@@ -73,30 +73,34 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-muted to-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-card shadow-lg border-b-2 border-primary">
-        <div className="max-w-4xl mx-auto px-4 py-6">
+      <header className="bg-card shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-center gap-3">
             <div className="p-2 rounded-full jamaican-gradient">
-              <MessageCircle className="w-6 h-6 text-jamaican-black" />
+              <MessageCircle className="w-5 h-5 text-jamaican-black" />
             </div>
             <div className="text-center">
-              <h1 className="text-2xl font-bold jamaican-text-gradient">
+              <h1 className="text-xl font-semibold jamaican-text-gradient">
                 JamAI Chat
               </h1>
-              <p className="text-sm text-muted-foreground">
-                Yuh AI assistant wid di Jamaican vibes
-              </p>
             </div>
           </div>
         </div>
       </header>
 
       {/* Chat Container */}
-      <div className="flex-1 max-w-4xl mx-auto w-full flex flex-col">
+      <div className="flex-1 max-w-3xl mx-auto w-full flex flex-col">
+        {/* Suggestions - shown at top when no user messages yet */}
+        {showSuggestions && messages.length === 1 && (
+          <div className="pt-8 pb-4">
+            <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
+          </div>
+        )}
+
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
           {messages.map((message) => (
             <ChatMessage
               key={message.id}
@@ -107,26 +111,14 @@ const Index = () => {
           ))}
           {isTyping && <TypingIndicator />}
           
-          {/* Show suggestions only when no user messages yet */}
-          {showSuggestions && messages.length === 1 && (
-            <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
-          )}
-          
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input */}
-        <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
-      </div>
-
-      {/* Footer */}
-      <footer className="bg-card border-t py-4">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            Built with love and irie vibes 🇯🇲
-          </p>
+        <div className="p-4">
+          <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
         </div>
-      </footer>
+      </div>
     </div>
   );
 };
