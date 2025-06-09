@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
+import ChatSuggestions from '@/components/ChatSuggestions';
 import TypingIndicator from '@/components/TypingIndicator';
 import { generatePatoisResponse, getPatoisGreeting } from '@/utils/patoisResponses';
 
@@ -16,6 +17,7 @@ interface Message {
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -38,6 +40,9 @@ const Index = () => {
   }, []);
 
   const handleSendMessage = async (messageText: string) => {
+    // Hide suggestions after first message
+    setShowSuggestions(false);
+    
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -63,16 +68,20 @@ const Index = () => {
     }, 1000 + Math.random() * 2000); // Random delay between 1-3 seconds
   };
 
+  const handleSuggestionClick = (suggestionText: string) => {
+    handleSendMessage(suggestionText);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted to-background flex flex-col">
       {/* Header */}
       <header className="bg-card shadow-lg border-b-2 border-primary">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center gap-3">
             <div className="p-2 rounded-full jamaican-gradient">
               <MessageCircle className="w-6 h-6 text-jamaican-black" />
             </div>
-            <div>
+            <div className="text-center">
               <h1 className="text-2xl font-bold jamaican-text-gradient">
                 JamAI Chat
               </h1>
@@ -97,6 +106,12 @@ const Index = () => {
             />
           ))}
           {isTyping && <TypingIndicator />}
+          
+          {/* Show suggestions only when no user messages yet */}
+          {showSuggestions && messages.length === 1 && (
+            <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
 

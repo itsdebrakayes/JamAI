@@ -1,4 +1,3 @@
-
 // Jamaican Patois responses for the AI
 export const patoisGreetings = [
   "Wah gwaan! Mi deh yah fi help yuh out today!",
@@ -29,6 +28,8 @@ export const patoisFarewells = [
   "Respect and blessings! Chat soon!"
 ];
 
+import chatSuggestionsData from '@/data/chatSuggestions.json';
+
 export const getRandomPatoisResponse = (): string => {
   const responses = [...patoisResponses];
   return responses[Math.floor(Math.random() * responses.length)];
@@ -44,6 +45,20 @@ export const getPatoisFarewell = (): string => {
 
 export const generatePatoisResponse = (userMessage: string): string => {
   const lowerMessage = userMessage.toLowerCase();
+  
+  // Check for suggestion-based responses
+  for (const suggestion of chatSuggestionsData.suggestions) {
+    if (lowerMessage.includes(suggestion.text.toLowerCase()) || 
+        (suggestion.id === 'patois' && (lowerMessage.includes('patois') || lowerMessage.includes('teach me'))) ||
+        (suggestion.id === 'recipe' && (lowerMessage.includes('recipe') || lowerMessage.includes('cook'))) ||
+        (suggestion.id === 'culture' && lowerMessage.includes('culture')) ||
+        (suggestion.id === 'music' && lowerMessage.includes('music')) ||
+        (suggestion.id === 'places' && (lowerMessage.includes('places') || lowerMessage.includes('visit')))) {
+      
+      const randomIndex = Math.floor(Math.random() * suggestion.responses.length);
+      return suggestion.responses[randomIndex];
+    }
+  }
   
   // Greetings
   if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
@@ -61,7 +76,7 @@ export const generatePatoisResponse = (userMessage: string): string => {
   }
   
   // Music related
-  if (lowerMessage.includes('music') || lowerMessage.includes('reggae') || lowerMessage.includes('dancehall')) {
+  if (lowerMessage.includes('reggae') || lowerMessage.includes('dancehall')) {
     return "Yow! Reggae and dancehall music sweet enuh! From Bob Marley to di new generation, Jamaica music touch every corner a di earth!";
   }
   
