@@ -22,21 +22,21 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
 
   return (
     <div className="relative">
-      <form onSubmit={handleSubmit} className="flex items-end gap-2 bg-background border border-border rounded-2xl p-3 shadow-sm focus-within:shadow-md transition-shadow">
+      <form onSubmit={handleSubmit} className="flex items-end gap-3 glass-effect rounded-3xl p-4 modern-shadow-lg transition-all duration-300 hover:shadow-xl">
         <Input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           placeholder="Message JamAI..."
           disabled={disabled}
-          className="flex-1 border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground text-sm"
+          className="flex-1 border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground text-base px-2 py-3 h-auto"
         />
         <Button 
           type="submit" 
           disabled={!message.trim() || disabled}
           size="icon"
-          className="h-8 w-8 rounded-lg bg-foreground hover:bg-foreground/90 text-background disabled:bg-muted disabled:text-muted-foreground"
+          className="h-10 w-10 rounded-2xl bg-gradient-to-r from-secondary to-accent hover:from-secondary/90 hover:to-accent/90 text-secondary-foreground disabled:from-muted disabled:to-muted disabled:text-muted-foreground modern-shadow transition-all duration-200 hover:scale-105"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-5 h-5" />
         </Button>
       </form>
     </div>

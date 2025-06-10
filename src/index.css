@@ -3,76 +3,79 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Jamaican Flag Color Design System */
+/* Enhanced Jamaican Flag Color Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 8%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
+    --card-foreground: 0 0% 8%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
+    --popover-foreground: 0 0% 8%;
 
     /* Jamaican Gold as primary */
     --primary: 51 100% 50%;
     --primary-foreground: 0 0% 0%;
 
     /* Rich Jamaican Green as secondary */
-    --secondary: 140 100% 30%;
+    --secondary: 140 85% 25%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 51 30% 95%;
-    --muted-foreground: 0 0% 30%;
+    /* Refined muted colors with green tint */
+    --muted: 140 15% 96%;
+    --muted-foreground: 140 8% 35%;
 
-    --accent: 140 100% 30%;
+    --accent: 140 85% 30%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 51 20% 85%;
-    --input: 51 20% 85%;
+    --border: 140 20% 88%;
+    --input: 140 20% 90%;
     --ring: 51 100% 50%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    /* Custom Jamaican colors */
+    /* Enhanced Jamaican colors */
     --jamaican-gold: 51 100% 50%;
-    --jamaican-green: 140 100% 30%;
-    --jamaican-black: 0 0% 0%;
+    --jamaican-green: 140 85% 25%;
+    --jamaican-green-light: 140 60% 45%;
+    --jamaican-black: 0 0% 8%;
+    --jamaican-accent: 51 85% 55%;
   }
 
   .dark {
-    --background: 0 0% 5%;
+    --background: 0 0% 3%;
     --foreground: 0 0% 95%;
 
-    --card: 0 0% 8%;
+    --card: 0 0% 5%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 0 0% 8%;
+    --popover: 0 0% 5%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 51 100% 50%;
+    --primary: 51 100% 55%;
     --primary-foreground: 0 0% 0%;
 
-    --secondary: 140 100% 25%;
+    --secondary: 140 85% 20%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
+    --muted: 140 15% 8%;
+    --muted-foreground: 140 8% 65%;
 
-    --accent: 140 100% 25%;
+    --accent: 140 85% 25%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 51 100% 50%;
+    --border: 140 15% 12%;
+    --input: 140 15% 10%;
+    --ring: 51 100% 55%;
   }
 }
 
@@ -82,29 +85,35 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
   }
 }
 
-/* Custom gradients for Jamaican theme */
+/* Modern Jamaican gradients */
 .jamaican-gradient {
-  background: linear-gradient(135deg, hsl(var(--jamaican-gold)) 0%, hsl(var(--jamaican-green)) 100%);
+  background: linear-gradient(135deg, hsl(var(--jamaican-gold)) 0%, hsl(var(--jamaican-green-light)) 50%, hsl(var(--jamaican-green)) 100%);
 }
 
 .jamaican-text-gradient {
-  background: linear-gradient(135deg, hsl(var(--jamaican-gold)) 0%, hsl(var(--jamaican-green)) 100%);
+  background: linear-gradient(135deg, hsl(var(--jamaican-gold)) 0%, hsl(var(--jamaican-green-light)) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Typing animation */
+.jamaican-border-gradient {
+  background: linear-gradient(135deg, hsl(var(--jamaican-gold)) 0%, hsl(var(--jamaican-green)) 100%);
+}
+
+/* Enhanced typing animation */
 @keyframes typing-dots {
   0%, 60%, 100% {
     transform: translateY(0);
+    opacity: 0.4;
   }
   30% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
+    opacity: 1;
   }
 }
 
@@ -114,3 +123,24 @@
 
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+/* Modern glass effect */
+.glass-effect {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-effect {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Modern shadows */
+.modern-shadow {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.06);
+}
+
+.modern-shadow-lg {
+  box-shadow: 0 10px 40px -4px rgba(0, 0, 0, 0.15), 0 4px 16px -4px rgba(0, 0, 0, 0.1);
+}

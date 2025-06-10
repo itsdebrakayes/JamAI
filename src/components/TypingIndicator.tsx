@@ -3,14 +3,23 @@ import React from 'react';
 
 const TypingIndicator = () => {
   return (
-    <div className="flex justify-start mb-4">
-      <div className="bg-secondary text-secondary-foreground rounded-2xl px-4 py-3 mr-4 shadow-lg">
-        <div className="flex items-center space-x-1">
-          <span className="text-sm opacity-70">AI a type...</span>
-          <div className="flex space-x-1 ml-2">
-            <div className="w-2 h-2 bg-current rounded-full typing-dot opacity-60"></div>
-            <div className="w-2 h-2 bg-current rounded-full typing-dot opacity-60"></div>
-            <div className="w-2 h-2 bg-current rounded-full typing-dot opacity-60"></div>
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="flex gap-4">
+        <div className="flex-shrink-0">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-accent text-secondary-foreground flex items-center justify-center text-lg font-medium modern-shadow">
+            🇯🇲
+          </div>
+        </div>
+        <div className="flex-1">
+          <div className="bg-card/60 backdrop-blur-sm rounded-2xl px-5 py-4 modern-shadow border border-secondary/20 inline-block">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm text-muted-foreground">AI a type...</span>
+              <div className="flex space-x-1 ml-2">
+                <div className="w-2 h-2 bg-secondary rounded-full typing-dot"></div>
+                <div className="w-2 h-2 bg-secondary rounded-full typing-dot"></div>
+                <div className="w-2 h-2 bg-secondary rounded-full typing-dot"></div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

@@ -9,15 +9,15 @@ interface ChatSuggestionsProps {
 const ChatSuggestions = ({ onSuggestionClick }: ChatSuggestionsProps) => {
   return (
     <div className="px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="grid grid-cols-2 gap-3 mb-3">
+      <div className="max-w-3xl mx-auto">
+        <div className="grid grid-cols-2 gap-4 mb-4">
           {chatSuggestionsData.suggestions.slice(0, 4).map((suggestion) => (
             <button
               key={suggestion.id}
               onClick={() => onSuggestionClick(suggestion.text)}
-              className="group px-4 py-3 rounded-2xl border-2 border-secondary/30 bg-background hover:bg-secondary/10 hover:border-secondary/50 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md text-left"
+              className="group px-5 py-4 rounded-2xl border-2 border-secondary/30 bg-card/60 backdrop-blur-sm hover:bg-secondary/10 hover:border-secondary/60 transition-all duration-300 text-sm font-medium modern-shadow hover:modern-shadow-lg text-left hover:scale-[1.02]"
             >
-              <span className="group-hover:scale-[1.02] transition-transform duration-200 inline-block text-foreground/80 group-hover:text-foreground">
+              <span className="text-foreground/80 group-hover:text-foreground transition-colors duration-200">
                 {suggestion.text}
               </span>
             </button>
@@ -28,9 +28,9 @@ const ChatSuggestions = ({ onSuggestionClick }: ChatSuggestionsProps) => {
         <div className="flex justify-center">
           <button
             onClick={() => onSuggestionClick(chatSuggestionsData.suggestions[4].text)}
-            className="group px-4 py-3 rounded-2xl border-2 border-secondary/30 bg-background hover:bg-secondary/10 hover:border-secondary/50 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
+            className="group px-5 py-4 rounded-2xl border-2 border-secondary/30 bg-card/60 backdrop-blur-sm hover:bg-secondary/10 hover:border-secondary/60 transition-all duration-300 text-sm font-medium modern-shadow hover:modern-shadow-lg hover:scale-[1.02]"
           >
-            <span className="group-hover:scale-[1.02] transition-transform duration-200 inline-block text-foreground/80 group-hover:text-foreground">
+            <span className="text-foreground/80 group-hover:text-foreground transition-colors duration-200">
               {chatSuggestionsData.suggestions[4].text}
             </span>
           </button>
