@@ -102,8 +102,8 @@ const Index = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-jamaican-gold/30 to-jamaican-green/30 rounded-full blur-2xl scale-150"></div>
                 </div>
               </div>
-              <h2 className="text-3xl font-bold jamaican-text-gradient mb-3">
-                How can I help you today?
+              <h2 className="text-6xl font-bold jamaican-text-gradient mb-6 tracking-tight">
+                JamAI
               </h2>
               <p className="text-muted-foreground text-lg">
                 Chat with me in Jamaican Patois!
