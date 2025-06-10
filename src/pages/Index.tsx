@@ -27,8 +27,7 @@ const Index = () => {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    // Send initial greeting
+  const initializeChat = () => {
     const initialMessage: Message = {
       id: '1',
       text: getPatoisGreeting(),
@@ -36,7 +35,18 @@ const Index = () => {
       timestamp: new Date()
     };
     setMessages([initialMessage]);
+    setShowSuggestions(true);
+    setIsTyping(false);
+  };
+
+  useEffect(() => {
+    // Send initial greeting
+    initializeChat();
   }, []);
+
+  const handleNewChat = () => {
+    initializeChat();
+  };
 
   const handleSendMessage = async (messageText: string) => {
     // Hide suggestions after first message
@@ -77,7 +87,10 @@ const Index = () => {
       <header className="glass-effect sticky top-0 z-50 border-b border-border/30">
         <div className="max-w-4xl mx-auto px-6 py-4">
           <div className="flex items-center justify-center">
-            <div className="flex items-center gap-3">
+            <button 
+              onClick={handleNewChat}
+              className="flex items-center gap-3 hover:scale-105 transition-transform duration-200 cursor-pointer"
+            >
               <div className="relative">
                 <span className="text-3xl filter drop-shadow-sm">🇯🇲</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-jamaican-gold/20 to-jamaican-green/20 rounded-full blur-xl"></div>
@@ -85,7 +98,7 @@ const Index = () => {
               <h1 className="text-xl font-semibold jamaican-text-gradient">
                 JamAI Chat
               </h1>
-            </div>
+            </button>
           </div>
         </div>
       </header>
@@ -102,9 +115,12 @@ const Index = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-jamaican-gold/30 to-jamaican-green/30 rounded-full blur-2xl scale-150"></div>
                 </div>
               </div>
-              <h2 className="text-6xl font-bold jamaican-text-gradient mb-6 tracking-tight">
+              <button 
+                onClick={handleNewChat}
+                className="text-6xl font-bold jamaican-text-gradient mb-6 tracking-tight hover:scale-105 transition-transform duration-200 cursor-pointer"
+              >
                 JamAI
-              </h2>
+              </button>
               <p className="text-muted-foreground text-lg">
                 Chat with me in Jamaican Patois!
               </p>
