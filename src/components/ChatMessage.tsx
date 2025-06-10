@@ -11,22 +11,33 @@ interface ChatMessageProps {
 const ChatMessage = ({ message, isUser, timestamp }: ChatMessageProps) => {
   return (
     <div className={cn(
-      "flex w-full mb-4",
-      isUser ? "justify-end" : "justify-start"
+      "group w-full",
+      isUser ? "bg-background" : "bg-muted/30"
     )}>
-      <div className={cn(
-        "max-w-[70%] rounded-2xl px-4 py-3 shadow-lg transition-all duration-200 hover:shadow-xl",
-        isUser 
-          ? "bg-primary text-primary-foreground ml-4" 
-          : "bg-secondary text-secondary-foreground mr-4"
-      )}>
-        <p className="text-sm leading-relaxed">{message}</p>
-        <p className={cn(
-          "text-xs mt-1 opacity-70",
-          isUser ? "text-right" : "text-left"
-        )}>
-          {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-        </p>
+      <div className="max-w-3xl mx-auto px-4 py-6">
+        <div className="flex gap-4">
+          <div className="flex-shrink-0">
+            {isUser ? (
+              <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center text-sm font-medium">
+                You
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center text-lg">
+                🇯🇲
+              </div>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+              {message}
+            </div>
+            <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-xs text-muted-foreground">
+                {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

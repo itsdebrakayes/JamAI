@@ -21,22 +21,25 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2 p-4 border-t bg-card">
-      <Input
-        value={message}
-        onChange={(e) => setMessage(e.target.value)}
-        placeholder="Type yuh message here..."
-        disabled={disabled}
-        className="flex-1 border-2 border-border focus:border-primary transition-colors"
-      />
-      <Button 
-        type="submit" 
-        disabled={!message.trim() || disabled}
-        className="jamaican-gradient hover:opacity-90 transition-opacity"
-      >
-        <Send className="w-4 h-4" />
-      </Button>
-    </form>
+    <div className="relative">
+      <form onSubmit={handleSubmit} className="flex items-end gap-2 bg-background border border-border rounded-2xl p-3 shadow-sm focus-within:shadow-md transition-shadow">
+        <Input
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Message JamAI..."
+          disabled={disabled}
+          className="flex-1 border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground text-sm"
+        />
+        <Button 
+          type="submit" 
+          disabled={!message.trim() || disabled}
+          size="icon"
+          className="h-8 w-8 rounded-lg bg-foreground hover:bg-foreground/90 text-background disabled:bg-muted disabled:text-muted-foreground"
+        >
+          <Send className="w-4 h-4" />
+        </Button>
+      </form>
+    </div>
   );
 };
 
