@@ -119,6 +119,9 @@ const Index = () => {
       setMessages(chat.messages);
       setShowSuggestions(false);
       setIsTyping(false);
+      // Reset translation-related state when loading old chat
+      setLastAIMessage('');
+      setLastMessageWasPatois(false);
     }
   };
 
