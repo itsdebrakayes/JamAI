@@ -38,7 +38,7 @@ const Index = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [isPuterAvailable, setIsPuterAvailable] = useState(false);
-  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(false);
+  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(true);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,12 +65,8 @@ const Index = () => {
       setChatHistory(parsedHistory);
     }
 
-    // Check for saved OpenAI API key
-    const savedApiKey = localStorage.getItem('openai-api-key');
-    if (savedApiKey) {
-      openaiService.setApiKey(savedApiKey);
-      setIsOpenAIConfigured(true);
-    }
+    // OpenAI is now automatically configured
+    console.log('OpenAI is ready to use');
   }, []);
 
   // Check for Puter availability on mount
@@ -79,9 +75,7 @@ const Index = () => {
       const available = puterService.isConfigured();
       setIsPuterAvailable(available);
       if (available) {
-        console.log('Puter AI is available and ready to use');
-      } else {
-        console.log('Puter AI not available, using fallback responses');
+        console.log('Puter AI is also available as fallback');
       }
     };
 
@@ -184,7 +178,7 @@ const Index = () => {
       let responseText: string;
       
       if (isOpenAIConfigured) {
-        // Prefer OpenAI if configured
+        // Use OpenAI (now automatically configured)
         const aiResponse = await openaiService.generateResponse(messageText, isUserMessagePatois);
         responseText = aiResponse.message;
       } else if (isPuterAvailable) {
@@ -248,11 +242,6 @@ const Index = () => {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex w-full">
-        <ApiKeyInput 
-          onApiKeySet={handleApiKeySet}
-          isVisible={showApiKeyInput}
-        />
-        
         <ChatHistorySidebar
           chatHistory={chatHistory}
           currentChatId={currentChatId}
@@ -281,11 +270,9 @@ const Index = () => {
                       </h1>
                     </button>
                   </div>
-                  {(isOpenAIConfigured || isPuterAvailable) && (
-                    <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                      {isOpenAIConfigured ? 'OpenAI Powered' : 'AI Powered'}
-                    </div>
-                  )}
+                  <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                    OpenAI Powered
+                  </div>
                 </div>
               </div>
             </header>

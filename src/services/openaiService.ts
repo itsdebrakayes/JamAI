@@ -9,12 +9,10 @@ interface AIResponse {
 
 export class OpenAIService {
   private openai: OpenAI | null = null;
-  private apiKey: string = '';
+  private apiKey: string = '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';
 
-  constructor(apiKey?: string) {
-    if (apiKey) {
-      this.setApiKey(apiKey);
-    }
+  constructor() {
+    this.setApiKey(this.apiKey);
   }
 
   setApiKey(apiKey: string) {
@@ -88,4 +86,4 @@ export class OpenAIService {
 }
 
 // Export singleton instance
-export const openaiService = new OpenAIService();
+export const openaiService = new OpenAI Service();
