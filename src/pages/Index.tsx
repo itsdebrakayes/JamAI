@@ -164,7 +164,7 @@ const Index = () => {
   }, [messages]);
 
   return (
-    <SidebarProvider defaultOpen={false}>
+    <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex w-full">
         <ChatHistorySidebar
           chatHistory={chatHistory}
@@ -180,7 +180,7 @@ const Index = () => {
               <div className="max-w-4xl mx-auto px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <SidebarTrigger className="md:hidden" />
+                    <SidebarTrigger />
                     <button 
                       onClick={handleNewChat}
                       className="flex items-center gap-3 hover:scale-105 transition-transform duration-200 cursor-pointer"
