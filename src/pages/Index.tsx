@@ -14,7 +14,6 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { detectLanguage } from '@/utils/languageDetection';
-import { puterService } from '@/services/puterService';
 import { geminiService } from '@/services/geminiService';
 
 interface Message {
@@ -37,7 +36,6 @@ const Index = () => {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
-  const [isPuterAvailable, setIsPuterAvailable] = useState(false);
   const [isGeminiConfigured, setIsGeminiConfigured] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -71,32 +69,9 @@ const Index = () => {
       setIsGeminiConfigured(true);
     } else {
       setIsGeminiConfigured(false);
+      setShowApiKeyInput(true);
     }
   }, []);
-
-  // Check for Puter availability on mount
-  useEffect(() => {
-    const checkPuter = () => {
-      const available = typeof window !== 'undefined' && !!window.puter;
-      setIsPuterAvailable(available);
-      console.log('Puter availability check:', available);
-      
-      if (available) {
-        console.log('Puter AI is available as primary service');
-      }
-    };
-
-    checkPuter();
-    // Check again after a short delay in case Puter loads asynchronously
-    setTimeout(checkPuter, 2000);
-  }, []);
-
-  // Only show API key input if neither service is available
-  useEffect(() => {
-    const shouldShowApiInput = !isPuterAvailable && !isGeminiConfigured;
-    console.log('Should show API input:', shouldShowApiInput, { isPuterAvailable, isGeminiConfigured });
-    setShowApiKeyInput(shouldShowApiInput);
-  }, [isPuterAvailable, isGeminiConfigured]);
 
   const handleApiKeySet = (apiKey: string) => {
     geminiService.setApiKey(apiKey);
@@ -185,20 +160,15 @@ const Index = () => {
     try {
       let responseText: string;
       
-      console.log('Attempting to get AI response...', { isPuterAvailable, isGeminiConfigured });
+      console.log('Attempting to get AI response from Gemini...');
       
-      if (isPuterAvailable) {
-        // Use Puter as primary service
-        console.log('Using Puter AI...');
-        const aiResponse = await puterService.generateResponse(messageText, isUserMessagePatois);
-        responseText = aiResponse.message;
-      } else if (isGeminiConfigured) {
-        // Fallback to Gemini
-        console.log('Using Gemini fallback...');
+      if (isGeminiConfigured) {
+        // Use Gemini as primary service
+        console.log('Using Gemini AI...');
         const aiResponse = await geminiService.generateResponse(messageText, isUserMessagePatois);
         responseText = aiResponse.message;
       } else {
-        // Final fallback to local responses
+        // Fallback to local responses
         console.log('Using local fallback responses...');
         responseText = generatePatoisResponse(messageText);
       }
@@ -284,7 +254,7 @@ const Index = () => {
                     </button>
                   </div>
                   <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                    {isPuterAvailable ? 'Puter AI' : isGeminiConfigured ? 'Gemini' : 'Local'}
+                    {isGeminiConfigured ? 'Gemini AI' : 'Local'}
                   </div>
                 </div>
               </div>
