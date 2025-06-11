@@ -38,7 +38,7 @@ const Index = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [isPuterAvailable, setIsPuterAvailable] = useState(false);
-  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(true);
+  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,29 +65,37 @@ const Index = () => {
       setChatHistory(parsedHistory);
     }
 
-    // OpenAI is now automatically configured
-    console.log('OpenAI is ready to use');
+    // Check for stored OpenAI API key
+    const storedApiKey = localStorage.getItem('openai-api-key');
+    if (storedApiKey) {
+      setIsOpenAIConfigured(true);
+    } else {
+      setIsOpenAIConfigured(false);
+    }
   }, []);
 
   // Check for Puter availability on mount
   useEffect(() => {
     const checkPuter = () => {
-      const available = puterService.isConfigured();
+      const available = typeof window !== 'undefined' && !!window.puter;
       setIsPuterAvailable(available);
+      console.log('Puter availability check:', available);
+      
       if (available) {
-        console.log('Puter AI is also available as fallback');
+        console.log('Puter AI is available as primary service');
       }
     };
 
     checkPuter();
-    setTimeout(checkPuter, 1000);
+    // Check again after a short delay in case Puter loads asynchronously
+    setTimeout(checkPuter, 2000);
   }, []);
 
-  // Show API key input if neither service is available
+  // Only show API key input if neither service is available
   useEffect(() => {
-    if (!isPuterAvailable && !isOpenAIConfigured) {
-      setShowApiKeyInput(true);
-    }
+    const shouldShowApiInput = !isPuterAvailable && !isOpenAIConfigured;
+    console.log('Should show API input:', shouldShowApiInput, { isPuterAvailable, isOpenAIConfigured });
+    setShowApiKeyInput(shouldShowApiInput);
   }, [isPuterAvailable, isOpenAIConfigured]);
 
   const handleApiKeySet = (apiKey: string) => {
@@ -177,16 +185,21 @@ const Index = () => {
     try {
       let responseText: string;
       
-      if (isOpenAIConfigured) {
-        // Use OpenAI (now automatically configured)
-        const aiResponse = await openaiService.generateResponse(messageText, isUserMessagePatois);
-        responseText = aiResponse.message;
-      } else if (isPuterAvailable) {
-        // Fallback to Puter
+      console.log('Attempting to get AI response...', { isPuterAvailable, isOpenAIConfigured });
+      
+      if (isPuterAvailable) {
+        // Use Puter as primary service
+        console.log('Using Puter AI...');
         const aiResponse = await puterService.generateResponse(messageText, isUserMessagePatois);
+        responseText = aiResponse.message;
+      } else if (isOpenAIConfigured) {
+        // Fallback to OpenAI
+        console.log('Using OpenAI fallback...');
+        const aiResponse = await openaiService.generateResponse(messageText, isUserMessagePatois);
         responseText = aiResponse.message;
       } else {
         // Final fallback to local responses
+        console.log('Using local fallback responses...');
         responseText = generatePatoisResponse(messageText);
       }
 
@@ -212,7 +225,7 @@ const Index = () => {
           id: (Date.now() + 1).toString(),
           text: isUserMessagePatois 
             ? "Zeen! Mi have some trouble right now, but mi deh yah fi help yuh still!"
-            : "I'm having some trouble right now, but I'm here to help you!",
+            : "I'm having some connection issues right now, but I'm here to help you!",
           isUser: false,
           timestamp: new Date()
         };
@@ -270,8 +283,8 @@ const Index = () => {
                       </h1>
                     </button>
                   </div>
-                  <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    OpenAI Powered
+                  <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                    {isPuterAvailable ? 'Puter AI' : isOpenAIConfigured ? 'OpenAI' : 'Local'}
                   </div>
                 </div>
               </div>
