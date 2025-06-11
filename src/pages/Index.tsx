@@ -186,7 +186,7 @@ const Index = () => {
                       className="flex items-center gap-3 hover:scale-105 transition-transform duration-200 cursor-pointer"
                     >
                       <div className="relative">
-                        <span className="text-3xl filter drop-shadow-sm">🇯🇦</span>
+                        <span className="text-3xl filter drop-shadow-sm">🇯🇲</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-jamaican-gold/20 to-jamaican-green/20 rounded-full blur-xl"></div>
                       </div>
                       <h1 className="text-xl font-semibold jamaican-text-gradient">
@@ -206,7 +206,7 @@ const Index = () => {
                   <div className="text-center mb-12">
                     <div className="flex justify-center mb-6 relative">
                       <div className="relative">
-                        <span className="text-7xl filter drop-shadow-lg">🇯🇦</span>
+                        <span className="text-7xl filter drop-shadow-lg">🇯🇲</span>
                         <div className="absolute inset-0 bg-gradient-to-r from-jamaican-gold/30 to-jamaican-green/30 rounded-full blur-2xl scale-150"></div>
                       </div>
                     </div>
@@ -226,13 +226,13 @@ const Index = () => {
                     <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
                   </div>
                   
-                  {/* AI Greeting */}
-                  <div className="max-w-2xl mx-auto">
+                  {/* AI Greeting - Left aligned */}
+                  <div className="max-w-2xl">
                     <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 modern-shadow border border-secondary/20">
                       <div className="flex gap-4 items-start">
                         <div className="flex-shrink-0">
                           <div className="w-10 h-10 rounded-full bg-gradient-to-br from-secondary to-accent text-secondary-foreground flex items-center justify-center text-lg font-medium modern-shadow">
-                            🇯🇦
+                            🇯🇲
                           </div>
                         </div>
                         <div className="flex-1">
@@ -283,3 +283,5 @@ const Index = () => {
 };
 
 export default Index;
+
+}
