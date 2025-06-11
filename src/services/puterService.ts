@@ -14,7 +14,7 @@ export class PuterService {
 
   private checkAvailability() {
     // Check if Puter is available in the global scope
-    this.isAvailable = typeof window !== 'undefined' && window.puter;
+    this.isAvailable = typeof window !== 'undefined' && !!window.puter;
   }
 
   isConfigured(): boolean {
