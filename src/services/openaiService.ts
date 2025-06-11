@@ -8,7 +8,7 @@ interface AIResponse {
 
 export class OpenAIService {
   private openai: OpenAI | null = null;
-  private apiKey: string = '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';
+  private apiKey: string = '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';
 
   constructor() {
     this.setApiKey(this.apiKey);
