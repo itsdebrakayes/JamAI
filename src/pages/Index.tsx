@@ -38,7 +38,7 @@ const Index = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [isPuterAvailable, setIsPuterAvailable] = useState(false);
-  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(false);
+  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(true);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,8 +65,8 @@ const Index = () => {
       setChatHistory(parsedHistory);
     }
 
-    // Check if OpenAI is configured
-    setIsOpenAIConfigured(openaiService.isConfigured());
+    // OpenAI is now automatically configured
+    console.log('OpenAI is ready to use');
   }, []);
 
   // Check for Puter availability on mount
@@ -75,7 +75,7 @@ const Index = () => {
       const available = puterService.isConfigured();
       setIsPuterAvailable(available);
       if (available) {
-        console.log('Puter AI is available and will be used as primary service');
+        console.log('Puter AI is also available as fallback');
       }
     };
 
@@ -83,7 +83,7 @@ const Index = () => {
     setTimeout(checkPuter, 1000);
   }, []);
 
-  // Show API key input only if neither service is available
+  // Show API key input if neither service is available
   useEffect(() => {
     if (!isPuterAvailable && !isOpenAIConfigured) {
       setShowApiKeyInput(true);
@@ -177,13 +177,13 @@ const Index = () => {
     try {
       let responseText: string;
       
-      if (isPuterAvailable) {
-        // Use Puter as primary service
-        const aiResponse = await puterService.generateResponse(messageText, isUserMessagePatois);
-        responseText = aiResponse.message;
-      } else if (isOpenAIConfigured) {
-        // Fallback to OpenAI if available
+      if (isOpenAIConfigured) {
+        // Use OpenAI (now automatically configured)
         const aiResponse = await openaiService.generateResponse(messageText, isUserMessagePatois);
+        responseText = aiResponse.message;
+      } else if (isPuterAvailable) {
+        // Fallback to Puter
+        const aiResponse = await puterService.generateResponse(messageText, isUserMessagePatois);
         responseText = aiResponse.message;
       } else {
         // Final fallback to local responses
@@ -271,7 +271,7 @@ const Index = () => {
                     </button>
                   </div>
                   <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    {isPuterAvailable ? 'Puter AI' : isOpenAIConfigured ? 'OpenAI' : 'Local Mode'}
+                    OpenAI Powered
                   </div>
                 </div>
               </div>
