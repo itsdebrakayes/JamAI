@@ -35,8 +35,6 @@ const Index = () => {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
-  const [lastAIMessage, setLastAIMessage] = useState<string>('');
-  const [lastMessageWasPatois, setLastMessageWasPatois] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -123,59 +121,10 @@ const Index = () => {
   };
 
   const handleSendMessage = async (messageText: string) => {
+    console.log('Index: handleSendMessage called with:', messageText);
+    
     // Hide suggestions after first message
     setShowSuggestions(false);
-    
-    // Check if this is a translation request for the last AI message
-    const isTranslationRequest = require('@/utils/languageDetection').isTranslationRequest;
-    const translationRequested = isTranslationRequest(messageText) && lastMessageWasPatois && lastAIMessage;
-    
-    if (translationRequested) {
-      // Add user message
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        text: messageText,
-        isUser: true,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, userMessage]);
-      setIsTyping(true);
-
-      try {
-        const translatedText = await geminiService.translateToEnglish(lastAIMessage);
-        
-        setTimeout(() => {
-          const translationMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            text: `Here's the English translation:\n\n"${translatedText}"`,
-            isUser: false,
-            timestamp: new Date()
-          };
-
-          setMessages(prev => [...prev, translationMessage]);
-          setIsTyping(false);
-          setLastMessageWasPatois(false); // Reset after translation
-        }, 1000);
-        
-      } catch (error) {
-        console.error('Translation error:', error);
-        
-        setTimeout(() => {
-          const errorMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            text: "Sorry, I'm having trouble with the translation right now.",
-            isUser: false,
-            timestamp: new Date()
-          };
-
-          setMessages(prev => [...prev, errorMessage]);
-          setIsTyping(false);
-        }, 1000);
-      }
-      
-      return; // Exit early for translation requests
-    }
     
     // Add user message
     const userMessage: Message = {
@@ -185,6 +134,7 @@ const Index = () => {
       timestamp: new Date()
     };
 
+    console.log('Index: Adding user message:', userMessage);
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
@@ -198,9 +148,7 @@ const Index = () => {
       const aiResponse = await geminiService.generateResponse(messageText, isUserMessagePatois);
       responseText = aiResponse.message;
 
-      // Store the AI message and whether it was in Patois for potential translation
-      setLastAIMessage(responseText);
-      setLastMessageWasPatois(aiResponse.isPatois || false);
+      console.log('Index: Got AI response:', responseText);
 
       // Simulate AI response delay
       setTimeout(() => {
@@ -211,6 +159,7 @@ const Index = () => {
           timestamp: new Date()
         };
 
+        console.log('Index: Adding AI response:', aiResponse);
         setMessages(prev => [...prev, aiResponse]);
         setIsTyping(false);
       }, 1000 + Math.random() * 2000);
