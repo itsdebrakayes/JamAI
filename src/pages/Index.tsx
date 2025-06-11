@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
@@ -13,10 +12,19 @@ interface Message {
   timestamp: Date;
 }
 
+interface ChatHistory {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: Date;
+}
+
 const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(true);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -27,7 +35,51 @@ const Index = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Load chat history from localStorage on component mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem('jamAI-chat-history');
+    if (savedHistory) {
+      const parsedHistory = JSON.parse(savedHistory).map((chat: any) => ({
+        ...chat,
+        createdAt: new Date(chat.createdAt),
+        messages: chat.messages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }))
+      }));
+      setChatHistory(parsedHistory);
+    }
+  }, []);
+
+  // Save current chat to history
+  const saveCurrentChatToHistory = () => {
+    if (messages.length > 1 && currentChatId) {
+      const chatToSave: ChatHistory = {
+        id: currentChatId,
+        title: messages.find(m => m.isUser)?.text.slice(0, 50) + '...' || 'New Chat',
+        messages: messages,
+        createdAt: new Date()
+      };
+
+      const updatedHistory = chatHistory.filter(chat => chat.id !== currentChatId);
+      updatedHistory.unshift(chatToSave);
+      
+      // Keep only last 20 chats
+      const limitedHistory = updatedHistory.slice(0, 20);
+      setChatHistory(limitedHistory);
+      localStorage.setItem('jamAI-chat-history', JSON.stringify(limitedHistory));
+    }
+  };
+
   const initializeChat = () => {
+    // Save current chat before starting new one
+    if (messages.length > 1) {
+      saveCurrentChatToHistory();
+    }
+
+    const newChatId = Date.now().toString();
+    setCurrentChatId(newChatId);
+
     const initialMessage: Message = {
       id: '1',
       text: getPatoisGreeting(),
@@ -46,6 +98,16 @@ const Index = () => {
 
   const handleNewChat = () => {
     initializeChat();
+  };
+
+  const loadChatFromHistory = (chatId: string) => {
+    const chat = chatHistory.find(c => c.id === chatId);
+    if (chat) {
+      setCurrentChatId(chatId);
+      setMessages(chat.messages);
+      setShowSuggestions(false);
+      setIsTyping(false);
+    }
   };
 
   const handleSendMessage = async (messageText: string) => {
@@ -80,6 +142,18 @@ const Index = () => {
   const handleSuggestionClick = (suggestionText: string) => {
     handleSendMessage(suggestionText);
   };
+
+  // Save chat when messages change (except initial load)
+  useEffect(() => {
+    if (messages.length > 1 && currentChatId) {
+      // Debounce saving to avoid too frequent saves
+      const timeoutId = setTimeout(() => {
+        saveCurrentChatToHistory();
+      }, 2000);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [messages]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex flex-col">
