@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Key, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,9 +29,9 @@ const ApiKeyInput = ({ onApiKeySet, isVisible }: ApiKeyInputProps) => {
           <div className="w-12 h-12 bg-gradient-to-br from-secondary to-accent rounded-full flex items-center justify-center mx-auto mb-4">
             <Key className="w-6 h-6 text-secondary-foreground" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">OpenAI API Key Required</h2>
+          <h2 className="text-xl font-semibold mb-2">Gemini API Key Required</h2>
           <p className="text-muted-foreground text-sm">
-            Enter your OpenAI API key to enable AI-powered responses
+            Enter your Google Gemini API key to enable AI-powered responses
           </p>
         </div>
 
@@ -42,7 +41,7 @@ const ApiKeyInput = ({ onApiKeySet, isVisible }: ApiKeyInputProps) => {
               type={showKey ? 'text' : 'password'}
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
-              placeholder="sk-..."
+              placeholder="AIza..."
               className="pr-10"
             />
             <Button
@@ -61,7 +60,7 @@ const ApiKeyInput = ({ onApiKeySet, isVisible }: ApiKeyInputProps) => {
             className="w-full"
             disabled={!apiKey.trim()}
           >
-            Connect to OpenAI
+            Connect to Gemini
           </Button>
         </form>
 

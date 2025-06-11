@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { detectLanguage } from '@/utils/languageDetection';
 import { puterService } from '@/services/puterService';
-import { openaiService } from '@/services/openaiService';
+import { geminiService } from '@/services/geminiService';
 
 interface Message {
   id: string;
@@ -38,7 +38,7 @@ const Index = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [isPuterAvailable, setIsPuterAvailable] = useState(false);
-  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(false);
+  const [isGeminiConfigured, setIsGeminiConfigured] = useState(false);
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -65,12 +65,12 @@ const Index = () => {
       setChatHistory(parsedHistory);
     }
 
-    // Check for stored OpenAI API key
-    const storedApiKey = localStorage.getItem('openai-api-key');
+    // Check for stored Gemini API key
+    const storedApiKey = localStorage.getItem('gemini-api-key');
     if (storedApiKey) {
-      setIsOpenAIConfigured(true);
+      setIsGeminiConfigured(true);
     } else {
-      setIsOpenAIConfigured(false);
+      setIsGeminiConfigured(false);
     }
   }, []);
 
@@ -93,15 +93,15 @@ const Index = () => {
 
   // Only show API key input if neither service is available
   useEffect(() => {
-    const shouldShowApiInput = !isPuterAvailable && !isOpenAIConfigured;
-    console.log('Should show API input:', shouldShowApiInput, { isPuterAvailable, isOpenAIConfigured });
+    const shouldShowApiInput = !isPuterAvailable && !isGeminiConfigured;
+    console.log('Should show API input:', shouldShowApiInput, { isPuterAvailable, isGeminiConfigured });
     setShowApiKeyInput(shouldShowApiInput);
-  }, [isPuterAvailable, isOpenAIConfigured]);
+  }, [isPuterAvailable, isGeminiConfigured]);
 
   const handleApiKeySet = (apiKey: string) => {
-    openaiService.setApiKey(apiKey);
-    localStorage.setItem('openai-api-key', apiKey);
-    setIsOpenAIConfigured(true);
+    geminiService.setApiKey(apiKey);
+    localStorage.setItem('gemini-api-key', apiKey);
+    setIsGeminiConfigured(true);
     setShowApiKeyInput(false);
   };
 
@@ -185,17 +185,17 @@ const Index = () => {
     try {
       let responseText: string;
       
-      console.log('Attempting to get AI response...', { isPuterAvailable, isOpenAIConfigured });
+      console.log('Attempting to get AI response...', { isPuterAvailable, isGeminiConfigured });
       
       if (isPuterAvailable) {
         // Use Puter as primary service
         console.log('Using Puter AI...');
         const aiResponse = await puterService.generateResponse(messageText, isUserMessagePatois);
         responseText = aiResponse.message;
-      } else if (isOpenAIConfigured) {
-        // Fallback to OpenAI
-        console.log('Using OpenAI fallback...');
-        const aiResponse = await openaiService.generateResponse(messageText, isUserMessagePatois);
+      } else if (isGeminiConfigured) {
+        // Fallback to Gemini
+        console.log('Using Gemini fallback...');
+        const aiResponse = await geminiService.generateResponse(messageText, isUserMessagePatois);
         responseText = aiResponse.message;
       } else {
         // Final fallback to local responses
@@ -284,7 +284,7 @@ const Index = () => {
                     </button>
                   </div>
                   <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                    {isPuterAvailable ? 'Puter AI' : isOpenAIConfigured ? 'OpenAI' : 'Local'}
+                    {isPuterAvailable ? 'Puter AI' : isGeminiConfigured ? 'Gemini' : 'Local'}
                   </div>
                 </div>
               </div>
