@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -20,15 +20,24 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   return (
     <div className="relative">
       <form onSubmit={handleSubmit} className="flex items-end gap-3 glass-effect rounded-3xl p-4 modern-shadow-lg transition-all duration-300 hover:shadow-xl">
-        <Input
+        <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
           placeholder="Message JamAI..."
           disabled={disabled}
-          className="flex-1 border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground text-base px-2 py-3 h-auto"
+          className="flex-1 border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground text-base px-2 py-3 min-h-[24px] max-h-32"
+          rows={1}
         />
         <Button 
           type="submit" 
