@@ -5,6 +5,7 @@ import ChatInput from '@/components/ChatInput';
 import ChatSuggestions from '@/components/ChatSuggestions';
 import TypingIndicator from '@/components/TypingIndicator';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
+import ApiKeyInput from '@/components/ApiKeyInput';
 import { generatePatoisResponse, getPatoisGreeting } from '@/utils/patoisResponses';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/sidebar';
 import { detectLanguage } from '@/utils/languageDetection';
 import { puterService } from '@/services/puterService';
+import { openaiService } from '@/services/openaiService';
 
 interface Message {
   id: string;
@@ -36,6 +38,8 @@ const Index = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [isPuterAvailable, setIsPuterAvailable] = useState(false);
+  const [isOpenAIConfigured, setIsOpenAIConfigured] = useState(false);
+  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -60,6 +64,13 @@ const Index = () => {
       }));
       setChatHistory(parsedHistory);
     }
+
+    // Check for saved OpenAI API key
+    const savedApiKey = localStorage.getItem('openai-api-key');
+    if (savedApiKey) {
+      openaiService.setApiKey(savedApiKey);
+      setIsOpenAIConfigured(true);
+    }
   }, []);
 
   // Check for Puter availability on mount
@@ -74,10 +85,23 @@ const Index = () => {
       }
     };
 
-    // Check immediately and also after a short delay to ensure script has loaded
     checkPuter();
     setTimeout(checkPuter, 1000);
   }, []);
+
+  // Show API key input if neither service is available
+  useEffect(() => {
+    if (!isPuterAvailable && !isOpenAIConfigured) {
+      setShowApiKeyInput(true);
+    }
+  }, [isPuterAvailable, isOpenAIConfigured]);
+
+  const handleApiKeySet = (apiKey: string) => {
+    openaiService.setApiKey(apiKey);
+    localStorage.setItem('openai-api-key', apiKey);
+    setIsOpenAIConfigured(true);
+    setShowApiKeyInput(false);
+  };
 
   // Save current chat to history
   const saveCurrentChatToHistory = () => {
@@ -159,12 +183,16 @@ const Index = () => {
     try {
       let responseText: string;
       
-      if (isPuterAvailable) {
-        // Use Puter for enhanced responses
+      if (isOpenAIConfigured) {
+        // Prefer OpenAI if configured
+        const aiResponse = await openaiService.generateResponse(messageText, isUserMessagePatois);
+        responseText = aiResponse.message;
+      } else if (isPuterAvailable) {
+        // Fallback to Puter
         const aiResponse = await puterService.generateResponse(messageText, isUserMessagePatois);
         responseText = aiResponse.message;
       } else {
-        // Fallback to local Patois responses
+        // Final fallback to local responses
         responseText = generatePatoisResponse(messageText);
       }
 
@@ -220,6 +248,11 @@ const Index = () => {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex w-full">
+        <ApiKeyInput 
+          onApiKeySet={handleApiKeySet}
+          isVisible={showApiKeyInput}
+        />
+        
         <ChatHistorySidebar
           chatHistory={chatHistory}
           currentChatId={currentChatId}
@@ -248,9 +281,9 @@ const Index = () => {
                       </h1>
                     </button>
                   </div>
-                  {isPuterAvailable && (
+                  {(isOpenAIConfigured || isPuterAvailable) && (
                     <div className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                      AI Powered
+                      {isOpenAIConfigured ? 'OpenAI Powered' : 'AI Powered'}
                     </div>
                   )}
                 </div>
