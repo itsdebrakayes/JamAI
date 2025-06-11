@@ -1,4 +1,3 @@
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface AIResponse {
@@ -8,31 +7,24 @@ interface AIResponse {
 }
 
 export class GeminiService {
-  private genAI: GoogleGenerativeAI | null = null;
-  private apiKey: string = '';
+  private genAI: GoogleGenerativeAI;
+  private apiKey: string = 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
 
   constructor() {
-    // Check for stored API key in localStorage
-    const storedKey = localStorage.getItem('gemini-api-key');
-    if (storedKey) {
-      this.setApiKey(storedKey);
-    }
+    this.genAI = new GoogleGenerativeAI(this.apiKey);
   }
 
   setApiKey(apiKey: string) {
-    this.apiKey = apiKey;
-    this.genAI = new GoogleGenerativeAI(apiKey);
+    // Keep this method for compatibility but use hardcoded key
+    this.apiKey = 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
+    this.genAI = new GoogleGenerativeAI(this.apiKey);
   }
 
   isConfigured(): boolean {
-    return !!this.genAI && !!this.apiKey;
+    return true; // Always configured with hardcoded key
   }
 
   async generateResponse(userMessage: string, isUserMessagePatois: boolean): Promise<AIResponse> {
-    if (!this.genAI) {
-      throw new Error('Gemini not configured. Please provide an API key.');
-    }
-
     const systemPrompt = isUserMessagePatois 
       ? `You are JamAI, a friendly AI assistant that speaks Jamaican Patois naturally and authentically. 
          The user has written to you in Patois, so respond primarily in Patois. 

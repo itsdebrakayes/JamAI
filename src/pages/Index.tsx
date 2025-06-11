@@ -5,7 +5,6 @@ import ChatInput from '@/components/ChatInput';
 import ChatSuggestions from '@/components/ChatSuggestions';
 import TypingIndicator from '@/components/TypingIndicator';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
-import ApiKeyInput from '@/components/ApiKeyInput';
 import { generatePatoisResponse, getPatoisGreeting } from '@/utils/patoisResponses';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,8 +35,6 @@ const Index = () => {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
-  const [isGeminiConfigured, setIsGeminiConfigured] = useState(false);
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -62,23 +59,7 @@ const Index = () => {
       }));
       setChatHistory(parsedHistory);
     }
-
-    // Check for stored Gemini API key
-    const storedApiKey = localStorage.getItem('gemini-api-key');
-    if (storedApiKey) {
-      setIsGeminiConfigured(true);
-    } else {
-      setIsGeminiConfigured(false);
-      setShowApiKeyInput(true);
-    }
   }, []);
-
-  const handleApiKeySet = (apiKey: string) => {
-    geminiService.setApiKey(apiKey);
-    localStorage.setItem('gemini-api-key', apiKey);
-    setIsGeminiConfigured(true);
-    setShowApiKeyInput(false);
-  };
 
   // Save current chat to history
   const saveCurrentChatToHistory = () => {
@@ -162,16 +143,10 @@ const Index = () => {
       
       console.log('Attempting to get AI response from Gemini...');
       
-      if (isGeminiConfigured) {
-        // Use Gemini as primary service
-        console.log('Using Gemini AI...');
-        const aiResponse = await geminiService.generateResponse(messageText, isUserMessagePatois);
-        responseText = aiResponse.message;
-      } else {
-        // Fallback to local responses
-        console.log('Using local fallback responses...');
-        responseText = generatePatoisResponse(messageText);
-      }
+      // Use Gemini as primary service (always configured now)
+      console.log('Using Gemini AI...');
+      const aiResponse = await geminiService.generateResponse(messageText, isUserMessagePatois);
+      responseText = aiResponse.message;
 
       // Simulate AI response delay
       setTimeout(() => {
@@ -254,19 +229,11 @@ const Index = () => {
                     </button>
                   </div>
                   <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                    {isGeminiConfigured ? 'Gemini AI' : 'Local'}
+                    Gemini AI
                   </div>
                 </div>
               </div>
             </header>
-
-            {/* Show API key input if needed */}
-            {showApiKeyInput && (
-              <ApiKeyInput
-                onApiKeySet={handleApiKeySet}
-                isVisible={showApiKeyInput}
-              />
-            )}
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
