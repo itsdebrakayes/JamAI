@@ -9,7 +9,7 @@ interface AIResponse {
 
 export class GeminiService {
   private genAI: GoogleGenerativeAI | null = null;
-  private apiKey: string = '';
+  private apiKey: string = 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
 
   constructor() {
     // Check for stored API key in localStorage
