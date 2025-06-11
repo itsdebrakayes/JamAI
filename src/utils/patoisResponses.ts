@@ -2,29 +2,29 @@
 export const patoisGreetings = [
   "Wah gwaan! Mi deh yah fi help yuh out today!",
   "Big up yuself! How mi can assist yuh?",
-  "Irie! Mi ready fi chat wid yuh!",
-  "Bless up! Wah yuh waan know?",
+  "Respect! Mi ready fi chat wid yuh!",
+  "Bless up! Wah yuh wah know?",
   "Walk good! Mi here fi help yuh out!"
 ];
 
 export const patoisResponses = [
-  "Seen! Mi understand wah yuh a seh.",
+  "Zeen! Mi understand wah ya seh.",
   "Dat sound good enuh! Tell mi more bout dat.",
   "Respect! Dat a one interesting ting yuh bring up.",
   "Fi real? Dat nice man!",
-  "Mi feel yuh pon dat one!",
+  "Mi feel yuh pon da one deh!",
   "Cho! Dat easy fi deal wid.",
   "No problem at all, bredrin!",
   "Yuh know seh mi always ready fi help!",
   "Dat make whole heap a sense!",
-  "Blessed! Mi glad fi share dis wid yuh."
+  "Bless! Mi glad fi share dis wid yuh."
 ];
 
 export const patoisFarewells = [
   "Walk good and tek care a yuself!",
-  "Until next time, stay blessed!",
-  "One love! See yuh soon!",
-  "Big up yuself and have a irie day!",
+  "Until next time, up up!",
+  "Dunce! See yuh soon!",
+  "Big up yuself and have a nice day!",
   "Respect and blessings! Chat soon!"
 ];
 
