@@ -1,3 +1,4 @@
+
 import OpenAI from 'openai';
 
 interface AIResponse {
@@ -8,10 +9,14 @@ interface AIResponse {
 
 export class OpenAIService {
   private openai: OpenAI | null = null;
-  private apiKey: string = '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';
+  private apiKey: string = '';
 
   constructor() {
-    this.setApiKey(this.apiKey);
+    // Try to load API key from localStorage
+    const savedKey = localStorage.getItem('openai-api-key');
+    if (savedKey) {
+      this.setApiKey(savedKey);
+    }
   }
 
   setApiKey(apiKey: string) {
