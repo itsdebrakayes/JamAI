@@ -14,9 +14,18 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (message.trim() && !disabled) {
-      onSendMessage(message.trim());
+    const trimmedMessage = message.trim();
+    
+    console.log('ChatInput: Attempting to send message:', trimmedMessage);
+    console.log('ChatInput: Disabled state:', disabled);
+    
+    if (trimmedMessage && !disabled) {
+      console.log('ChatInput: Calling onSendMessage with:', trimmedMessage);
+      onSendMessage(trimmedMessage);
       setMessage('');
+      console.log('ChatInput: Message sent and input cleared');
+    } else {
+      console.log('ChatInput: Message not sent - empty or disabled');
     }
   };
 
