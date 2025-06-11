@@ -77,3 +77,21 @@ export const detectLanguage = (text: string): 'patois' | 'english' => {
 export const isPatoisMessage = (text: string): boolean => {
   return detectLanguage(text) === 'patois';
 };
+
+export const isTranslationRequest = (text: string): boolean => {
+  const lowerText = text.toLowerCase().trim();
+  
+  const translationKeywords = [
+    'yes', 'yeah', 'translate', 'translation', 'english', 
+    'please translate', 'can you translate', 'what does that mean',
+    'what did you say', 'in english', 'english please',
+    'yes please', 'sure', 'ok', 'okay'
+  ];
+  
+  // Check if the message is short and contains translation request keywords
+  if (lowerText.length < 50) {
+    return translationKeywords.some(keyword => lowerText.includes(keyword));
+  }
+  
+  return false;
+};

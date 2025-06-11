@@ -1,3 +1,4 @@
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface AIResponse {
@@ -22,6 +23,25 @@ export class GeminiService {
 
   isConfigured(): boolean {
     return true; // Always configured with hardcoded key
+  }
+
+  async translateToEnglish(patoisText: string): Promise<string> {
+    try {
+      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const prompt = `Translate the following Jamaican Patois text to clear, natural English. Keep the meaning and tone intact:
+
+"${patoisText}"
+
+Provide only the English translation, nothing else.`;
+      
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text() || 'Translation not available.';
+    } catch (error) {
+      console.error('Translation Error:', error);
+      return 'Sorry, translation is not available right now.';
+    }
   }
 
   async generateResponse(userMessage: string, isUserMessagePatois: boolean): Promise<AIResponse> {
