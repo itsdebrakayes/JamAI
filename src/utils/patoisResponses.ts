@@ -60,6 +60,10 @@ export const generatePatoisResponse = (userMessage: string): string => {
     }
   }
   
+  // Enhanced language detection context
+  const isPatoisInput = lowerMessage.includes('mi ') || lowerMessage.includes('yuh ') || 
+                       lowerMessage.includes('wah gwaan') || lowerMessage.includes('big up');
+  
   // Greetings
   if (lowerMessage.includes('hello') || lowerMessage.includes('hi') || lowerMessage.includes('hey')) {
     return getPatoisGreeting();
