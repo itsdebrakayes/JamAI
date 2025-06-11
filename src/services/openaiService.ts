@@ -88,4 +88,4 @@ export class OpenAIService {
 }
 
 // Export singleton instance
-export const openaiService = new OpenAI Service();
+export const openaiService = new OpenAIService();
