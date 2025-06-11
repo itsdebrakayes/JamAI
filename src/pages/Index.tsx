@@ -115,6 +115,7 @@ const Index = () => {
   const loadChatFromHistory = (chatId: string) => {
     const chat = chatHistory.find(c => c.id === chatId);
     if (chat) {
+      console.log('Loading chat from history:', chatId);
       setCurrentChatId(chatId);
       setMessages(chat.messages);
       setShowSuggestions(false);
@@ -122,16 +123,26 @@ const Index = () => {
       // Reset translation-related state when loading old chat
       setLastAIMessage('');
       setLastMessageWasPatois(false);
+      console.log('Chat loaded successfully, ready for new messages');
     }
   };
 
   const handleSendMessage = async (messageText: string) => {
+    console.log('handleSendMessage called with:', messageText);
+    console.log('Current chat ID:', currentChatId);
+    console.log('Last AI message:', lastAIMessage);
+    console.log('Last message was Patois:', lastMessageWasPatois);
+    
     // Hide suggestions after first message
     setShowSuggestions(false);
     
     // Check if this is a translation request for the last AI message
     const isTranslationRequest = require('@/utils/languageDetection').isTranslationRequest;
-    if (isTranslationRequest(messageText) && lastMessageWasPatois && lastAIMessage) {
+    const translationRequested = isTranslationRequest(messageText) && lastMessageWasPatois && lastAIMessage;
+    
+    console.log('Translation requested:', translationRequested);
+    
+    if (translationRequested) {
       // Add user message
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -178,6 +189,8 @@ const Index = () => {
       return; // Exit early for translation requests
     }
     
+    console.log('Processing as normal message');
+    
     // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -186,6 +199,7 @@ const Index = () => {
       timestamp: new Date()
     };
 
+    console.log('Adding user message:', userMessage);
     setMessages(prev => [...prev, userMessage]);
     setIsTyping(true);
 
@@ -215,6 +229,7 @@ const Index = () => {
           timestamp: new Date()
         };
 
+        console.log('Adding AI response:', aiResponse);
         setMessages(prev => [...prev, aiResponse]);
         setIsTyping(false);
       }, 1000 + Math.random() * 2000);
