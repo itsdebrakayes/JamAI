@@ -16,7 +16,7 @@ import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarProvider, 
 import { Toaster } from '@/components/ui/sonner';
 import { useToast } from '@/hooks/use-toast';
 import { Message } from '@/types/Message';
-import { getChatHistory, addToHistory, clearHistory } from '@/utils/chatHistory';
+import { getChatHistory, addToHistory, clearHistory, saveChatHistory, loadChatHistory } from '@/utils/chatHistory';
 import { detectLanguage } from '@/utils/languageDetection';
 import { generatePatoisResponse } from '@/utils/patoisResponses';
 import { geminiService } from '@/services/geminiService';
@@ -85,6 +85,10 @@ const Index = () => {
     return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
+  const generateChatTitle = (firstMessage: string): string => {
+    return firstMessage.length > 30 ? firstMessage.substring(0, 30) + '...' : firstMessage;
+  };
+
   // ============================
   // MESSAGE HANDLING
   // ============================
@@ -99,7 +103,8 @@ const Index = () => {
       timestamp: new Date(),
     };
 
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     scrollToBottom();
     setIsTyping(true);
 
@@ -123,8 +128,32 @@ const Index = () => {
         timestamp: new Date(),
       };
 
-      setMessages((prevMessages) => [...prevMessages, aiMessage]);
+      const finalMessages = [...newMessages, aiMessage];
+      setMessages(finalMessages);
       addToHistory(userMessage, aiMessage);
+
+      // Save chat history if this is the first message
+      if (messages.length === 0) {
+        const chatTitle = generateChatTitle(text);
+        const newChat: ChatHistory = {
+          id: currentChatId,
+          title: chatTitle,
+          messages: finalMessages,
+          createdAt: new Date()
+        };
+        const updatedHistory = [newChat, ...chatHistory];
+        setChatHistory(updatedHistory);
+        saveChatHistory(updatedHistory);
+      } else {
+        // Update existing chat
+        const updatedHistory = chatHistory.map(chat => 
+          chat.id === currentChatId 
+            ? { ...chat, messages: finalMessages }
+            : chat
+        );
+        setChatHistory(updatedHistory);
+        saveChatHistory(updatedHistory);
+      }
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast({
@@ -146,6 +175,7 @@ const Index = () => {
     setMessages([]);
     clearHistory();
     setChatHistory([]);
+    saveChatHistory([]);
   };
 
   const handleNewChat = () => {
@@ -163,7 +193,9 @@ const Index = () => {
   };
 
   const handleDeleteChats = (chatIds: string[]) => {
-    setChatHistory(prev => prev.filter(chat => !chatIds.includes(chat.id)));
+    const updatedHistory = chatHistory.filter(chat => !chatIds.includes(chat.id));
+    setChatHistory(updatedHistory);
+    saveChatHistory(updatedHistory);
     if (chatIds.includes(currentChatId)) {
       handleNewChat();
     }
@@ -171,8 +203,13 @@ const Index = () => {
 
   const handleClearAllHistory = () => {
     setChatHistory([]);
+    saveChatHistory([]);
     handleNewChat();
     clearHistory();
+  };
+
+  const handleHeaderClick = () => {
+    handleNewChat();
   };
 
   // ============================
@@ -190,6 +227,9 @@ const Index = () => {
   }, [apiKey, currentService]);
 
   useEffect(() => {
+    // Load chat history on component mount
+    const savedHistory = loadChatHistory();
+    setChatHistory(savedHistory);
     const newChatId = generateChatId();
     setCurrentChatId(newChatId);
   }, []);
@@ -260,7 +300,11 @@ const Index = () => {
               <div className="flex items-center justify-between max-w-6xl mx-auto">
                 <div className="flex items-center gap-3">
                   <SidebarTrigger />
-                  <div className="flex items-center gap-2">
+                  <div 
+                    className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={handleHeaderClick}
+                    title="Start new chat"
+                  >
                     <span className="text-lg font-bold">🇯🇲</span>
                     <div>
                       <h1 className="font-bold text-lg jamaican-text-gradient">JamAI</h1>

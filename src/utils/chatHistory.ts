@@ -1,6 +1,15 @@
+
 import { Message } from '@/types/Message';
 
 const STORAGE_KEY = 'jamai_chat_history';
+const CHAT_HISTORY_KEY = 'jamai_chat_list';
+
+interface ChatHistory {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: Date;
+}
 
 export const getChatHistory = (): Message[] => {
   try {
@@ -37,5 +46,33 @@ export const clearHistory = () => {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
     console.error('Error clearing chat history:', error);
+  }
+};
+
+export const saveChatHistory = (chats: ChatHistory[]) => {
+  try {
+    localStorage.setItem(CHAT_HISTORY_KEY, JSON.stringify(chats));
+  } catch (error) {
+    console.error('Error saving chat history list:', error);
+  }
+};
+
+export const loadChatHistory = (): ChatHistory[] => {
+  try {
+    const stored = localStorage.getItem(CHAT_HISTORY_KEY);
+    if (!stored) return [];
+    
+    const parsed = JSON.parse(stored);
+    return parsed.map((chat: any) => ({
+      ...chat,
+      createdAt: new Date(chat.createdAt),
+      messages: chat.messages.map((msg: any) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp)
+      }))
+    }));
+  } catch (error) {
+    console.error('Error loading chat history list:', error);
+    return [];
   }
 };
