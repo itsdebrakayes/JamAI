@@ -3,7 +3,7 @@
 const patoisKeywords = [
   // Greetings and common phrases
   'wah gwaan', 'big up', 'respect', 'bless up', 'walk good', 'dunce',
-  'zeen', 'seen', 'yah mon', 'ya mon', 'bredrin', 'sistren', 'up up', 'bredda', 'sista'
+  'zeen', 'seen', 'yah mon', 'ya mon', 'bredrin', 'sistren', 'up up', 'bredda', 'sista',
   
   // Patois pronouns and grammar
   'mi', 'yuh', 'wi', 'dem', 'unu', 'fi', 'seh', 'deh', 'nuh',
