@@ -17,7 +17,11 @@ export const patoisResponses = [
   "No problem at all, bredrin!",
   "Yuh know seh mi always ready fi help!",
   "Dat make whole heap a sense!",
-  "Bless! Mi glad fi share dis wid yuh."
+  "Bless! Mi glad fi share dis wid yuh.",
+  "Ah, lemme get that started",
+  "Dunce, sound like a mad ting, can get that for you rn!",
+  "Up up mi g, bout fi maths dat up fi yuh",
+  "Ah, watch dis."
 ];
 
 export const patoisFarewells = [
