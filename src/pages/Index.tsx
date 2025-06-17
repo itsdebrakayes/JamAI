@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -273,13 +274,13 @@ const Index = () => {
                       onClick={handleOpenTranslationMode}
                       variant="ghost"
                       size="sm"
-                      className="group relative overflow-hidden backdrop-blur-sm border border-border/50 bg-background/50 hover:bg-background/80 dark:bg-gradient-to-r dark:from-jamaican-green/20 dark:to-jamaican-gold/20 dark:hover:from-jamaican-green/30 dark:hover:to-jamaican-gold/30 dark:border-jamaican-gold/30 transition-all duration-300 ease-out shadow-sm hover:shadow-md"
+                      className="group relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
                     >
                       <div className="flex items-center gap-2 relative z-10">
                         <Languages className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
                         <span className="hidden sm:inline font-medium">Translation</span>
                       </div>
-                      <div className="absolute inset-0 bg-gradient-to-r from-jamaican-gold/10 to-jamaican-green/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
                     </Button>
                   )}
                   <ThemeToggle />
@@ -353,11 +354,11 @@ const Index = () => {
         {messages.length > 1 && !showTranslationMode && (
           <Button
             onClick={handleOpenTranslationMode}
-            className="fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full shadow-xl hover:shadow-2xl bg-gradient-to-br from-jamaican-gold via-jamaican-gold/90 to-jamaican-green hover:from-jamaican-gold/95 hover:via-jamaican-gold/85 hover:to-jamaican-green/95 transition-all duration-300 ease-out transform hover:scale-105 border border-white/20 backdrop-blur-sm group"
+            className="fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full shadow-xl hover:shadow-2xl bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium transition-all duration-300 ease-out transform hover:scale-105 border border-white/30 backdrop-blur-sm group"
             size="icon"
             title="Open Translation Mode"
           >
-            <Languages className="w-6 h-6 text-white transition-transform duration-200 group-hover:scale-110" />
+            <Languages className="w-6 h-6 transition-transform duration-200 group-hover:scale-110" />
             <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent opacity-50" />
           </Button>
         )}
