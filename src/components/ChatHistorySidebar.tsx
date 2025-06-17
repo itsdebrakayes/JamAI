@@ -144,7 +144,7 @@ const ChatHistorySidebar = ({
             <div className="flex gap-2">
               <Button 
                 onClick={() => setIsSelectionMode(!isSelectionMode)}
-                className="flex-1 justify-start gap-2 h-8 text-xs px-2"
+                className="justify-start gap-2 h-8 text-sm px-3"
                 variant="ghost"
                 size="sm"
               >
@@ -155,7 +155,7 @@ const ChatHistorySidebar = ({
                 <>
                   <Button 
                     onClick={toggleSelectAll}
-                    className="flex-1 justify-start gap-2 h-8 text-xs px-2"
+                    className="justify-start gap-2 h-8 text-sm px-3"
                     variant="ghost"
                     size="sm"
                   >
