@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -261,7 +262,7 @@ const Index = () => {
                   <SidebarTrigger />
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-gradient-to-br from-jamaican-gold to-jamaican-green rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">J</span>
+                      <span className="text-white font-bold text-sm">🇯🇲</span>
                     </div>
                     <div>
                       <h1 className="font-bold text-lg jamaican-text-gradient">JamAI</h1>
@@ -287,7 +288,7 @@ const Index = () => {
                   <ThemeToggle />
                   <Badge 
                     variant="secondary" 
-                    className="bg-jamaican-green/10 text-jamaican-green border-jamaican-green/20 font-medium"
+                    className="bg-jamaican-green/10 text-jamaican-green border-jamaican-green/20"
                   >
                     {currentService.toUpperCase()}
                   </Badge>
@@ -304,7 +305,7 @@ const Index = () => {
                     <>
                       <div className="text-center py-12">
                         <div className="w-16 h-16 bg-gradient-to-br from-jamaican-gold to-jamaican-green rounded-2xl flex items-center justify-center mx-auto mb-6 modern-shadow">
-                          <span className="text-white font-bold text-2xl">J</span>
+                          <span className="text-white font-bold text-2xl">🇯🇲</span>
                         </div>
                         <h2 className="text-3xl font-bold mb-4 jamaican-text-gradient">
                           Welcome to JamAI
@@ -374,7 +375,6 @@ const Index = () => {
           />
         )}
       </div>
-      <Toaster />
     </SidebarProvider>
   );
 };
