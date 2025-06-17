@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -17,6 +16,7 @@ import {
 import { detectLanguage } from '@/utils/languageDetection';
 import { geminiService } from '@/services/geminiService';
 import { Toaster } from '@/components/ui/toaster';
+import ThemeToggle from '@/components/ThemeToggle';
 
 /**
  * Interface defining the structure of a chat message
@@ -419,9 +419,13 @@ const Index = () => {
                       </h1>
                     </button>
                   </div>
-                  {/* AI service indicator */}
-                  <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
-                    Gemini AI
+                  <div className="flex items-center gap-3">
+                    {/* Theme toggle button */}
+                    <ThemeToggle />
+                    {/* AI service indicator */}
+                    <div className="text-xs text-blue-600 bg-blue-50 dark:text-blue-400 dark:bg-blue-950/30 px-2 py-1 rounded-full">
+                      Gemini AI
+                    </div>
                   </div>
                 </div>
               </div>
