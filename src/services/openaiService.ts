@@ -13,6 +13,15 @@ interface Message {
   timestamp: Date;
 }
 
+interface KnowledgeEntry {
+  id: string;
+  category: 'recipe' | 'preference' | 'recommendation' | 'fact' | 'conversation';
+  userQuery: string;
+  aiResponse: string;
+  keywords: string[];
+  timestamp: string;
+}
+
 export class OpenAIService {
   private openai: OpenAI | null = null;
   private apiKey: string = '';
@@ -38,24 +47,76 @@ export class OpenAIService {
   }
 
   private getStoredKnowledge(): string {
-    const knowledge = localStorage.getItem('jamAI-knowledge');
-    return knowledge ? JSON.parse(knowledge).join('\n') : '';
+    const knowledge = localStorage.getItem('jamAI-enhanced-knowledge');
+    if (!knowledge) return '';
+    
+    const knowledgeEntries: KnowledgeEntry[] = JSON.parse(knowledge);
+    
+    // Group by category for better context
+    const categorized = knowledgeEntries.reduce((acc, entry) => {
+      if (!acc[entry.category]) acc[entry.category] = [];
+      acc[entry.category].push(`User: ${entry.userQuery}\nAssistant: ${entry.aiResponse}`);
+      return acc;
+    }, {} as Record<string, string[]>);
+    
+    let contextString = '';
+    Object.entries(categorized).forEach(([category, entries]) => {
+      if (entries.length > 0) {
+        contextString += `\n${category.toUpperCase()} KNOWLEDGE:\n${entries.slice(-5).join('\n---\n')}\n`;
+      }
+    });
+    
+    return contextString;
   }
 
-  private storeKnowledge(newKnowledge: string) {
-    const existing = localStorage.getItem('jamAI-knowledge');
-    const knowledgeArray = existing ? JSON.parse(existing) : [];
+  private extractKeywords(text: string): string[] {
+    const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'];
+    const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+    return words.filter(word => word.length > 2 && !commonWords.includes(word)).slice(0, 10);
+  }
+
+  private categorizeContent(userQuery: string, aiResponse: string): KnowledgeEntry['category'] {
+    const combinedText = (userQuery + ' ' + aiResponse).toLowerCase();
     
-    // Add new knowledge with timestamp
-    const timestampedKnowledge = `[${new Date().toISOString()}] ${newKnowledge}`;
-    knowledgeArray.push(timestampedKnowledge);
-    
-    // Keep only last 50 pieces of knowledge to avoid storage issues
-    if (knowledgeArray.length > 50) {
-      knowledgeArray.splice(0, knowledgeArray.length - 50);
+    if (combinedText.includes('recipe') || combinedText.includes('cook') || combinedText.includes('ingredient') || combinedText.includes('dish')) {
+      return 'recipe';
+    }
+    if (combinedText.includes('recommend') || combinedText.includes('suggest') || combinedText.includes('pair') || combinedText.includes('goes with')) {
+      return 'recommendation';
+    }
+    if (combinedText.includes('like') || combinedText.includes('prefer') || combinedText.includes('favorite') || combinedText.includes('love')) {
+      return 'preference';
+    }
+    if (combinedText.includes('what') || combinedText.includes('how') || combinedText.includes('why') || combinedText.includes('when')) {
+      return 'fact';
     }
     
-    localStorage.setItem('jamAI-knowledge', JSON.stringify(knowledgeArray));
+    return 'conversation';
+  }
+
+  private storeKnowledge(userQuery: string, aiResponse: string) {
+    if (userQuery.length < 10 || aiResponse.length < 20) return; // Only store substantial exchanges
+    
+    const existing = localStorage.getItem('jamAI-enhanced-knowledge');
+    const knowledgeArray: KnowledgeEntry[] = existing ? JSON.parse(existing) : [];
+    
+    const newEntry: KnowledgeEntry = {
+      id: Date.now().toString(),
+      category: this.categorizeContent(userQuery, aiResponse),
+      userQuery,
+      aiResponse,
+      keywords: this.extractKeywords(userQuery + ' ' + aiResponse),
+      timestamp: new Date().toISOString()
+    };
+    
+    knowledgeArray.push(newEntry);
+    
+    // Keep only last 150 entries (increased from 50)
+    if (knowledgeArray.length > 150) {
+      knowledgeArray.splice(0, knowledgeArray.length - 150);
+    }
+    
+    localStorage.setItem('jamAI-enhanced-knowledge', JSON.stringify(knowledgeArray));
   }
 
   private buildConversationMessages(userMessage: string, conversationHistory: Message[], systemPrompt: string): any[] {
@@ -89,31 +150,29 @@ export class OpenAIService {
     const systemPrompt = isUserMessagePatois 
       ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
 
-IMPORTANT: You have access to previous conversation history and stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
+IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before. When users reference previous conversations (like "the recipe I asked about" or "pair with what I mentioned"), actively use your stored knowledge to provide relevant context.
 
-${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}`
+${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowledge}\n` : ''}`
       : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.
 
-IMPORTANT: You have access to previous conversation history and stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
+IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before. When users reference previous conversations (like "the recipe I asked about" or "pair with what I mentioned"), actively use your stored knowledge to provide relevant context.
 
-${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}`;
+${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowledge}\n` : ''}`;
 
     try {
       const messages = this.buildConversationMessages(userMessage, conversationHistory, systemPrompt);
       
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4o-mini",
+        model: "gpt-4.1-2025-04-14",
         messages: messages,
-        max_tokens: 1500,
+        max_tokens: 2000, // Increased for more detailed responses
         temperature: 0.7,
       });
 
       const responseText = completion.choices[0]?.message?.content || 'Sorry, mi cyaan understand dat right now.';
       
-      // Store important information from this exchange
-      if (userMessage.length > 20) { // Only store substantial messages
-        this.storeKnowledge(`User asked: ${userMessage} | Assistant responded: ${responseText.substring(0, 200)}...`);
-      }
+      // Store the full exchange with enhanced categorization
+      this.storeKnowledge(userMessage, responseText);
       
       return {
         message: responseText,

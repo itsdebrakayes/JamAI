@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sidebar';
 import { detectLanguage } from '@/utils/languageDetection';
 import { geminiService } from '@/services/geminiService';
+import { Toaster } from '@/components/ui/toaster';
 
 interface Message {
   id: string;
@@ -358,6 +359,7 @@ const Index = () => {
           </div>
         </SidebarInset>
       </div>
+      <Toaster />
     </SidebarProvider>
   );
 };
