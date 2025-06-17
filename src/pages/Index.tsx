@@ -260,9 +260,7 @@ const Index = () => {
                 <div className="flex items-center gap-3">
                   <SidebarTrigger />
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-jamaican-gold to-jamaican-green rounded-lg flex items-center justify-center">
-                      <span className="text-lg">🇯🇲</span>
-                    </div>
+                    <span className="text-lg font-bold">🇯🇲</span>
                     <div>
                       <h1 className="font-bold text-lg jamaican-text-gradient">JamAI</h1>
                       <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
@@ -303,9 +301,7 @@ const Index = () => {
                   {messages.length === 0 && (
                     <>
                       <div className="text-center py-12">
-                        <div className="w-16 h-16 bg-gradient-to-br from-jamaican-gold to-jamaican-green rounded-2xl flex items-center justify-center mx-auto mb-6 modern-shadow">
-                          <span className="text-3xl">🇯🇲</span>
-                        </div>
+                        <span className="text-6xl font-bold block mb-6">🇯🇲</span>
                         <h2 className="text-3xl font-bold mb-4 jamaican-text-gradient">
                           Welcome to JamAI
                         </h2>
