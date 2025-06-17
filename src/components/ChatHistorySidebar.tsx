@@ -142,6 +142,26 @@ const ChatHistorySidebar = ({
           
           {chatHistory.length > 0 && (
             <div className="flex gap-2">
+              {!isSelectionMode && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 px-2">
+                      <MoreVertical className="w-3 h-3" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48" align="end">
+                    <Button 
+                      onClick={handleClearAll}
+                      className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      variant="ghost"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Clear All History
+                    </Button>
+                  </PopoverContent>
+                </Popover>
+              )}
+              
               <Button 
                 onClick={() => setIsSelectionMode(!isSelectionMode)}
                 className="justify-start gap-2 h-8 text-sm px-3"
@@ -173,26 +193,6 @@ const ChatHistorySidebar = ({
                     </Button>
                   )}
                 </>
-              )}
-              
-              {!isSelectionMode && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                      <MoreVertical className="w-3 h-3" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-48" align="end">
-                    <Button 
-                      onClick={handleClearAll}
-                      className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      variant="ghost"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Clear All History
-                    </Button>
-                  </PopoverContent>
-                </Popover>
               )}
             </div>
           )}
