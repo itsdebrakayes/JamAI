@@ -32,6 +32,14 @@ interface SuggestionItem {
 // Type definition for the AI service
 type AIService = 'gemini' | 'openai';
 
+// Chat history interface for sidebar
+interface ChatHistory {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: Date;
+}
+
 // Initial suggestions for the chat
 const initialSuggestions: SuggestionItem[] = [
   { id: 1, label: 'Explain Jamaica', query: 'Explain Jamaica in a nutshell' },
@@ -51,6 +59,8 @@ const Index = () => {
   const [currentService, setCurrentService] = useState<AIService>('gemini');
   const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(`${currentService}ApiKey`) || '');
   const [hasValidApiKey, setHasValidApiKey] = useState<boolean>(!!apiKey);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string>('');
 
   // ============================
   // REFS
@@ -76,6 +86,14 @@ const Index = () => {
    */
   const generateMessageId = (): string => {
     return `message-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  /**
+   * Generates a unique ID for each chat session.
+   * @returns {string} A unique string ID.
+   */
+  const generateChatId = (): string => {
+    return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
   // ============================
@@ -160,6 +178,47 @@ const Index = () => {
   const handleClearHistory = () => {
     setMessages([]);
     clearHistory();
+    setChatHistory([]);
+  };
+
+  /**
+   * Starts a new chat session.
+   */
+  const handleNewChat = () => {
+    const newChatId = generateChatId();
+    setCurrentChatId(newChatId);
+    setMessages([]);
+  };
+
+  /**
+   * Loads a specific chat from history.
+   */
+  const handleLoadChat = (chatId: string) => {
+    const chat = chatHistory.find(c => c.id === chatId);
+    if (chat) {
+      setCurrentChatId(chatId);
+      setMessages(chat.messages);
+    }
+  };
+
+  /**
+   * Deletes selected chats from history.
+   */
+  const handleDeleteChats = (chatIds: string[]) => {
+    setChatHistory(prev => prev.filter(chat => !chatIds.includes(chat.id)));
+    // If current chat is being deleted, start a new one
+    if (chatIds.includes(currentChatId)) {
+      handleNewChat();
+    }
+  };
+
+  /**
+   * Clears all chat history.
+   */
+  const handleClearAllHistory = () => {
+    setChatHistory([]);
+    handleNewChat();
+    clearHistory();
   };
 
   // ============================
@@ -181,6 +240,14 @@ const Index = () => {
     setApiKey(storedApiKey);
     setHasValidApiKey(!!storedApiKey);
   }, [currentService]);
+
+  /**
+   * Initialize with a new chat on component mount.
+   */
+  useEffect(() => {
+    const newChatId = generateChatId();
+    setCurrentChatId(newChatId);
+  }, []);
 
   // ============================
   // API KEY HANDLERS
@@ -240,9 +307,12 @@ const Index = () => {
           </SidebarHeader>
           <SidebarContent>
             <ChatHistorySidebar
-              messages={messages}
-              onLoadHistory={setMessages}
-              onClearHistory={handleClearHistory}
+              chatHistory={chatHistory}
+              currentChatId={currentChatId}
+              onNewChat={handleNewChat}
+              onLoadChat={handleLoadChat}
+              onDeleteChats={handleDeleteChats}
+              onClearAllHistory={handleClearAllHistory}
             />
           </SidebarContent>
         </Sidebar>
