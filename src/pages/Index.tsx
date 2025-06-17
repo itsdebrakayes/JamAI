@@ -5,6 +5,7 @@ import ChatInput from '@/components/ChatInput';
 import ChatSuggestions from '@/components/ChatSuggestions';
 import TypingIndicator from '@/components/TypingIndicator';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
+import TypingMessage from '@/components/TypingMessage';
 import { generatePatoisResponse, getPatoisGreeting } from '@/utils/patoisResponses';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +37,7 @@ const Index = () => {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
+  const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -189,10 +191,11 @@ const Index = () => {
 
       console.log('Index: Got AI response:', responseText);
 
-      // Simulate AI response delay
+      // Create AI response message with typing animation
       setTimeout(() => {
+        const aiResponseId = (Date.now() + 1).toString();
         const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
+          id: aiResponseId,
           text: responseText,
           isUser: false,
           timestamp: new Date()
@@ -200,16 +203,18 @@ const Index = () => {
 
         console.log('Index: Adding AI response:', aiResponse);
         setMessages(prev => [...prev, aiResponse]);
+        setTypingMessageId(aiResponseId);
         setIsTyping(false);
-      }, 1000 + Math.random() * 2000);
+      }, 800 + Math.random() * 1000);
       
     } catch (error) {
       console.error('Error generating response:', error);
       
       // Fallback response
       setTimeout(() => {
+        const fallbackResponseId = (Date.now() + 1).toString();
         const fallbackResponse: Message = {
-          id: (Date.now() + 1).toString(),
+          id: fallbackResponseId,
           text: isUserMessagePatois 
             ? "Zeen! Mi have some trouble right now, but mi deh yah fi help yuh still!"
             : "I'm having some connection issues right now, but I'm here to help you!",
@@ -218,8 +223,15 @@ const Index = () => {
         };
 
         setMessages(prev => [...prev, fallbackResponse]);
+        setTypingMessageId(fallbackResponseId);
         setIsTyping(false);
-      }, 1000);
+      }, 800);
+    }
+  };
+
+  const handleTypingComplete = (messageId: string) => {
+    if (typingMessageId === messageId) {
+      setTypingMessageId(null);
     }
   };
 
@@ -333,12 +345,22 @@ const Index = () => {
                 {(!showSuggestions || messages.length > 1) && (
                   <div className="space-y-6 py-6">
                     {messages.map((message) => (
-                      <ChatMessage
-                        key={message.id}
-                        message={message.text}
-                        isUser={message.isUser}
-                        timestamp={message.timestamp}
-                      />
+                      typingMessageId === message.id ? (
+                        <TypingMessage
+                          key={message.id}
+                          fullMessage={message.text}
+                          isUser={message.isUser}
+                          timestamp={message.timestamp}
+                          onComplete={() => handleTypingComplete(message.id)}
+                        />
+                      ) : (
+                        <ChatMessage
+                          key={message.id}
+                          message={message.text}
+                          isUser={message.isUser}
+                          timestamp={message.timestamp}
+                        />
+                      )
                     ))}
                     {isTyping && <TypingIndicator />}
                   </div>
