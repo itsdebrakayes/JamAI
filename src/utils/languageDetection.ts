@@ -3,7 +3,7 @@
 const patoisKeywords = [
   // Greetings and common phrases
   'wah gwaan', 'big up', 'respect', 'bless up', 'walk good', 'dunce',
-  'zeen', 'seen', 'yah mon', 'ya mon', 'bredrin', 'sistren',
+  'zeen', 'seen', 'yah mon', 'ya mon', 'bredrin', 'sistren', 'up up', 'bredda', 'sista'
   
   // Patois pronouns and grammar
   'mi', 'yuh', 'wi', 'dem', 'unu', 'fi', 'seh', 'deh', 'nuh',
@@ -20,11 +20,11 @@ const patoisKeywords = [
   
   // Food and culture
   'ackee', 'saltfish', 'jerk', 'curry goat', 'rice and peas',
-  'bammy', 'festival', 'patty', 'sorrel', 'guinep',
+  'bammy', 'festival', 'patty', 'sorrel', 'guinep', 'oxtail', 
   
   // Music and culture
   'dancehall', 'reggae', 'sound system', 'bashment',
-  'selector', 'deejay', 'toaster'
+  'selector', 'deejay', 'toaster', 'dj', 'ska', 'dirt bounce', 
 ];
 
 const patoisGrammarPatterns = [
