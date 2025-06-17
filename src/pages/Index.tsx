@@ -109,31 +109,12 @@ const Index = () => {
 
     try {
       const language = await detectLanguage(text);
-      let responseText: string;
-
-      // Check if it's a quiz answer (A, B, or C)
-      const isQuizAnswer = /^[ABC]$/i.test(text.trim());
-      if (isQuizAnswer && messages.length > 0) {
-        const lastAiMessage = messages.filter(m => !m.isUser).pop();
-        if (lastAiMessage && lastAiMessage.text.includes('Quiz Time')) {
-          responseText = await (await import('@/utils/patoisResponses')).checkQuizAnswer(text, lastAiMessage.text, currentService);
-        } else {
-          // Even for quiz answers, use AI
-          responseText = await (currentService === 'gemini' 
-            ? geminiService.generateResponse(text, language === 'patois', newMessages)
-            : openaiService.generateResponse(text, language === 'patois', newMessages)
-          ).then(response => response.message);
-        }
-      } else if (text.toLowerCase().includes('quiz') || text.toLowerCase().includes('test') || text.toLowerCase().includes('question')) {
-        // Generate AI-powered quiz
-        responseText = await (await import('@/utils/patoisResponses')).generatePatoisQuiz(currentService);
-      } else {
-        // ALL other responses come from AI services
-        responseText = await (currentService === 'gemini' 
-          ? geminiService.generateResponse(text, language === 'patois', newMessages)
-          : openaiService.generateResponse(text, language === 'patois', newMessages)
-        ).then(response => response.message);
-      }
+      
+      // ALL responses come from AI services - no special handling
+      const responseText = await (currentService === 'gemini' 
+        ? geminiService.generateResponse(text, language === 'patois', newMessages)
+        : openaiService.generateResponse(text, language === 'patois', newMessages)
+      ).then(response => response.message);
 
       const aiMessage: Message = {
         id: generateMessageId(),
