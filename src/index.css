@@ -84,46 +84,8 @@
     @apply border-border;
   }
 
-  html {
-    /* Ultra-fast theme transitions */
-    transition: color-scheme 0.1s ease-out;
-  }
-
   body {
     @apply bg-background text-foreground antialiased;
-    /* Ultra-fast transitions for all color changes */
-    transition: background-color 0.1s ease-out, color 0.1s ease-out;
-  }
-
-  /* Ultra-fast transitions for all elements during theme changes */
-  *,
-  *::before,
-  *::after {
-    transition: 
-      background-color 0.1s ease-out,
-      border-color 0.1s ease-out,
-      color 0.1s ease-out,
-      fill 0.1s ease-out,
-      stroke 0.1s ease-out;
-  }
-
-  /* Preserve specific animations and transitions */
-  .animate-pulse,
-  .animate-spin,
-  .animate-bounce,
-  [class*="animate-"],
-  .typing-dot,
-  .transition-transform,
-  .transition-opacity,
-  .transition-all {
-    transition: 
-      background-color 0.1s ease-out,
-      border-color 0.1s ease-out,
-      color 0.1s ease-out,
-      fill 0.1s ease-out,
-      stroke 0.1s ease-out,
-      transform var(--tw-transition-duration, 150ms) var(--tw-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1)),
-      opacity var(--tw-transition-duration, 150ms) var(--tw-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1));
   }
 }
 
@@ -143,22 +105,20 @@
   background: linear-gradient(135deg, hsl(var(--jamaican-gold)) 0%, hsl(var(--jamaican-green)) 100%);
 }
 
-/* Enhanced typing animation - optimized for performance */
+/* Enhanced typing animation */
 @keyframes typing-dots {
   0%, 60%, 100% {
-    transform: translateY(0) translateZ(0);
+    transform: translateY(0);
     opacity: 0.4;
   }
   30% {
-    transform: translateY(-8px) translateZ(0);
+    transform: translateY(-8px);
     opacity: 1;
   }
 }
 
 .typing-dot {
   animation: typing-dots 1.4s infinite ease-in-out;
-  will-change: transform, opacity;
-  backface-visibility: hidden;
 }
 
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
@@ -183,24 +143,4 @@
 
 .modern-shadow-lg {
   box-shadow: 0 10px 40px -4px rgba(0, 0, 0, 0.15), 0 4px 16px -4px rgba(0, 0, 0, 0.1);
-}
-
-/* Performance optimizations for animations */
-.will-change-transform {
-  will-change: transform;
-}
-
-.will-change-opacity {
-  will-change: opacity;
-}
-
-/* Reduce motion for users who prefer it */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }

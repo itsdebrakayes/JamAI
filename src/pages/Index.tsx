@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -375,6 +374,7 @@ const Index = () => {
           />
         )}
       </div>
+      <Toaster />
     </SidebarProvider>
   );
 };
