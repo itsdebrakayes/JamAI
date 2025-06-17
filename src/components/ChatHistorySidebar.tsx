@@ -373,7 +373,7 @@ const ChatHistorySidebar = ({
               Delete
             </AlertDialogAction>
           </AlertDialogFooter>
-        </AlertDialogFooter>
+        </AlertDialogContent>
       </AlertDialog>
 
       {/* Clear all confirmation dialog */}
