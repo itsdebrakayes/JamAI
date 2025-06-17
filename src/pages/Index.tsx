@@ -1,6 +1,8 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
+import TypingMessage from '@/components/TypingMessage';
 import ChatInput from '@/components/ChatInput';
 import TypingIndicator from '@/components/TypingIndicator';
 import ChatSuggestions from '@/components/ChatSuggestions';
@@ -54,6 +56,7 @@ const Index = () => {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [typingMessage, setTypingMessage] = useState<Message | null>(null);
   const [showTranslationMode, setShowTranslationMode] = useState(false);
   const [currentService, setCurrentService] = useState<AIService>('gemini');
   const [apiKey, setApiKey] = useState<string>('AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU');
@@ -92,6 +95,41 @@ const Index = () => {
   // MESSAGE HANDLING
   // ============================
 
+  const handleTypingComplete = () => {
+    if (typingMessage) {
+      const finalMessages = [...messages, typingMessage];
+      setMessages(finalMessages);
+      addToHistory(messages[messages.length - 1], typingMessage);
+
+      // Save chat history if this is the first message
+      if (messages.length === 1) {
+        const chatTitle = generateChatTitle(messages[0].text);
+        const newChat: ChatHistory = {
+          id: currentChatId,
+          title: chatTitle,
+          messages: finalMessages,
+          createdAt: new Date()
+        };
+        const updatedHistory = [newChat, ...chatHistory];
+        setChatHistory(updatedHistory);
+        saveChatHistory(updatedHistory);
+      } else {
+        // Update existing chat
+        const updatedHistory = chatHistory.map(chat => 
+          chat.id === currentChatId 
+            ? { ...chat, messages: finalMessages }
+            : chat
+        );
+        setChatHistory(updatedHistory);
+        saveChatHistory(updatedHistory);
+      }
+      
+      setTypingMessage(null);
+    }
+    setIsTyping(false);
+    scrollToBottom();
+  };
+
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
@@ -123,32 +161,7 @@ const Index = () => {
         timestamp: new Date(),
       };
 
-      const finalMessages = [...newMessages, aiMessage];
-      setMessages(finalMessages);
-      addToHistory(userMessage, aiMessage);
-
-      // Save chat history if this is the first message
-      if (messages.length === 0) {
-        const chatTitle = generateChatTitle(text);
-        const newChat: ChatHistory = {
-          id: currentChatId,
-          title: chatTitle,
-          messages: finalMessages,
-          createdAt: new Date()
-        };
-        const updatedHistory = [newChat, ...chatHistory];
-        setChatHistory(updatedHistory);
-        saveChatHistory(updatedHistory);
-      } else {
-        // Update existing chat
-        const updatedHistory = chatHistory.map(chat => 
-          chat.id === currentChatId 
-            ? { ...chat, messages: finalMessages }
-            : chat
-        );
-        setChatHistory(updatedHistory);
-        saveChatHistory(updatedHistory);
-      }
+      setTypingMessage(aiMessage);
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast({
@@ -156,9 +169,7 @@ const Index = () => {
         description: error.message || 'Failed to send message. Please try again.',
         duration: 5000,
       });
-    } finally {
       setIsTyping(false);
-      scrollToBottom();
     }
   };
 
@@ -168,6 +179,7 @@ const Index = () => {
 
   const handleClearHistory = () => {
     setMessages([]);
+    setTypingMessage(null);
     clearHistory();
     setChatHistory([]);
     saveChatHistory([]);
@@ -177,6 +189,7 @@ const Index = () => {
     const newChatId = generateChatId();
     setCurrentChatId(newChatId);
     setMessages([]);
+    setTypingMessage(null);
   };
 
   const handleLoadChat = (chatId: string) => {
@@ -184,6 +197,7 @@ const Index = () => {
     if (chat) {
       setCurrentChatId(chatId);
       setMessages(chat.messages);
+      setTypingMessage(null);
     }
   };
 
@@ -338,7 +352,7 @@ const Index = () => {
               <div className="flex-1 overflow-y-auto px-4 py-6">
                 <div className="max-w-4xl mx-auto space-y-6">
                   {/* Welcome message and suggestions */}
-                  {messages.length === 0 && (
+                  {messages.length === 0 && !typingMessage && (
                     <>
                       <div className="text-center py-12">
                         <span className="text-6xl font-bold block mb-6">🇯🇲</span>
@@ -364,8 +378,19 @@ const Index = () => {
                     />
                   ))}
 
+                  {/* Typing message */}
+                  {typingMessage && (
+                    <TypingMessage
+                      key={typingMessage.id}
+                      fullMessage={typingMessage.text}
+                      isUser={typingMessage.isUser}
+                      timestamp={typingMessage.timestamp}
+                      onComplete={handleTypingComplete}
+                    />
+                  )}
+
                   {/* Typing indicator */}
-                  {isTyping && <TypingIndicator />}
+                  {isTyping && !typingMessage && <TypingIndicator />}
 
                   <div ref={messagesEndRef} />
                 </div>
