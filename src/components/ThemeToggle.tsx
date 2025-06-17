@@ -78,18 +78,18 @@ const ThemeToggle = () => {
       variant="ghost"
       size="sm"
       onClick={toggleTheme}
-      className="h-9 w-9 p-0 hover:bg-muted transition-colors duration-200"
+      className="h-9 w-9 p-0 hover:bg-muted transition-all duration-300 ease-in-out"
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {/* Conditional rendering of icons with smooth transition */}
-      <div className="relative">
+      <div className="relative w-4 h-4">
         <Sun 
-          className={`h-4 w-4 transition-all duration-300 ${
+          className={`absolute inset-0 h-4 w-4 transition-all duration-500 ease-in-out ${
             isDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'
           }`} 
         />
         <Moon 
-          className={`absolute inset-0 h-4 w-4 transition-all duration-300 ${
+          className={`absolute inset-0 h-4 w-4 transition-all duration-500 ease-in-out ${
             isDark ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'
           }`} 
         />
