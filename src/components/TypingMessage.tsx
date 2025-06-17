@@ -38,8 +38,8 @@ const TypingMessage = ({ fullMessage, isUser, timestamp, onComplete }: TypingMes
   
   const scrollToMessage = useCallback(() => {
     const now = Date.now();
-    // Throttle scrolling to every 100ms to reduce stuttering
-    if (now - lastScrollTime.current > 100 && messageRef.current) {
+    // Throttle scrolling to every 80ms for smoother performance
+    if (now - lastScrollTime.current > 80 && messageRef.current) {
       messageRef.current.scrollIntoView({ 
         behavior: 'smooth', 
         block: 'end'
@@ -58,19 +58,19 @@ const TypingMessage = ({ fullMessage, isUser, timestamp, onComplete }: TypingMes
     }
 
     let currentIndex = 0;
-    const typingSpeed = 20;
+    const typingSpeed = 15; // Faster typing speed
 
     const typeMessage = () => {
       if (currentIndex < fullMessage.length) {
         // Batch character updates for smoother performance
-        const batchSize = Math.random() > 0.7 ? 2 : 1; // Occasionally type 2 chars
+        const batchSize = Math.random() > 0.6 ? 2 : 1; // More frequent 2-char batches
         const nextIndex = Math.min(currentIndex + batchSize, fullMessage.length);
         
         setDisplayedMessage(fullMessage.slice(0, nextIndex));
         currentIndex = nextIndex;
         
         // Use requestAnimationFrame for smoother scrolling
-        if (currentIndex % 5 === 0) { // Scroll every 5 characters
+        if (currentIndex % 4 === 0) { // Scroll every 4 characters for smoother feel
           requestAnimationFrame(scrollToMessage);
         }
         
@@ -85,7 +85,7 @@ const TypingMessage = ({ fullMessage, isUser, timestamp, onComplete }: TypingMes
 
     const initialDelay = setTimeout(() => {
       typeMessage();
-    }, 500);
+    }, 300); // Slightly faster initial delay
     
     return () => {
       clearTimeout(initialDelay);
