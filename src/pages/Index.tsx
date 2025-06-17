@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -20,14 +21,6 @@ import { detectLanguage } from '@/utils/languageDetection';
 import { generatePatoisResponse } from '@/utils/patoisResponses';
 import { geminiService } from '@/services/geminiService';
 import { openaiService } from '@/services/openaiService';
-
-// Define the structure of a chat message
-interface ChatMessageProps {
-  id: string;
-  text: string;
-  isUserMessage: boolean;
-  timestamp: string;
-}
 
 // Define the structure of a suggestion item
 interface SuggestionItem {
@@ -52,7 +45,7 @@ const Index = () => {
   // STATE VARIABLES
   // ============================
 
-  const [messages, setMessages] = useState<ChatMessageProps[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [showTranslationMode, setShowTranslationMode] = useState(false);
   const [currentService, setCurrentService] = useState<AIService>('gemini');
@@ -64,6 +57,7 @@ const Index = () => {
   // ============================
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // ============================
   // UTILITY FUNCTIONS
@@ -84,17 +78,6 @@ const Index = () => {
     return `message-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  /**
-   * Formats a timestamp for each chat message.
-   * @returns {string} A formatted timestamp string.
-   */
-  const formatTimestamp = (): string => {
-    const now = new Date();
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  };
-
   // ============================
   // MESSAGE HANDLING
   // ============================
@@ -106,11 +89,11 @@ const Index = () => {
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
-    const userMessage: ChatMessageProps = {
+    const userMessage: Message = {
       id: generateMessageId(),
       text: text,
-      isUserMessage: true,
-      timestamp: formatTimestamp(),
+      isUser: true,
+      timestamp: new Date(),
     };
 
     // Optimistically update the chat with the user's message
@@ -125,20 +108,23 @@ const Index = () => {
       const language = await detectLanguage(text);
       let responseText: string;
 
-      if (language === 'jam') {
-        // If the message is in Patois, respond in English
-        responseText = await (currentService === 'gemini' ? geminiService.sendMessage(text, apiKey) : openaiService.sendMessage(text, apiKey));
+      if (language === 'patois') {
+        // If the message is in Patois, get AI response
+        responseText = await (currentService === 'gemini' 
+          ? geminiService.generateResponse(text, false, [])
+          : openaiService.generateResponse(text, false, [])
+        ).then(response => response.message);
       } else {
         // If the message is in English, respond in Patois
         responseText = await generatePatoisResponse(text);
       }
 
       // Create the AI response message
-      const aiMessage: ChatMessageProps = {
+      const aiMessage: Message = {
         id: generateMessageId(),
         text: responseText,
-        isUserMessage: false,
-        timestamp: formatTimestamp(),
+        isUser: false,
+        timestamp: new Date(),
       };
 
       // Update the chat with the AI response
@@ -148,7 +134,7 @@ const Index = () => {
       addToHistory(userMessage, aiMessage);
     } catch (error: any) {
       console.error('Error sending message:', error);
-      useToast({
+      toast({
         title: 'Error',
         description: error.message || 'Failed to send message. Please try again.',
         duration: 5000,
@@ -209,14 +195,14 @@ const Index = () => {
       setApiKey(newApiKey);
       localStorage.setItem(`${currentService}ApiKey`, newApiKey);
       setHasValidApiKey(true);
-      useToast({
+      toast({
         title: 'API Key Set',
         description: `API Key for ${currentService.toUpperCase()} has been successfully set.`,
       });
     } else {
       setHasValidApiKey(false);
       localStorage.removeItem(`${currentService}ApiKey`);
-      useToast({
+      toast({
         title: 'API Key Removed',
         description: `API Key for ${currentService.toUpperCase()} has been successfully removed.`,
       });
@@ -254,7 +240,7 @@ const Index = () => {
           </SidebarHeader>
           <SidebarContent>
             <ChatHistorySidebar
-              currentMessages={messages}
+              messages={messages}
               onLoadHistory={setMessages}
               onClearHistory={handleClearHistory}
             />
@@ -318,7 +304,6 @@ const Index = () => {
                     <div className="mb-8">
                       <ApiKeyInput 
                         onApiKeySet={handleApiKeySet}
-                        currentService={currentService}
                         onServiceChange={setCurrentService}
                       />
                     </div>
@@ -345,7 +330,12 @@ const Index = () => {
 
                   {/* Chat messages */}
                   {messages.map((message) => (
-                    <ChatMessage key={message.id} message={message} />
+                    <ChatMessage 
+                      key={message.id} 
+                      message={message.text}
+                      isUser={message.isUser}
+                      timestamp={message.timestamp}
+                    />
                   ))}
 
                   {/* Typing indicator */}
@@ -366,7 +356,7 @@ const Index = () => {
                   {/* Chat summary */}
                   {messages.length > 4 && (
                     <div className="mt-4">
-                      <ChatSummary messages={messages} />
+                      <ChatSummary onClose={() => {}} />
                     </div>
                   )}
                 </div>
