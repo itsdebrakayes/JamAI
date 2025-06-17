@@ -1,3 +1,4 @@
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface AIResponse {
@@ -45,11 +46,17 @@ Provide only the English translation, nothing else.`;
 
   async generateResponse(userMessage: string, isUserMessagePatois: boolean): Promise<AIResponse> {
     const systemPrompt = isUserMessagePatois 
-      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and concise - don't use excessive greetings or cultural expressions unless they're relevant to the conversation. Answer questions directly and clearly. Use Patois naturally but don't overdo it with too many expressions.`
-      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and concise - answer questions directly without unnecessary greetings or lengthy introductions. You can reference Jamaican culture when relevant, but keep responses focused and to the point.`;
+      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.`
+      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.`;
 
     try {
-      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = this.genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        generationConfig: {
+          maxOutputTokens: 1500,
+          temperature: 0.7,
+        }
+      });
       
       const prompt = `${systemPrompt}\n\nUser message: ${userMessage}`;
       

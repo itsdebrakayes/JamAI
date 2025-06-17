@@ -37,8 +37,8 @@ export class OpenAIService {
     }
 
     const systemPrompt = isUserMessagePatois 
-      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and concise - don't use excessive greetings or cultural expressions unless they're relevant to the conversation. Answer questions directly and clearly. Use Patois naturally but don't overdo it with too many expressions.`
-      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and concise - answer questions directly without unnecessary greetings or lengthy introductions. You can reference Jamaican culture when relevant, but keep responses focused and to the point.`;
+      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.`
+      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.`;
 
     try {
       const completion = await this.openai.chat.completions.create({
@@ -53,7 +53,7 @@ export class OpenAIService {
             content: userMessage
           }
         ],
-        max_tokens: 300,
+        max_tokens: 1500,
         temperature: 0.7,
       });
 
