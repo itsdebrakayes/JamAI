@@ -144,8 +144,9 @@ const ChatHistorySidebar = ({
             <div className="flex gap-2">
               <Button 
                 onClick={() => setIsSelectionMode(!isSelectionMode)}
-                className="flex-1 justify-start gap-2 h-10 text-sm"
+                className="flex-1 justify-start gap-2 h-8 text-xs px-2"
                 variant="ghost"
+                size="sm"
               >
                 {isSelectionMode ? 'Cancel' : 'Select'}
               </Button>
@@ -154,8 +155,9 @@ const ChatHistorySidebar = ({
                 <>
                   <Button 
                     onClick={toggleSelectAll}
-                    className="flex-1 justify-start gap-2 h-10 text-sm"
+                    className="flex-1 justify-start gap-2 h-8 text-xs px-2"
                     variant="ghost"
+                    size="sm"
                   >
                     {selectedChats.size === chatHistory.length ? 'Deselect All' : 'Select All'}
                   </Button>
@@ -163,11 +165,11 @@ const ChatHistorySidebar = ({
                   {selectedChats.size > 0 && (
                     <Button 
                       onClick={handleDeleteSelected}
-                      className="h-10 px-3"
+                      className="h-8 px-2"
                       variant="destructive"
                       size="sm"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3 h-3" />
                     </Button>
                   )}
                 </>
@@ -176,8 +178,8 @@ const ChatHistorySidebar = ({
               {!isSelectionMode && (
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-10 px-3">
-                      <MoreVertical className="w-4 h-4" />
+                    <Button variant="ghost" size="sm" className="h-8 px-2">
+                      <MoreVertical className="w-3 h-3" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-48" align="end">
