@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -287,7 +288,7 @@ const Index = () => {
                   <ThemeToggle />
                   <Badge 
                     variant="secondary" 
-                    className="bg-blue-100 text-blue-800 border-blue-200"
+                    className="bg-blue-100 text-blue-800 border-blue-200 rounded-md pointer-events-none"
                   >
                     {currentService.toUpperCase()}
                   </Badge>
