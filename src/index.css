@@ -85,26 +85,26 @@
   }
 
   html {
-    /* Faster theme transitions */
-    transition: color-scheme 0.15s ease-in-out;
+    /* Ultra-fast theme transitions */
+    transition: color-scheme 0.1s ease-out;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
-    /* Faster transitions for all color changes */
-    transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+    /* Ultra-fast transitions for all color changes */
+    transition: background-color 0.1s ease-out, color 0.1s ease-out;
   }
 
-  /* Faster transitions for all elements during theme changes */
+  /* Ultra-fast transitions for all elements during theme changes */
   *,
   *::before,
   *::after {
     transition: 
-      background-color 0.15s ease-in-out,
-      border-color 0.15s ease-in-out,
-      color 0.15s ease-in-out,
-      fill 0.15s ease-in-out,
-      stroke 0.15s ease-in-out;
+      background-color 0.1s ease-out,
+      border-color 0.1s ease-out,
+      color 0.1s ease-out,
+      fill 0.1s ease-out,
+      stroke 0.1s ease-out;
   }
 
   /* Preserve specific animations and transitions */
@@ -117,11 +117,11 @@
   .transition-opacity,
   .transition-all {
     transition: 
-      background-color 0.15s ease-in-out,
-      border-color 0.15s ease-in-out,
-      color 0.15s ease-in-out,
-      fill 0.15s ease-in-out,
-      stroke 0.15s ease-in-out,
+      background-color 0.1s ease-out,
+      border-color 0.1s ease-out,
+      color 0.1s ease-out,
+      fill 0.1s ease-out,
+      stroke 0.1s ease-out,
       transform var(--tw-transition-duration, 150ms) var(--tw-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1)),
       opacity var(--tw-transition-duration, 150ms) var(--tw-transition-timing-function, cubic-bezier(0.4, 0, 0.2, 1));
   }

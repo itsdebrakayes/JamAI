@@ -16,7 +16,7 @@ interface TypingMessageProps {
 }
 
 /**
- * TypingMessage Component - Optimized for smooth performance
+ * TypingMessage Component - Ultra-optimized for smooth performance
  */
 const TypingMessage = ({ fullMessage, isUser, timestamp, onComplete }: TypingMessageProps) => {
   // ============================
@@ -33,13 +33,13 @@ const TypingMessage = ({ fullMessage, isUser, timestamp, onComplete }: TypingMes
   const lastScrollTime = useRef<number>(0);
 
   // ============================
-  // OPTIMIZED TYPING ANIMATION
+  // ULTRA-OPTIMIZED TYPING ANIMATION
   // ============================
   
   const scrollToMessage = useCallback(() => {
     const now = Date.now();
-    // Throttle scrolling to every 80ms for smoother performance
-    if (now - lastScrollTime.current > 80 && messageRef.current) {
+    // Throttle scrolling to every 60ms for ultra-smooth performance
+    if (now - lastScrollTime.current > 60 && messageRef.current) {
       messageRef.current.scrollIntoView({ 
         behavior: 'smooth', 
         block: 'end'
@@ -58,19 +58,19 @@ const TypingMessage = ({ fullMessage, isUser, timestamp, onComplete }: TypingMes
     }
 
     let currentIndex = 0;
-    const typingSpeed = 15; // Faster typing speed
+    const typingSpeed = 10; // Ultra-fast typing speed
 
     const typeMessage = () => {
       if (currentIndex < fullMessage.length) {
-        // Batch character updates for smoother performance
-        const batchSize = Math.random() > 0.6 ? 2 : 1; // More frequent 2-char batches
+        // More aggressive batching for smoother performance
+        const batchSize = Math.random() > 0.5 ? 3 : 2; // More frequent larger batches
         const nextIndex = Math.min(currentIndex + batchSize, fullMessage.length);
         
         setDisplayedMessage(fullMessage.slice(0, nextIndex));
         currentIndex = nextIndex;
         
-        // Use requestAnimationFrame for smoother scrolling
-        if (currentIndex % 4 === 0) { // Scroll every 4 characters for smoother feel
+        // Use requestAnimationFrame for ultra-smooth scrolling
+        if (currentIndex % 3 === 0) { // Scroll every 3 characters for ultra-smooth feel
           requestAnimationFrame(scrollToMessage);
         }
         
@@ -85,7 +85,7 @@ const TypingMessage = ({ fullMessage, isUser, timestamp, onComplete }: TypingMes
 
     const initialDelay = setTimeout(() => {
       typeMessage();
-    }, 300); // Slightly faster initial delay
+    }, 200); // Ultra-fast initial delay
     
     return () => {
       clearTimeout(initialDelay);
