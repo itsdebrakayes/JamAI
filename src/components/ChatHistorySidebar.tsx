@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MessageSquare, Plus, Trash2, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -226,10 +225,10 @@ const ChatHistorySidebar = ({
       <Sidebar side="left" className="border-r border-border bg-background/95 backdrop-blur-md">
         {/* Sidebar header with new chat button and controls */}
         <SidebarHeader className="p-4 bg-background/90 border-b border-border/30">
-          {/* Primary new chat button with dark mode colors */}
+          {/* Primary new chat button with gold hover state */}
           <Button 
             onClick={handleNewChat}
-            className="w-full justify-start gap-3 h-12 bg-background hover:bg-muted text-foreground border border-border shadow-sm mb-2"
+            className="w-full justify-start gap-3 h-12 bg-background hover:bg-gradient-to-r hover:from-yellow-400/20 hover:to-yellow-600/20 hover:text-yellow-600 dark:hover:text-yellow-400 text-foreground border border-border shadow-sm mb-2 transition-all duration-200"
             variant="outline"
           >
             <Plus className="w-4 h-4" />
