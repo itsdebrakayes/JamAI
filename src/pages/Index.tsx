@@ -57,8 +57,8 @@ const Index = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [showTranslationMode, setShowTranslationMode] = useState(false);
   const [currentService, setCurrentService] = useState<AIService>('gemini');
-  const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem(`${currentService}ApiKey`) || '');
-  const [hasValidApiKey, setHasValidApiKey] = useState<boolean>(!!apiKey);
+  const [apiKey, setApiKey] = useState<string>('AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU');
+  const [hasValidApiKey, setHasValidApiKey] = useState<boolean>(true);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
 
@@ -73,25 +73,14 @@ const Index = () => {
   // UTILITY FUNCTIONS
   // ============================
 
-  /**
-   * Scrolls the chat container to the bottom to show the latest message.
-   */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  /**
-   * Generates a unique ID for each chat message.
-   * @returns {string} A unique string ID.
-   */
   const generateMessageId = (): string => {
     return `message-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  /**
-   * Generates a unique ID for each chat session.
-   * @returns {string} A unique string ID.
-   */
   const generateChatId = (): string => {
     return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
@@ -100,10 +89,6 @@ const Index = () => {
   // MESSAGE HANDLING
   // ============================
 
-  /**
-   * Handles the submission of a new chat message.
-   * @param {string} text - The text content of the message.
-   */
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
@@ -114,30 +99,23 @@ const Index = () => {
       timestamp: new Date(),
     };
 
-    // Optimistically update the chat with the user's message
     setMessages((prevMessages) => [...prevMessages, userMessage]);
     scrollToBottom();
-
-    // Start the typing indicator
     setIsTyping(true);
 
     try {
-      // Determine if the message is in Patois
       const language = await detectLanguage(text);
       let responseText: string;
 
       if (language === 'patois') {
-        // If the message is in Patois, get AI response
         responseText = await (currentService === 'gemini' 
           ? geminiService.generateResponse(text, false, [])
           : openaiService.generateResponse(text, false, [])
         ).then(response => response.message);
       } else {
-        // If the message is in English, respond in Patois
         responseText = await generatePatoisResponse(text);
       }
 
-      // Create the AI response message
       const aiMessage: Message = {
         id: generateMessageId(),
         text: responseText,
@@ -145,10 +123,7 @@ const Index = () => {
         timestamp: new Date(),
       };
 
-      // Update the chat with the AI response
       setMessages((prevMessages) => [...prevMessages, aiMessage]);
-
-      // Save the chat history
       addToHistory(userMessage, aiMessage);
     } catch (error: any) {
       console.error('Error sending message:', error);
@@ -158,41 +133,27 @@ const Index = () => {
         duration: 5000,
       });
     } finally {
-      // Stop the typing indicator and scroll to the bottom
       setIsTyping(false);
       scrollToBottom();
     }
   };
 
-  /**
-   * Handles a suggestion click to use it as a new message.
-   * @param {string} suggestion - The suggestion text to send as a message.
-   */
   const handleSuggestionClick = (suggestion: string) => {
     handleSendMessage(suggestion);
   };
 
-  /**
-   * Clears the chat history.
-   */
   const handleClearHistory = () => {
     setMessages([]);
     clearHistory();
     setChatHistory([]);
   };
 
-  /**
-   * Starts a new chat session.
-   */
   const handleNewChat = () => {
     const newChatId = generateChatId();
     setCurrentChatId(newChatId);
     setMessages([]);
   };
 
-  /**
-   * Loads a specific chat from history.
-   */
   const handleLoadChat = (chatId: string) => {
     const chat = chatHistory.find(c => c.id === chatId);
     if (chat) {
@@ -201,20 +162,13 @@ const Index = () => {
     }
   };
 
-  /**
-   * Deletes selected chats from history.
-   */
   const handleDeleteChats = (chatIds: string[]) => {
     setChatHistory(prev => prev.filter(chat => !chatIds.includes(chat.id)));
-    // If current chat is being deleted, start a new one
     if (chatIds.includes(currentChatId)) {
       handleNewChat();
     }
   };
 
-  /**
-   * Clears all chat history.
-   */
   const handleClearAllHistory = () => {
     setChatHistory([]);
     handleNewChat();
@@ -225,25 +179,16 @@ const Index = () => {
   // EFFECTS
   // ============================
 
-  /**
-   * Effect to scroll to the bottom of the chat when new messages are added.
-   */
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  /**
-   * Effect to validate the API key on component mount and when the service changes.
-   */
   useEffect(() => {
-    const storedApiKey = localStorage.getItem(`${currentService}ApiKey`) || '';
-    setApiKey(storedApiKey);
-    setHasValidApiKey(!!storedApiKey);
-  }, [currentService]);
+    // Set the API key in the gemini service
+    geminiService.setApiKey(apiKey);
+    setHasValidApiKey(!!apiKey);
+  }, [apiKey, currentService]);
 
-  /**
-   * Initialize with a new chat on component mount.
-   */
   useEffect(() => {
     const newChatId = generateChatId();
     setCurrentChatId(newChatId);
@@ -253,10 +198,6 @@ const Index = () => {
   // API KEY HANDLERS
   // ============================
 
-  /**
-   * Handles the API key being set and validates it.
-   * @param {string} newApiKey - The new API key to set.
-   */
   const handleApiKeySet = (newApiKey: string) => {
     if (newApiKey) {
       setApiKey(newApiKey);
@@ -276,16 +217,10 @@ const Index = () => {
     }
   };
   
-  /**
-   * Opens the translation mode overlay
-   */
   const handleOpenTranslationMode = () => {
     setShowTranslationMode(true);
   };
 
-  /**
-   * Closes the translation mode overlay
-   */
   const handleCloseTranslationMode = () => {
     setShowTranslationMode(false);
   };
@@ -336,7 +271,6 @@ const Index = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {/* Translation mode button - sleek and classy */}
                   {messages.length > 1 && (
                     <Button
                       onClick={handleOpenTranslationMode}
@@ -351,9 +285,7 @@ const Index = () => {
                       <div className="absolute inset-0 bg-gradient-to-r from-jamaican-gold/10 to-jamaican-green/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     </Button>
                   )}
-                  {/* Theme toggle button */}
                   <ThemeToggle />
-                  {/* AI service indicator */}
                   <Badge 
                     variant="secondary" 
                     className="bg-jamaican-green/10 text-jamaican-green border-jamaican-green/20 font-medium"
@@ -366,21 +298,10 @@ const Index = () => {
 
             {/* Main chat area */}
             <div className="flex-1 flex flex-col overflow-hidden">
-              {/* Messages container */}
               <div className="flex-1 overflow-y-auto px-4 py-6">
                 <div className="max-w-4xl mx-auto space-y-6">
-                  {/* API Key Input - shown when no valid key */}
-                  {!hasValidApiKey && (
-                    <div className="mb-8">
-                      <ApiKeyInput 
-                        onApiKeySet={handleApiKeySet}
-                        onServiceChange={setCurrentService}
-                      />
-                    </div>
-                  )}
-
                   {/* Welcome message and suggestions */}
-                  {messages.length === 0 && hasValidApiKey && (
+                  {messages.length === 0 && (
                     <>
                       <div className="text-center py-12">
                         <div className="w-16 h-16 bg-gradient-to-br from-jamaican-gold to-jamaican-green rounded-2xl flex items-center justify-center mx-auto mb-6 modern-shadow">
@@ -411,7 +332,6 @@ const Index = () => {
                   {/* Typing indicator */}
                   {isTyping && <TypingIndicator />}
 
-                  {/* Scroll anchor */}
                   <div ref={messagesEndRef} />
                 </div>
               </div>
@@ -421,9 +341,8 @@ const Index = () => {
                 <div className="max-w-4xl mx-auto">
                   <ChatInput 
                     onSendMessage={handleSendMessage} 
-                    disabled={isTyping || !hasValidApiKey}
+                    disabled={isTyping}
                   />
-                  {/* Chat summary */}
                   {messages.length > 4 && (
                     <div className="mt-4">
                       <ChatSummary onClose={() => {}} />
@@ -435,7 +354,7 @@ const Index = () => {
           </div>
         </SidebarInset>
 
-        {/* Floating Translation Button - sleek and premium */}
+        {/* Floating Translation Button */}
         {messages.length > 1 && !showTranslationMode && (
           <Button
             onClick={handleOpenTranslationMode}
@@ -456,7 +375,6 @@ const Index = () => {
           />
         )}
       </div>
-      {/* Toast notification system for user feedback */}
       <Toaster />
     </SidebarProvider>
   );

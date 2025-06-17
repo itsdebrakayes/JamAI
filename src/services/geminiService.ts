@@ -1,4 +1,3 @@
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
@@ -57,7 +56,7 @@ export class GeminiService {
   
   /**
    * API key for Google Gemini service
-   * Currently hardcoded but could be made configurable
+   * Using the provided API key
    */
   private apiKey: string = 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
 
@@ -69,22 +68,20 @@ export class GeminiService {
   }
 
   /**
-   * Sets API key for the service (maintains compatibility)
-   * Currently uses hardcoded key but method exists for future flexibility
-   * @param apiKey - The API key to set (currently ignored)
+   * Sets API key for the service
+   * @param apiKey - The API key to set
    */
   setApiKey(apiKey: string) {
-    // Keep this method for compatibility but use hardcoded key
-    this.apiKey = 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
+    this.apiKey = apiKey || 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
     this.genAI = new GoogleGenerativeAI(this.apiKey);
   }
 
   /**
    * Checks if the service is properly configured with API key
-   * @returns Always true since we use hardcoded key
+   * @returns Always true since we have a default key
    */
   isConfigured(): boolean {
-    return true; // Always configured with hardcoded key
+    return true;
   }
 
   // ============================
