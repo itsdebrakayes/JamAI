@@ -1,10 +1,16 @@
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface AIResponse {
   message: string;
   isPatois: boolean;
   translationOffered?: boolean;
+}
+
+interface Message {
+  id: string;
+  text: string;
+  isUser: boolean;
+  timestamp: Date;
 }
 
 export class GeminiService {
@@ -23,6 +29,40 @@ export class GeminiService {
 
   isConfigured(): boolean {
     return true; // Always configured with hardcoded key
+  }
+
+  private getStoredKnowledge(): string {
+    const knowledge = localStorage.getItem('jamAI-knowledge');
+    return knowledge ? JSON.parse(knowledge).join('\n') : '';
+  }
+
+  private storeKnowledge(newKnowledge: string) {
+    const existing = localStorage.getItem('jamAI-knowledge');
+    const knowledgeArray = existing ? JSON.parse(existing) : [];
+    
+    // Add new knowledge with timestamp
+    const timestampedKnowledge = `[${new Date().toISOString()}] ${newKnowledge}`;
+    knowledgeArray.push(timestampedKnowledge);
+    
+    // Keep only last 50 pieces of knowledge to avoid storage issues
+    if (knowledgeArray.length > 50) {
+      knowledgeArray.splice(0, knowledgeArray.length - 50);
+    }
+    
+    localStorage.setItem('jamAI-knowledge', JSON.stringify(knowledgeArray));
+  }
+
+  private buildConversationContext(messages: Message[]): string {
+    // Get last 10 messages for context (to avoid token limits)
+    const recentMessages = messages.slice(-10);
+    
+    let context = '';
+    recentMessages.forEach(msg => {
+      const role = msg.isUser ? 'User' : 'Assistant';
+      context += `${role}: ${msg.text}\n`;
+    });
+    
+    return context;
   }
 
   async translateToEnglish(patoisText: string): Promise<string> {
@@ -44,10 +84,25 @@ Provide only the English translation, nothing else.`;
     }
   }
 
-  async generateResponse(userMessage: string, isUserMessagePatois: boolean): Promise<AIResponse> {
+  async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
+    const storedKnowledge = this.getStoredKnowledge();
+    const conversationContext = this.buildConversationContext(conversationHistory);
+    
     const systemPrompt = isUserMessagePatois 
-      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.`
-      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.`;
+      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
+
+IMPORTANT: You have access to previous conversation history and stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
+
+${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}
+
+${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`
+      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.
+
+IMPORTANT: You have access to previous conversation history and stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
+
+${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}
+
+${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`;
 
     try {
       const model = this.genAI.getGenerativeModel({ 
@@ -63,6 +118,11 @@ Provide only the English translation, nothing else.`;
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const responseText = response.text() || 'Sorry, mi cyaan understand dat right now.';
+      
+      // Store important information from this exchange
+      if (userMessage.length > 20) { // Only store substantial messages
+        this.storeKnowledge(`User asked: ${userMessage} | Assistant responded: ${responseText.substring(0, 200)}...`);
+      }
       
       return {
         message: responseText,

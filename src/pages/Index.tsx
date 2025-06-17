@@ -182,8 +182,8 @@ const Index = () => {
     try {
       let responseText: string;
       
-      // Use Gemini as primary service (always configured now)
-      const aiResponse = await geminiService.generateResponse(messageText, isUserMessagePatois);
+      // Use Gemini as primary service (always configured now) and pass conversation history
+      const aiResponse = await geminiService.generateResponse(messageText, isUserMessagePatois, messages);
       responseText = aiResponse.message;
 
       console.log('Index: Got AI response:', responseText);
