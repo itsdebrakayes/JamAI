@@ -58,7 +58,8 @@ export const generatePatoisResponse = (userMessage: string): string => {
         (suggestion.id === 'recipe' && (lowerMessage.includes('recipe') || lowerMessage.includes('cook'))) ||
         (suggestion.id === 'culture' && lowerMessage.includes('culture')) ||
         (suggestion.id === 'music' && lowerMessage.includes('music')) ||
-        (suggestion.id === 'places' && (lowerMessage.includes('places') || lowerMessage.includes('visit')))) {
+        (suggestion.id === 'places' && (lowerMessage.includes('places') || lowerMessage.includes('visit'))) ||
+        (suggestion.id === 'quiz' && (lowerMessage.includes('quiz') || lowerMessage.includes('test') || lowerMessage.includes('question')))) {
       
       const randomIndex = Math.floor(Math.random() * suggestion.responses.length);
       return suggestion.responses[randomIndex];
@@ -94,11 +95,6 @@ export const generatePatoisResponse = (userMessage: string): string => {
     return "Cho! Jamaican food wicked! Jerk chicken, curry goat, rice and peas - everything tasty and full a flavor!";
   }
   
-  // Quiz functionality - fixed implementation
-  if (lowerMessage.includes('quiz') || lowerMessage.includes('test') || lowerMessage.includes('question')) {
-    return generatePatoisQuiz();
-  }
-  
   // Thanks
   if (lowerMessage.includes('thank') || lowerMessage.includes('appreciate')) {
     return "No problem at all! Mi glad fi help yuh out anytime!";
@@ -106,39 +102,4 @@ export const generatePatoisResponse = (userMessage: string): string => {
   
   // Default responses
   return getRandomPatoisResponse();
-};
-
-// Fixed patois quiz function
-export const generatePatoisQuiz = (): string => {
-  const quizQuestions = [
-    {
-      question: "Wah dis mean: 'Wah gwaan'?",
-      options: ["A) How are you? B) Where you going? C) What's happening?"],
-      answer: "C) What's happening?"
-    },
-    {
-      question: "How yuh seh 'I am going' inna Patois?",
-      options: ["A) Mi a go B) Mi going C) Mi gone"],
-      answer: "A) Mi a go"
-    },
-    {
-      question: "Wah 'big up' mean?",
-      options: ["A) Get bigger B) Respect/greetings C) Stand up"],
-      answer: "B) Respect/greetings"
-    },
-    {
-      question: "How yuh seh 'something' inna Patois?",
-      options: ["A) Someting B) Sumting C) Sometin"],
-      answer: "A) Someting"
-    },
-    {
-      question: "Wah 'cho' express?",
-      options: ["A) Happiness B) Frustration/annoyance C) Surprise"],
-      answer: "B) Frustration/annoyance"
-    }
-  ];
-  
-  const randomQuestion = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
-  
-  return `🧠 Patois Quiz Time! 🇯🇲\n\n${randomQuestion.question}\n\n${randomQuestion.options[0]}\n\nTink bout it and tell mi yuh answer! Di correct answer is: ${randomQuestion.answer}`;
 };
