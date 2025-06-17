@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -93,6 +92,12 @@ const Index = () => {
    * Used for automatic scrolling when new messages arrive
    */
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * Controls whether translation mode is visible
+   * When true, shows side-by-side Patois and English translations
+   */
+  const [showTranslationMode, setShowTranslationMode] = useState(false);
 
   // ============================
   // UTILITY FUNCTIONS
@@ -383,6 +388,24 @@ const Index = () => {
   }, [messages]);
 
   // ============================
+  // TRANSLATION MODE HANDLERS
+  // ============================
+  
+  /**
+   * Opens the translation mode overlay
+   */
+  const handleOpenTranslationMode = () => {
+    setShowTranslationMode(true);
+  };
+
+  /**
+   * Closes the translation mode overlay
+   */
+  const handleCloseTranslationMode = () => {
+    setShowTranslationMode(false);
+  };
+
+  // ============================
   // RENDER
   // ============================
   
@@ -423,6 +446,18 @@ const Index = () => {
                     </button>
                   </div>
                   <div className="flex items-center gap-3">
+                    {/* Translation mode button */}
+                    {messages.length > 1 && (
+                      <Button
+                        onClick={handleOpenTranslationMode}
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Languages className="w-4 h-4" />
+                        <span className="hidden sm:inline">Translation</span>
+                      </Button>
+                    )}
                     {/* Theme toggle button */}
                     <ThemeToggle />
                     {/* AI service indicator */}
@@ -528,6 +563,26 @@ const Index = () => {
             </div>
           </div>
         </SidebarInset>
+
+        {/* Floating Translation Button - only show when there are messages */}
+        {messages.length > 1 && !showTranslationMode && (
+          <Button
+            onClick={handleOpenTranslationMode}
+            className="fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full shadow-lg bg-gradient-to-r from-jamaican-gold to-jamaican-green hover:from-jamaican-gold/90 hover:to-jamaican-green/90 transition-all duration-200"
+            size="icon"
+            title="Open Translation Mode"
+          >
+            <Languages className="w-6 h-6" />
+          </Button>
+        )}
+
+        {/* Translation Mode Overlay */}
+        {showTranslationMode && (
+          <TranslationMode
+            messages={messages}
+            onClose={handleCloseTranslationMode}
+          />
+        )}
       </div>
       {/* Toast notification system for user feedback */}
       <Toaster />
