@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -112,24 +111,28 @@ const Index = () => {
       const language = await detectLanguage(text);
       let responseText: string;
 
-      if (language === 'patois') {
-        responseText = await (currentService === 'gemini' 
-          ? geminiService.generateResponse(text, false, [])
-          : openaiService.generateResponse(text, false, [])
-        ).then(response => response.message);
-      } else {
-        // Check if it's a quiz answer (A, B, or C)
-        const isQuizAnswer = /^[ABC]$/i.test(text.trim());
-        if (isQuizAnswer && messages.length > 0) {
-          const lastAiMessage = messages.filter(m => !m.isUser).pop();
-          if (lastAiMessage && lastAiMessage.text.includes('Quiz Time')) {
-            responseText = await (await import('@/utils/patoisResponses')).checkQuizAnswer(text, lastAiMessage.text);
-          } else {
-            responseText = await (await import('@/utils/patoisResponses')).generatePatoisResponse(text);
-          }
+      // Check if it's a quiz answer (A, B, or C)
+      const isQuizAnswer = /^[ABC]$/i.test(text.trim());
+      if (isQuizAnswer && messages.length > 0) {
+        const lastAiMessage = messages.filter(m => !m.isUser).pop();
+        if (lastAiMessage && lastAiMessage.text.includes('Quiz Time')) {
+          responseText = await (await import('@/utils/patoisResponses')).checkQuizAnswer(text, lastAiMessage.text, currentService);
         } else {
-          responseText = await (await import('@/utils/patoisResponses')).generatePatoisResponse(text);
+          // Even for quiz answers, use AI
+          responseText = await (currentService === 'gemini' 
+            ? geminiService.generateResponse(text, language === 'patois', newMessages)
+            : openaiService.generateResponse(text, language === 'patois', newMessages)
+          ).then(response => response.message);
         }
+      } else if (text.toLowerCase().includes('quiz') || text.toLowerCase().includes('test') || text.toLowerCase().includes('question')) {
+        // Generate AI-powered quiz
+        responseText = await (await import('@/utils/patoisResponses')).generatePatoisQuiz(currentService);
+      } else {
+        // ALL other responses come from AI services
+        responseText = await (currentService === 'gemini' 
+          ? geminiService.generateResponse(text, language === 'patois', newMessages)
+          : openaiService.generateResponse(text, language === 'patois', newMessages)
+        ).then(response => response.message);
       }
 
       const aiMessage: Message = {
