@@ -344,9 +344,9 @@ const ChatHistorySidebar = ({
         
         {/* Sidebar footer with app branding - dark mode support */}
         <SidebarFooter className="p-4 bg-background/90 border-t border-border/30">
-          <div className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground">
-            <span className="text-2xl">🇯🇲</span>
-            <span className="font-medium">JamAI Chat</span>
+          <div className="flex items-center gap-3 px-3 py-2 text-sm">
+            <span className="text-lg font-bold">🇯🇲</span>
+            <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
           </div>
         </SidebarFooter>
       </Sidebar>
