@@ -1,11 +1,14 @@
+
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 import ChatSuggestions from '@/components/ChatSuggestions';
 import TypingIndicator from '@/components/TypingIndicator';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import TypingMessage from '@/components/TypingMessage';
+import TranslationMode from '@/components/TranslationMode';
+import ChatSummary from '@/components/ChatSummary';
 import { generatePatoisResponse, getPatoisGreeting } from '@/utils/patoisResponses';
 import { Button } from '@/components/ui/button';
 import {
