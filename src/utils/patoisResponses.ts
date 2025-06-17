@@ -1,5 +1,3 @@
-
-
 // Jamaican Patois responses for the AI
 export const patoisGreetings = [
   "Wah gwaan! Mi deh yah fi help yuh out today!",
@@ -35,6 +33,7 @@ export const patoisFarewells = [
 ];
 
 import chatSuggestionsData from '@/data/chatSuggestions.json';
+import { geminiService } from '@/services/geminiService';
 
 export const getRandomPatoisResponse = (): string => {
   const responses = [...patoisResponses];
@@ -49,73 +48,51 @@ export const getPatoisFarewell = (): string => {
   return patoisFarewells[Math.floor(Math.random() * patoisFarewells.length)];
 };
 
-// Patois quiz questions and answers
-const quizQuestions = [
-  {
-    question: "Wah dis mean: 'Wah gwaan'?",
-    options: ["A) How are you?", "B) Where you going?", "C) What's happening?"],
-    answer: "C) What's happening?"
-  },
-  {
-    question: "How yuh seh 'I am going' inna Patois?",
-    options: ["A) Mi a go", "B) Mi going", "C) Mi gone"],
-    answer: "A) Mi a go"
-  },
-  {
-    question: "Wah 'big up' mean?",
-    options: ["A) Get bigger", "B) Respect/greetings", "C) Stand up"],
-    answer: "B) Respect/greetings"
-  },
-  {
-    question: "How yuh seh 'something' inna Patois?",
-    options: ["A) Someting", "B) Sumting", "C) Sometin"],
-    answer: "A) Someting"
-  },
-  {
-    question: "Wah 'cho' express?",
-    options: ["A) Happiness", "B) Frustration/annoyance", "C) Surprise"],
-    answer: "B) Frustration/annoyance"
-  },
-  {
-    question: "How yuh seh 'beautiful' inna Patois?",
-    options: ["A) Pretty", "B) Nice", "C) Buff"],
-    answer: "C) Buff"
-  },
-  {
-    question: "Wah 'bredrin' mean?",
-    options: ["A) Brother/friend", "B) Bread", "C) Breakfast"],
-    answer: "A) Brother/friend"
-  },
-  {
-    question: "How yuh seh 'very' inna Patois?",
-    options: ["A) Too much", "B) Whole heap", "C) Nuff"],
-    answer: "C) Nuff"
-  }
-];
+// AI-powered Patois quiz generation
+export const generatePatoisQuiz = async (): Promise<string> => {
+  try {
+    const prompt = `Generate a fun Patois quiz question with 3 multiple choice options (A, B, C). The question should test knowledge of Jamaican Patois words, phrases, or meanings. Format it exactly like this:
 
-export const generatePatoisQuiz = (): string => {
-  const randomQuestion = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
-  
-  return `🧠 Patois Quiz Time! 🇯🇲\n\n${randomQuestion.question}\n\n${randomQuestion.options.join('\n')}\n\nTink bout it and tell mi yuh answer! Reply wid A, B, or C.`;
-};
+🧠 Patois Quiz Time! 🇯🇲
 
-export const checkQuizAnswer = (userAnswer: string, lastQuestion?: string): string => {
-  if (!lastQuestion) return "Mi nuh have no question fi check right now!";
-  
-  const question = quizQuestions.find(q => lastQuestion.includes(q.question));
-  if (!question) return "Mi cyaan find dat question!";
-  
-  const answer = userAnswer.toUpperCase().trim();
-  const correctLetter = question.answer.charAt(0);
-  
-  if (answer === correctLetter) {
-    return `🎉 Correct! ${question.answer}\n\nBig up yuself! Yuh know yuh Patois! Want another question?`;
-  } else {
-    return `❌ Not quite! Di right answer is ${question.answer}\n\nNo worries, keep practicing! Want fi try another one?`;
+[Question about Patois]
+
+A) [Option 1]
+B) [Option 2] 
+C) [Option 3]
+
+Tink bout it and tell mi yuh answer! Reply wid A, B, or C.
+
+Make it educational and fun!`;
+
+    const response = await geminiService.generateResponse(prompt, false, []);
+    return response.message;
+  } catch (error) {
+    console.error('Error generating quiz:', error);
+    return `🧠 Patois Quiz Time! 🇯🇲\n\nWah dis mean: "Wah gwaan"?\n\nA) How are you?\nB) Where you going?\nC) What's happening?\n\nTink bout it and tell mi yuh answer! Reply wid A, B, or C.`;
   }
 };
 
-export const generatePatoisResponse = (userMessage: string): string => {
+export const checkQuizAnswer = async (userAnswer: string, lastQuestion: string): Promise<string> => {
+  try {
+    if (!lastQuestion) return "Mi nuh have no question fi check right now!";
+    
+    const prompt = `Here was the Patois quiz question:
+"${lastQuestion}"
+
+The user answered: "${userAnswer}"
+
+Please check if their answer is correct and respond in Jamaican Patois style. If correct, congratulate them and ask if they want another question. If wrong, tell them the correct answer and encourage them to try again. Keep the response friendly and encouraging in Patois style.`;
+
+    const response = await geminiService.generateResponse(prompt, false, []);
+    return response.message;
+  } catch (error) {
+    console.error('Error checking quiz answer:', error);
+    return "Mi cyaan check dat answer right now, but keep practicing yuh Patois!";
+  }
+};
+
+export const generatePatoisResponse = async (userMessage: string): Promise<string> => {
   const lowerMessage = userMessage.toLowerCase();
   
   // Check for suggestion-based responses (exclude quiz)
@@ -147,9 +124,9 @@ export const generatePatoisResponse = (userMessage: string): string => {
     return getPatoisFarewell();
   }
   
-  // Quiz functionality - generate quiz questions
+  // Quiz functionality - generate AI-powered quiz questions
   if (lowerMessage.includes('quiz') || lowerMessage.includes('test') || lowerMessage.includes('question')) {
-    return generatePatoisQuiz();
+    return await generatePatoisQuiz();
   }
   
   // Questions about Jamaica
@@ -175,4 +152,3 @@ export const generatePatoisResponse = (userMessage: string): string => {
   // Default responses
   return getRandomPatoisResponse();
 };
-

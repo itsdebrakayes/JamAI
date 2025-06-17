@@ -118,7 +118,18 @@ const Index = () => {
           : openaiService.generateResponse(text, false, [])
         ).then(response => response.message);
       } else {
-        responseText = await generatePatoisResponse(text);
+        // Check if it's a quiz answer (A, B, or C)
+        const isQuizAnswer = /^[ABC]$/i.test(text.trim());
+        if (isQuizAnswer && messages.length > 0) {
+          const lastAiMessage = messages.filter(m => !m.isUser).pop();
+          if (lastAiMessage && lastAiMessage.text.includes('Quiz Time')) {
+            responseText = await (await import('@/utils/patoisResponses')).checkQuizAnswer(text, lastAiMessage.text);
+          } else {
+            responseText = await (await import('@/utils/patoisResponses')).generatePatoisResponse(text);
+          }
+        } else {
+          responseText = await (await import('@/utils/patoisResponses')).generatePatoisResponse(text);
+        }
       }
 
       const aiMessage: Message = {
