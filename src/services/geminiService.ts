@@ -1,61 +1,119 @@
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
+/**
+ * Interface defining the structure of AI response objects
+ * Used to maintain consistency across different AI services
+ */
 interface AIResponse {
-  message: string;
-  isPatois: boolean;
-  translationOffered?: boolean;
+  message: string;              // The generated response text
+  isPatois: boolean;           // Whether response is in Jamaican Patois
+  translationOffered?: boolean; // Whether translation was offered (optional)
 }
 
+/**
+ * Interface defining the structure of chat messages
+ * Used for maintaining conversation context in AI requests
+ */
 interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
+  id: string;          // Unique message identifier
+  text: string;        // Message content
+  isUser: boolean;     // True if from user, false if from AI
+  timestamp: Date;     // When message was created
 }
 
+/**
+ * Interface for stored knowledge entries
+ * Used to build long-term memory across chat sessions
+ */
 interface KnowledgeEntry {
-  id: string;
-  category: 'recipe' | 'preference' | 'recommendation' | 'fact' | 'conversation';
-  userQuery: string;
-  aiResponse: string;
-  keywords: string[];
-  timestamp: string;
+  id: string;                                                              // Unique entry identifier
+  category: 'recipe' | 'preference' | 'recommendation' | 'fact' | 'conversation'; // Knowledge type
+  userQuery: string;                                                       // Original user question
+  aiResponse: string;                                                      // AI's full response
+  keywords: string[];                                                      // Extracted keywords for search
+  timestamp: string;                                                       // When entry was created
 }
 
+/**
+ * GeminiService Class
+ * 
+ * This service handles all interactions with Google's Gemini AI model.
+ * It provides enhanced functionality including:
+ * - Conversation context management
+ * - Long-term knowledge storage and retrieval
+ * - Jamaican Patois language detection and response
+ * - Automatic categorization of conversation topics
+ * - Translation capabilities
+ * 
+ * The service maintains memory across chat sessions by storing important
+ * exchanges in browser localStorage with intelligent categorization.
+ */
 export class GeminiService {
+  /**
+   * Google Generative AI instance for making API calls
+   */
   private genAI: GoogleGenerativeAI;
+  
+  /**
+   * API key for Google Gemini service
+   * Currently hardcoded but could be made configurable
+   */
   private apiKey: string = 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
 
+  /**
+   * Constructor initializes the Gemini service with API key
+   */
   constructor() {
     this.genAI = new GoogleGenerativeAI(this.apiKey);
   }
 
+  /**
+   * Sets API key for the service (maintains compatibility)
+   * Currently uses hardcoded key but method exists for future flexibility
+   * @param apiKey - The API key to set (currently ignored)
+   */
   setApiKey(apiKey: string) {
     // Keep this method for compatibility but use hardcoded key
     this.apiKey = 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
     this.genAI = new GoogleGenerativeAI(this.apiKey);
   }
 
+  /**
+   * Checks if the service is properly configured with API key
+   * @returns Always true since we use hardcoded key
+   */
   isConfigured(): boolean {
     return true; // Always configured with hardcoded key
   }
 
+  // ============================
+  // KNOWLEDGE MANAGEMENT SYSTEM
+  // ============================
+  
+  /**
+   * Retrieves and organizes stored knowledge from previous conversations
+   * This creates context for the AI to reference past interactions
+   * @returns Formatted string of categorized knowledge entries
+   */
   private getStoredKnowledge(): string {
     const knowledge = localStorage.getItem('jamAI-enhanced-knowledge');
     if (!knowledge) return '';
     
     const knowledgeEntries: KnowledgeEntry[] = JSON.parse(knowledge);
     
-    // Group by category for better context
+    // Group knowledge entries by category for better organization
     const categorized = knowledgeEntries.reduce((acc, entry) => {
       if (!acc[entry.category]) acc[entry.category] = [];
       acc[entry.category].push(`User: ${entry.userQuery}\nAssistant: ${entry.aiResponse}`);
       return acc;
     }, {} as Record<string, string[]>);
     
+    // Format categorized knowledge for AI context
     let contextString = '';
     Object.entries(categorized).forEach(([category, entries]) => {
       if (entries.length > 0) {
+        // Only include last 5 entries per category to manage token limits
         contextString += `\n${category.toUpperCase()} KNOWLEDGE:\n${entries.slice(-5).join('\n---\n')}\n`;
       }
     });
@@ -63,37 +121,69 @@ export class GeminiService {
     return contextString;
   }
 
+  /**
+   * Extracts meaningful keywords from text for knowledge indexing
+   * Filters out common words to focus on important terms
+   * @param text - The text to extract keywords from
+   * @returns Array of relevant keywords
+   */
   private extractKeywords(text: string): string[] {
+    // Common words to filter out (stop words)
     const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'];
+    
+    // Extract words using regex pattern
     const words = text.toLowerCase().match(/\b\w+\b/g) || [];
+    
+    // Filter meaningful words (length > 2, not common words), limit to 10
     return words.filter(word => word.length > 2 && !commonWords.includes(word)).slice(0, 10);
   }
 
+  /**
+   * Automatically categorizes conversation content based on keywords
+   * Helps organize knowledge for better retrieval later
+   * @param userQuery - The user's original question
+   * @param aiResponse - The AI's response
+   * @returns Category classification for the knowledge entry
+   */
   private categorizeContent(userQuery: string, aiResponse: string): KnowledgeEntry['category'] {
     const combinedText = (userQuery + ' ' + aiResponse).toLowerCase();
     
+    // Check for recipe-related content
     if (combinedText.includes('recipe') || combinedText.includes('cook') || combinedText.includes('ingredient') || combinedText.includes('dish')) {
       return 'recipe';
     }
+    // Check for recommendation content
     if (combinedText.includes('recommend') || combinedText.includes('suggest') || combinedText.includes('pair') || combinedText.includes('goes with')) {
       return 'recommendation';
     }
+    // Check for preference-related content
     if (combinedText.includes('like') || combinedText.includes('prefer') || combinedText.includes('favorite') || combinedText.includes('love')) {
       return 'preference';
     }
+    // Check for factual questions
     if (combinedText.includes('what') || combinedText.includes('how') || combinedText.includes('why') || combinedText.includes('when')) {
       return 'fact';
     }
     
+    // Default category for general conversation
     return 'conversation';
   }
 
+  /**
+   * Stores important conversation exchanges in browser storage for future reference
+   * Only stores substantial exchanges to avoid cluttering memory
+   * @param userQuery - The user's question
+   * @param aiResponse - The AI's response
+   */
   private storeKnowledge(userQuery: string, aiResponse: string) {
-    if (userQuery.length < 10 || aiResponse.length < 20) return; // Only store substantial exchanges
+    // Only store substantial exchanges (filters out greetings, short responses)
+    if (userQuery.length < 10 || aiResponse.length < 20) return;
     
+    // Get existing knowledge or initialize empty array
     const existing = localStorage.getItem('jamAI-enhanced-knowledge');
     const knowledgeArray: KnowledgeEntry[] = existing ? JSON.parse(existing) : [];
     
+    // Create new knowledge entry with automatic categorization
     const newEntry: KnowledgeEntry = {
       id: Date.now().toString(),
       category: this.categorizeContent(userQuery, aiResponse),
@@ -113,8 +203,18 @@ export class GeminiService {
     localStorage.setItem('jamAI-enhanced-knowledge', JSON.stringify(knowledgeArray));
   }
 
+  // ============================
+  // CONVERSATION CONTEXT MANAGEMENT
+  // ============================
+  
+  /**
+   * Builds conversation context string from recent message history
+   * Limits to last 10 messages to avoid token limits while maintaining context
+   * @param messages - Array of conversation messages
+   * @returns Formatted conversation context string
+   */
   private buildConversationContext(messages: Message[]): string {
-    // Get last 10 messages for context (to avoid token limits)
+    // Get last 10 messages for context (balances context vs token usage)
     const recentMessages = messages.slice(-10);
     
     let context = '';
@@ -126,6 +226,16 @@ export class GeminiService {
     return context;
   }
 
+  // ============================
+  // TRANSLATION FUNCTIONALITY
+  // ============================
+  
+  /**
+   * Translates Jamaican Patois text to English using Gemini
+   * Used for helping users understand Patois responses
+   * @param patoisText - The Patois text to translate
+   * @returns English translation of the text
+   */
   async translateToEnglish(patoisText: string): Promise<string> {
     try {
       const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -145,10 +255,25 @@ Provide only the English translation, nothing else.`;
     }
   }
 
+  // ============================
+  // MAIN RESPONSE GENERATION
+  // ============================
+  
+  /**
+   * Main method for generating AI responses with full context awareness
+   * Integrates conversation history, stored knowledge, and language preferences
+   * 
+   * @param userMessage - The current user message to respond to
+   * @param isUserMessagePatois - Whether user wrote in Jamaican Patois
+   * @param conversationHistory - Array of previous messages in this chat
+   * @returns Promise resolving to AI response object
+   */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
+    // Gather context from multiple sources
     const storedKnowledge = this.getStoredKnowledge();
     const conversationContext = this.buildConversationContext(conversationHistory);
     
+    // Build comprehensive system prompt based on user's language preference
     const systemPrompt = isUserMessagePatois 
       ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
 
@@ -166,23 +291,27 @@ ${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowle
 ${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`;
 
     try {
+      // Initialize Gemini model with appropriate configuration
       const model = this.genAI.getGenerativeModel({ 
         model: "gemini-1.5-flash",
         generationConfig: {
           maxOutputTokens: 2000, // Increased for more detailed responses
-          temperature: 0.7,
+          temperature: 0.7,      // Balance between creativity and consistency
         }
       });
       
+      // Combine system prompt with user message
       const prompt = `${systemPrompt}\n\nUser message: ${userMessage}`;
       
+      // Generate response from Gemini
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const responseText = response.text() || 'Sorry, mi cyaan understand dat right now.';
       
-      // Store the full exchange with enhanced categorization
+      // Store this exchange for future reference
       this.storeKnowledge(userMessage, responseText);
       
+      // Return structured response object
       return {
         message: responseText,
         isPatois: isUserMessagePatois,
@@ -191,7 +320,7 @@ ${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`
     } catch (error) {
       console.error('Gemini API Error:', error);
       
-      // Fallback to local Patois responses if Gemini fails
+      // Fallback response if Gemini service fails
       const fallbackMessage = isUserMessagePatois 
         ? "Mi have some trouble right now, but mi here fi help."
         : "I'm having some connection issues right now, but I'm here to help.";
@@ -205,5 +334,8 @@ ${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`
   }
 }
 
-// Export singleton instance
+/**
+ * Export singleton instance for use throughout the application
+ * This ensures consistent service state across all components
+ */
 export const geminiService = new GeminiService();

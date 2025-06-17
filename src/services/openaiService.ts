@@ -1,31 +1,70 @@
+
 import OpenAI from 'openai';
 
+/**
+ * Interface defining the structure of AI response objects
+ * Ensures consistency between different AI service implementations
+ */
 interface AIResponse {
-  message: string;
-  isPatois: boolean;
-  translationOffered?: boolean;
+  message: string;              // The generated response text
+  isPatois: boolean;           // Whether response is in Jamaican Patois
+  translationOffered?: boolean; // Whether translation was offered (optional)
 }
 
+/**
+ * Interface defining the structure of chat messages
+ * Used for maintaining conversation context in AI requests
+ */
 interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
+  id: string;          // Unique message identifier
+  text: string;        // Message content
+  isUser: boolean;     // True if from user, false if from AI
+  timestamp: Date;     // When message was created
 }
 
+/**
+ * Interface for stored knowledge entries
+ * Used to build long-term memory across chat sessions
+ */
 interface KnowledgeEntry {
-  id: string;
-  category: 'recipe' | 'preference' | 'recommendation' | 'fact' | 'conversation';
-  userQuery: string;
-  aiResponse: string;
-  keywords: string[];
-  timestamp: string;
+  id: string;                                                              // Unique entry identifier
+  category: 'recipe' | 'preference' | 'recommendation' | 'fact' | 'conversation'; // Knowledge type
+  userQuery: string;                                                       // Original user question
+  aiResponse: string;                                                      // AI's full response
+  keywords: string[];                                                      // Extracted keywords for search
+  timestamp: string;                                                       // When entry was created
 }
 
+/**
+ * OpenAIService Class
+ * 
+ * This service handles interactions with OpenAI's GPT models as an alternative
+ * to the Gemini service. It provides the same interface and functionality
+ * including conversation context, knowledge storage, and Patois support.
+ * 
+ * Features:
+ * - GPT-4 integration with custom API keys
+ * - Cross-session knowledge storage and retrieval
+ * - Jamaican Patois language support
+ * - Automatic conversation categorization
+ * - Context-aware responses using chat history
+ * 
+ * Note: Requires user to provide their own OpenAI API key
+ */
 export class OpenAIService {
+  /**
+   * OpenAI client instance (null until API key is provided)
+   */
   private openai: OpenAI | null = null;
+  
+  /**
+   * User's OpenAI API key
+   */
   private apiKey: string = '';
 
+  /**
+   * Constructor checks for stored API key in browser storage
+   */
   constructor() {
     // Check for stored API key in localStorage
     const storedKey = localStorage.getItem('openai-api-key');
@@ -34,34 +73,54 @@ export class OpenAIService {
     }
   }
 
+  /**
+   * Sets the OpenAI API key and initializes the client
+   * @param apiKey - User's OpenAI API key
+   */
   setApiKey(apiKey: string) {
     this.apiKey = apiKey;
     this.openai = new OpenAI({
       apiKey: apiKey,
-      dangerouslyAllowBrowser: true
+      dangerouslyAllowBrowser: true // Required for browser-based usage
     });
   }
 
+  /**
+   * Checks if the service has been configured with an API key
+   * @returns True if API key is set and client is initialized
+   */
   isConfigured(): boolean {
     return !!this.openai && !!this.apiKey;
   }
 
+  // ============================
+  // KNOWLEDGE MANAGEMENT SYSTEM
+  // ============================
+  // Note: These methods are identical to GeminiService for consistency
+  
+  /**
+   * Retrieves and organizes stored knowledge from previous conversations
+   * Creates categorized context for the AI to reference past interactions
+   * @returns Formatted string of categorized knowledge entries
+   */
   private getStoredKnowledge(): string {
     const knowledge = localStorage.getItem('jamAI-enhanced-knowledge');
     if (!knowledge) return '';
     
     const knowledgeEntries: KnowledgeEntry[] = JSON.parse(knowledge);
     
-    // Group by category for better context
+    // Group knowledge entries by category for better organization
     const categorized = knowledgeEntries.reduce((acc, entry) => {
       if (!acc[entry.category]) acc[entry.category] = [];
       acc[entry.category].push(`User: ${entry.userQuery}\nAssistant: ${entry.aiResponse}`);
       return acc;
     }, {} as Record<string, string[]>);
     
+    // Format categorized knowledge for AI context
     let contextString = '';
     Object.entries(categorized).forEach(([category, entries]) => {
       if (entries.length > 0) {
+        // Only include last 5 entries per category to manage token limits
         contextString += `\n${category.toUpperCase()} KNOWLEDGE:\n${entries.slice(-5).join('\n---\n')}\n`;
       }
     });
@@ -69,12 +128,26 @@ export class OpenAIService {
     return contextString;
   }
 
+  /**
+   * Extracts meaningful keywords from text for knowledge indexing
+   * Filters out common words to focus on important terms
+   * @param text - The text to extract keywords from
+   * @returns Array of relevant keywords (max 10)
+   */
   private extractKeywords(text: string): string[] {
+    // Common words to filter out (stop words)
     const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'];
     const words = text.toLowerCase().match(/\b\w+\b/g) || [];
     return words.filter(word => word.length > 2 && !commonWords.includes(word)).slice(0, 10);
   }
 
+  /**
+   * Automatically categorizes conversation content based on keywords
+   * Helps organize knowledge for better retrieval in future conversations
+   * @param userQuery - The user's original question
+   * @param aiResponse - The AI's response
+   * @returns Category classification for the knowledge entry
+   */
   private categorizeContent(userQuery: string, aiResponse: string): KnowledgeEntry['category'] {
     const combinedText = (userQuery + ' ' + aiResponse).toLowerCase();
     
@@ -94,8 +167,15 @@ export class OpenAIService {
     return 'conversation';
   }
 
+  /**
+   * Stores important conversation exchanges for future reference
+   * Only stores substantial exchanges to avoid memory clutter
+   * @param userQuery - The user's question
+   * @param aiResponse - The AI's response
+   */
   private storeKnowledge(userQuery: string, aiResponse: string) {
-    if (userQuery.length < 10 || aiResponse.length < 20) return; // Only store substantial exchanges
+    // Only store substantial exchanges (filters out greetings, short responses)
+    if (userQuery.length < 10 || aiResponse.length < 20) return;
     
     const existing = localStorage.getItem('jamAI-enhanced-knowledge');
     const knowledgeArray: KnowledgeEntry[] = existing ? JSON.parse(existing) : [];
@@ -119,6 +199,18 @@ export class OpenAIService {
     localStorage.setItem('jamAI-enhanced-knowledge', JSON.stringify(knowledgeArray));
   }
 
+  // ============================
+  // CONVERSATION CONTEXT MANAGEMENT
+  // ============================
+  
+  /**
+   * Builds conversation message array for OpenAI API format
+   * Includes system prompt and recent conversation history
+   * @param userMessage - Current user message
+   * @param conversationHistory - Previous messages in the chat
+   * @param systemPrompt - AI behavior instructions
+   * @returns Array of messages in OpenAI format
+   */
   private buildConversationMessages(userMessage: string, conversationHistory: Message[], systemPrompt: string): any[] {
     const messages = [{ role: "system", content: systemPrompt }];
     
@@ -140,13 +232,28 @@ export class OpenAIService {
     return messages;
   }
 
+  // ============================
+  // MAIN RESPONSE GENERATION
+  // ============================
+  
+  /**
+   * Generates AI responses using OpenAI's GPT model with full context
+   * Integrates stored knowledge, conversation history, and language preferences
+   * 
+   * @param userMessage - The current user message to respond to
+   * @param isUserMessagePatois - Whether user wrote in Jamaican Patois
+   * @param conversationHistory - Array of previous messages in this chat
+   * @returns Promise resolving to AI response object
+   */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
     if (!this.openai) {
       throw new Error('OpenAI not configured. Please provide an API key.');
     }
 
+    // Gather context from stored knowledge
     const storedKnowledge = this.getStoredKnowledge();
     
+    // Build system prompt based on user's language preference
     const systemPrompt = isUserMessagePatois 
       ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
 
@@ -160,18 +267,20 @@ IMPORTANT: You have access to previous conversation history and comprehensive st
 ${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowledge}\n` : ''}`;
 
     try {
+      // Build message array for OpenAI API
       const messages = this.buildConversationMessages(userMessage, conversationHistory, systemPrompt);
       
+      // Make API call to OpenAI
       const completion = await this.openai.chat.completions.create({
-        model: "gpt-4.1-2025-04-14",
+        model: "gpt-4.1-2025-04-14", // Latest GPT-4 model
         messages: messages,
-        max_tokens: 2000, // Increased for more detailed responses
-        temperature: 0.7,
+        max_tokens: 2000,             // Increased for detailed responses
+        temperature: 0.7,             // Balance creativity and consistency
       });
 
       const responseText = completion.choices[0]?.message?.content || 'Sorry, mi cyaan understand dat right now.';
       
-      // Store the full exchange with enhanced categorization
+      // Store the exchange for future reference
       this.storeKnowledge(userMessage, responseText);
       
       return {
@@ -182,7 +291,7 @@ ${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowle
     } catch (error) {
       console.error('OpenAI API Error:', error);
       
-      // Fallback to local Patois responses if OpenAI fails
+      // Fallback response if OpenAI fails
       const fallbackMessage = isUserMessagePatois 
         ? "Mi have some trouble connecting right now, but mi here fi help."
         : "I'm having some connection issues right now, but I'm here to help.";
@@ -196,5 +305,8 @@ ${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowle
   }
 }
 
-// Export singleton instance
+/**
+ * Export singleton instance for use throughout the application
+ * Maintains consistent service state across all components
+ */
 export const openaiService = new OpenAIService();

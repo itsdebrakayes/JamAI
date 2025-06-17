@@ -28,22 +28,43 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 
+/**
+ * Interface defining the structure of chat history entries
+ * Used for displaying and managing saved conversations
+ */
 interface ChatHistory {
-  id: string;
-  title: string;
-  messages: any[];
-  createdAt: Date;
+  id: string;          // Unique identifier for the chat
+  title: string;       // Display title (usually truncated first message)
+  messages: any[];     // Array of messages in this chat
+  createdAt: Date;     // When this chat was created
 }
 
+/**
+ * Props interface for the ChatHistorySidebar component
+ * Defines all callbacks and data needed for sidebar functionality
+ */
 interface ChatHistorySidebarProps {
-  chatHistory: ChatHistory[];
-  currentChatId: string;
-  onNewChat: () => void;
-  onLoadChat: (chatId: string) => void;
-  onDeleteChats: (chatIds: string[]) => void;
-  onClearAllHistory: () => void;
+  chatHistory: ChatHistory[];                    // Array of all saved chats
+  currentChatId: string;                         // ID of currently active chat
+  onNewChat: () => void;                         // Callback to start new chat
+  onLoadChat: (chatId: string) => void;          // Callback to load specific chat
+  onDeleteChats: (chatIds: string[]) => void;    // Callback to delete multiple chats
+  onClearAllHistory: () => void;                 // Callback to clear all history
 }
 
+/**
+ * ChatHistorySidebar Component
+ * 
+ * This component provides a sidebar interface for managing chat history.
+ * It allows users to:
+ * - Start new conversations
+ * - Browse and load previous chats
+ * - Delete individual or multiple chats
+ * - Clear entire chat history
+ * - Bulk select chats for operations
+ * 
+ * The sidebar is responsive and collapses on mobile devices.
+ */
 const ChatHistorySidebar = ({ 
   chatHistory, 
   currentChatId, 
@@ -52,15 +73,52 @@ const ChatHistorySidebar = ({
   onDeleteChats,
   onClearAllHistory
 }: ChatHistorySidebarProps) => {
+  // ============================
+  // STATE MANAGEMENT
+  // ============================
+  
+  /**
+   * Hook to control mobile sidebar visibility
+   */
   const { setOpenMobile } = useSidebar();
+  
+  /**
+   * Set of currently selected chat IDs for bulk operations
+   */
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set());
+  
+  /**
+   * Whether the sidebar is in selection mode for bulk operations
+   */
   const [isSelectionMode, setIsSelectionMode] = useState(false);
+  
+  /**
+   * Controls visibility of delete confirmation dialog
+   */
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  
+  /**
+   * Controls visibility of clear all confirmation dialog
+   */
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
+  
+  /**
+   * ID of single chat being deleted (when not in bulk mode)
+   */
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
 
+  // ============================
+  // EVENT HANDLERS
+  // ============================
+  
+  /**
+   * Handles clicking on a chat item
+   * Behavior depends on whether we're in selection mode or normal mode
+   * @param chatId - The ID of the clicked chat
+   */
   const handleChatSelect = (chatId: string) => {
     if (isSelectionMode) {
+      // In selection mode: toggle selection state
       const newSelected = new Set(selectedChats);
       if (newSelected.has(chatId)) {
         newSelected.delete(chatId);
@@ -69,11 +127,16 @@ const ChatHistorySidebar = ({
       }
       setSelectedChats(newSelected);
     } else {
+      // Normal mode: load the chat and close mobile sidebar
       onLoadChat(chatId);
       setOpenMobile(false);
     }
   };
 
+  /**
+   * Handles creating a new chat
+   * Resets selection state and closes mobile sidebar
+   */
   const handleNewChat = () => {
     onNewChat();
     setOpenMobile(false);
@@ -81,12 +144,19 @@ const ChatHistorySidebar = ({
     setSelectedChats(new Set());
   };
 
+  /**
+   * Initiates deletion of selected chats
+   * Shows confirmation dialog if chats are selected
+   */
   const handleDeleteSelected = () => {
     if (selectedChats.size > 0) {
       setDeleteDialogOpen(true);
     }
   };
 
+  /**
+   * Confirms and executes deletion of selected chats
+   */
   const confirmDeleteSelected = () => {
     onDeleteChats(Array.from(selectedChats));
     setSelectedChats(new Set());
@@ -94,12 +164,20 @@ const ChatHistorySidebar = ({
     setDeleteDialogOpen(false);
   };
 
+  /**
+   * Initiates deletion of a single chat
+   * @param chatId - ID of chat to delete
+   * @param e - Click event (to prevent propagation)
+   */
   const handleDeleteSingle = (chatId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent triggering chat selection
     setChatToDelete(chatId);
     setDeleteDialogOpen(true);
   };
 
+  /**
+   * Confirms and executes deletion of single chat
+   */
   const confirmDeleteSingle = () => {
     if (chatToDelete) {
       onDeleteChats([chatToDelete]);
@@ -108,10 +186,16 @@ const ChatHistorySidebar = ({
     }
   };
 
+  /**
+   * Initiates clearing all chat history
+   */
   const handleClearAll = () => {
     setClearAllDialogOpen(true);
   };
 
+  /**
+   * Confirms and executes clearing all history
+   */
   const confirmClearAll = () => {
     onClearAllHistory();
     setClearAllDialogOpen(false);
@@ -119,6 +203,10 @@ const ChatHistorySidebar = ({
     setSelectedChats(new Set());
   };
 
+  /**
+   * Toggles selection of all chats
+   * If all are selected, deselects all; otherwise selects all
+   */
   const toggleSelectAll = () => {
     if (selectedChats.size === chatHistory.length) {
       setSelectedChats(new Set());
@@ -127,10 +215,17 @@ const ChatHistorySidebar = ({
     }
   };
 
+  // ============================
+  // RENDER
+  // ============================
+  
   return (
     <>
+      {/* Main sidebar component */}
       <Sidebar side="left" className="border-r bg-white/95 backdrop-blur-md">
+        {/* Sidebar header with new chat button and controls */}
         <SidebarHeader className="p-4 bg-white/90 border-b border-border/30">
+          {/* Primary new chat button */}
           <Button 
             onClick={handleNewChat}
             className="w-full justify-start gap-3 h-12 bg-white hover:bg-gray-50 text-foreground border border-border shadow-sm mb-2"
@@ -140,8 +235,10 @@ const ChatHistorySidebar = ({
             <span className="font-medium">New Chat</span>
           </Button>
           
+          {/* Chat management controls - only shown if there are chats */}
           {chatHistory.length > 0 && (
             <div className="flex gap-2">
+              {/* Options menu - only shown when not in selection mode */}
               {!isSelectionMode && (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -162,6 +259,7 @@ const ChatHistorySidebar = ({
                 </Popover>
               )}
               
+              {/* Toggle selection mode button */}
               <Button 
                 onClick={() => setIsSelectionMode(!isSelectionMode)}
                 className="justify-start gap-2 h-8 text-sm px-3"
@@ -171,8 +269,10 @@ const ChatHistorySidebar = ({
                 {isSelectionMode ? 'Cancel' : 'Select'}
               </Button>
               
+              {/* Selection mode controls */}
               {isSelectionMode && (
                 <>
+                  {/* Select/Deselect all button */}
                   <Button 
                     onClick={toggleSelectAll}
                     className="justify-start gap-2 h-8 text-sm px-3"
@@ -182,6 +282,7 @@ const ChatHistorySidebar = ({
                     {selectedChats.size === chatHistory.length ? 'Deselect All' : 'Select All'}
                   </Button>
                   
+                  {/* Delete selected button - only shown when chats are selected */}
                   {selectedChats.size > 0 && (
                     <Button 
                       onClick={handleDeleteSelected}
@@ -198,11 +299,13 @@ const ChatHistorySidebar = ({
           )}
         </SidebarHeader>
         
+        {/* Sidebar content with chat list */}
         <SidebarContent className="px-2 bg-white/90">
           <SidebarMenu>
             {chatHistory.map((chat) => (
               <SidebarMenuItem key={chat.id}>
                 <div className="flex items-center gap-2 group">
+                  {/* Checkbox for selection mode */}
                   {isSelectionMode && (
                     <input
                       type="checkbox"
@@ -212,6 +315,7 @@ const ChatHistorySidebar = ({
                     />
                   )}
                   
+                  {/* Main chat button */}
                   <SidebarMenuButton
                     onClick={() => handleChatSelect(chat.id)}
                     isActive={chat.id === currentChatId && !isSelectionMode}
@@ -221,6 +325,7 @@ const ChatHistorySidebar = ({
                     <span className="truncate text-sm">{chat.title}</span>
                   </SidebarMenuButton>
                   
+                  {/* Individual delete button - only shown on hover and not in selection mode */}
                   {!isSelectionMode && (
                     <Button
                       onClick={(e) => handleDeleteSingle(chat.id, e)}
@@ -237,6 +342,7 @@ const ChatHistorySidebar = ({
           </SidebarMenu>
         </SidebarContent>
         
+        {/* Sidebar footer with app branding */}
         <SidebarFooter className="p-4 bg-white/90 border-t border-border/30">
           <div className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground">
             <span className="text-2xl">🇯🇲</span>

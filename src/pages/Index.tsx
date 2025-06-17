@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -17,41 +18,111 @@ import { detectLanguage } from '@/utils/languageDetection';
 import { geminiService } from '@/services/geminiService';
 import { Toaster } from '@/components/ui/toaster';
 
+/**
+ * Interface defining the structure of a chat message
+ * This ensures type safety throughout the application
+ */
 interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
+  id: string;          // Unique identifier for each message
+  text: string;        // The actual message content
+  isUser: boolean;     // True if message is from user, false if from AI
+  timestamp: Date;     // When the message was created
 }
 
+/**
+ * Interface defining the structure of chat history entries
+ * Used for storing and retrieving previous conversations
+ */
 interface ChatHistory {
-  id: string;
-  title: string;
-  messages: Message[];
-  createdAt: Date;
+  id: string;          // Unique identifier for the chat session
+  title: string;       // Display title (usually first user message, truncated)
+  messages: Message[]; // Array of all messages in this chat
+  createdAt: Date;     // When this chat was created
 }
 
+/**
+ * Main Index component - The core chat interface
+ * This is the primary page component that handles all chat functionality
+ */
 const Index = () => {
+  // ============================
+  // STATE MANAGEMENT
+  // ============================
+  
+  /**
+   * Array of messages in the current chat conversation
+   * Each message contains id, text, isUser flag, and timestamp
+   */
   const [messages, setMessages] = useState<Message[]>([]);
+  
+  /**
+   * Boolean flag to show typing indicator when AI is generating response
+   * Provides visual feedback that the system is processing
+   */
   const [isTyping, setIsTyping] = useState(false);
+  
+  /**
+   * Controls whether to show suggestion chips on the welcome screen
+   * Hidden after user sends their first message
+   */
   const [showSuggestions, setShowSuggestions] = useState(true);
+  
+  /**
+   * Array storing all previous chat conversations
+   * Persisted in localStorage for cross-session memory
+   */
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  
+  /**
+   * ID of the currently active chat session
+   * Used to identify which chat is being viewed/edited
+   */
   const [currentChatId, setCurrentChatId] = useState<string>('');
+  
+  /**
+   * ID of message currently being typed out with animation
+   * Null when no typing animation is active
+   */
   const [typingMessageId, setTypingMessageId] = useState<string | null>(null);
+  
+  /**
+   * Reference to the bottom of the messages container
+   * Used for automatic scrolling when new messages arrive
+   */
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // ============================
+  // UTILITY FUNCTIONS
+  // ============================
+  
+  /**
+   * Smoothly scrolls the chat to the bottom to show latest messages
+   * Called when new messages are added or typing begins
+   */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  /**
+   * Effect hook to automatically scroll to bottom when messages change
+   * Ensures users always see the latest message without manual scrolling
+   */
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Load chat history from localStorage on component mount
+  // ============================
+  // CHAT HISTORY MANAGEMENT
+  // ============================
+  
+  /**
+   * Effect hook to load saved chat history from browser storage on app startup
+   * Also performs cleanup of chats older than 30 days to prevent storage bloat
+   */
   useEffect(() => {
     const savedHistory = localStorage.getItem('jamAI-chat-history');
     if (savedHistory) {
+      // Parse stored JSON and convert date strings back to Date objects
       const parsedHistory = JSON.parse(savedHistory).map((chat: any) => ({
         ...chat,
         createdAt: new Date(chat.createdAt),
@@ -71,7 +142,7 @@ const Index = () => {
       
       setChatHistory(filteredHistory);
       
-      // Save the cleaned history back to localStorage if any chats were removed
+      // Save cleaned history back to storage if any chats were removed
       if (filteredHistory.length !== parsedHistory.length) {
         localStorage.setItem('jamAI-chat-history', JSON.stringify(filteredHistory));
         console.log(`Cleaned up ${parsedHistory.length - filteredHistory.length} chats older than 30 days`);
@@ -79,9 +150,13 @@ const Index = () => {
     }
   }, []);
 
-  // Save current chat to history
+  /**
+   * Saves the current active chat to history storage
+   * Only saves if there are actual messages (more than just the greeting)
+   */
   const saveCurrentChatToHistory = () => {
     if (messages.length > 1 && currentChatId) {
+      // Create chat history entry with truncated title from first user message
       const chatToSave: ChatHistory = {
         id: currentChatId,
         title: messages.find(m => m.isUser)?.text.slice(0, 50) + '...' || 'New Chat',
@@ -89,6 +164,7 @@ const Index = () => {
         createdAt: new Date()
       };
 
+      // Remove any existing entry with same ID and add updated version to front
       const updatedHistory = chatHistory.filter(chat => chat.id !== currentChatId);
       updatedHistory.unshift(chatToSave);
       
@@ -99,12 +175,16 @@ const Index = () => {
     }
   };
 
+  /**
+   * Deletes specified chats from history
+   * @param chatIds - Array of chat IDs to delete
+   */
   const handleDeleteChats = (chatIds: string[]) => {
     const updatedHistory = chatHistory.filter(chat => !chatIds.includes(chat.id));
     setChatHistory(updatedHistory);
     localStorage.setItem('jamAI-chat-history', JSON.stringify(updatedHistory));
     
-    // If current chat is being deleted, start a new chat
+    // If the currently active chat is being deleted, start a fresh chat
     if (chatIds.includes(currentChatId)) {
       initializeChat();
     }
@@ -112,6 +192,10 @@ const Index = () => {
     console.log(`Deleted ${chatIds.length} chat(s)`);
   };
 
+  /**
+   * Clears all chat history from storage and memory
+   * Starts a fresh chat session after clearing
+   */
   const handleClearAllHistory = () => {
     setChatHistory([]);
     localStorage.removeItem('jamAI-chat-history');
@@ -122,52 +206,83 @@ const Index = () => {
     console.log('Cleared all chat history');
   };
 
+  // ============================
+  // CHAT SESSION MANAGEMENT
+  // ============================
+  
+  /**
+   * Initializes a new chat session with a greeting message
+   * Saves current chat before starting new one if it has content
+   */
   const initializeChat = () => {
-    // Save current chat before starting new one
+    // Save current chat before starting new one if it has messages
     if (messages.length > 1) {
       saveCurrentChatToHistory();
     }
 
+    // Generate unique ID for new chat session
     const newChatId = Date.now().toString();
     setCurrentChatId(newChatId);
 
+    // Create initial AI greeting message
     const initialMessage: Message = {
       id: '1',
-      text: getPatoisGreeting(),
+      text: getPatoisGreeting(), // Get random Jamaican Patois greeting
       isUser: false,
       timestamp: new Date()
     };
+    
+    // Reset chat state for new conversation
     setMessages([initialMessage]);
-    setShowSuggestions(true);
-    setIsTyping(false);
+    setShowSuggestions(true);  // Show suggestion chips again
+    setIsTyping(false);        // Stop any typing indicators
   };
 
+  /**
+   * Effect hook to send initial greeting when component first mounts
+   * This creates the welcome experience for new users
+   */
   useEffect(() => {
-    // Send initial greeting
     initializeChat();
   }, []);
 
+  /**
+   * Handler for starting a new chat session
+   * Triggered by "New Chat" button clicks
+   */
   const handleNewChat = () => {
     initializeChat();
   };
 
+  /**
+   * Loads a specific chat from history and makes it the active conversation
+   * @param chatId - The ID of the chat to load
+   */
   const loadChatFromHistory = (chatId: string) => {
     const chat = chatHistory.find(c => c.id === chatId);
     if (chat) {
       setCurrentChatId(chatId);
       setMessages(chat.messages);
-      setShowSuggestions(false);
-      setIsTyping(false);
+      setShowSuggestions(false); // Hide suggestions for loaded chats
+      setIsTyping(false);        // Ensure no typing indicators
     }
   };
 
+  // ============================
+  // MESSAGE HANDLING
+  // ============================
+  
+  /**
+   * Main handler for processing user messages and generating AI responses
+   * @param messageText - The text content of the user's message
+   */
   const handleSendMessage = async (messageText: string) => {
     console.log('Index: handleSendMessage called with:', messageText);
     
-    // Hide suggestions after first message
+    // Hide suggestion chips after first user message
     setShowSuggestions(false);
     
-    // Add user message
+    // Create and add user message to conversation
     const userMessage: Message = {
       id: Date.now().toString(),
       text: messageText,
@@ -177,21 +292,19 @@ const Index = () => {
 
     console.log('Index: Adding user message:', userMessage);
     setMessages(prev => [...prev, userMessage]);
-    setIsTyping(true);
+    setIsTyping(true); // Show typing indicator while AI processes
 
-    // Detect language of user message
+    // Detect if user wrote in Jamaican Patois to determine response style
     const isUserMessagePatois = detectLanguage(messageText) === 'patois';
     
     try {
-      let responseText: string;
-      
-      // Use Gemini as primary service (always configured now) and pass conversation history
+      // Generate AI response using Gemini service with conversation context
       const aiResponse = await geminiService.generateResponse(messageText, isUserMessagePatois, messages);
-      responseText = aiResponse.message;
+      const responseText = aiResponse.message;
 
       console.log('Index: Got AI response:', responseText);
 
-      // Create AI response message with typing animation
+      // Add AI response with slight delay for natural feel, then start typing animation
       setTimeout(() => {
         const aiResponseId = (Date.now() + 1).toString();
         const aiResponse: Message = {
@@ -203,14 +316,14 @@ const Index = () => {
 
         console.log('Index: Adding AI response:', aiResponse);
         setMessages(prev => [...prev, aiResponse]);
-        setTypingMessageId(aiResponseId);
-        setIsTyping(false);
-      }, 800 + Math.random() * 1000);
+        setTypingMessageId(aiResponseId); // Start typing animation for this message
+        setIsTyping(false); // Hide general typing indicator
+      }, 800 + Math.random() * 1000); // Random delay for natural variation
       
     } catch (error) {
       console.error('Error generating response:', error);
       
-      // Fallback response
+      // Show fallback response if AI service fails
       setTimeout(() => {
         const fallbackResponseId = (Date.now() + 1).toString();
         const fallbackResponse: Message = {
@@ -229,31 +342,51 @@ const Index = () => {
     }
   };
 
+  /**
+   * Called when a typing animation completes
+   * @param messageId - ID of the message that finished typing
+   */
   const handleTypingComplete = (messageId: string) => {
     if (typingMessageId === messageId) {
-      setTypingMessageId(null);
+      setTypingMessageId(null); // Clear typing animation state
     }
   };
 
+  /**
+   * Handler for suggestion chip clicks
+   * @param suggestionText - The text of the clicked suggestion
+   */
   const handleSuggestionClick = (suggestionText: string) => {
     handleSendMessage(suggestionText);
   };
 
-  // Save chat when messages change (except initial load)
+  // ============================
+  // AUTO-SAVE FUNCTIONALITY
+  // ============================
+  
+  /**
+   * Effect hook to automatically save chat when messages change
+   * Uses debouncing to avoid excessive saves during rapid message exchanges
+   */
   useEffect(() => {
     if (messages.length > 1 && currentChatId) {
-      // Debounce saving to avoid too frequent saves
+      // Debounce saving to avoid too frequent localStorage writes
       const timeoutId = setTimeout(() => {
         saveCurrentChatToHistory();
-      }, 2000);
+      }, 2000); // Wait 2 seconds after last change before saving
 
-      return () => clearTimeout(timeoutId);
+      return () => clearTimeout(timeoutId); // Clean up timeout on next change
     }
   }, [messages]);
 
+  // ============================
+  // RENDER
+  // ============================
+  
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background flex w-full">
+        {/* Left sidebar with chat history and navigation */}
         <ChatHistorySidebar
           chatHistory={chatHistory}
           currentChatId={currentChatId}
@@ -265,12 +398,14 @@ const Index = () => {
         
         <SidebarInset className="flex-1">
           <div className="flex flex-col min-h-screen">
-            {/* Modern Header with mobile menu */}
+            {/* Header with app branding and mobile menu toggle */}
             <header className="glass-effect sticky top-0 z-50 border-b border-border/30">
               <div className="max-w-4xl mx-auto px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
+                    {/* Mobile sidebar trigger */}
                     <SidebarTrigger />
+                    {/* App logo and title - clickable to start new chat */}
                     <button 
                       onClick={handleNewChat}
                       className="flex items-center gap-3 hover:scale-105 transition-transform duration-200 cursor-pointer"
@@ -284,6 +419,7 @@ const Index = () => {
                       </h1>
                     </button>
                   </div>
+                  {/* AI service indicator */}
                   <div className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
                     Gemini AI
                   </div>
@@ -291,11 +427,12 @@ const Index = () => {
               </div>
             </header>
 
-            {/* Main Chat Area */}
+            {/* Main chat content area */}
             <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
-              {/* Welcome area with suggestions */}
+              {/* Welcome screen with suggestions (shown only for new chats) */}
               {showSuggestions && messages.length === 1 && (
                 <div className="flex-1 flex flex-col justify-center px-6 pb-8 pt-12">
+                  {/* Large welcome banner */}
                   <div className="text-center mb-12">
                     <div className="flex justify-center mb-6 relative">
                       <div className="relative">
@@ -314,12 +451,12 @@ const Index = () => {
                     </p>
                   </div>
                   
-                  {/* Suggestions above greeting */}
+                  {/* Suggestion chips for quick start */}
                   <div className="mb-8">
                     <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
                   </div>
                   
-                  {/* AI Greeting - Left aligned */}
+                  {/* AI greeting message displayed prominently */}
                   <div className="max-w-2xl">
                     <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 modern-shadow border border-secondary/20">
                       <div className="flex gap-4 items-start">
@@ -339,12 +476,13 @@ const Index = () => {
                 </div>
               )}
 
-              {/* Messages area */}
+              {/* Messages display area */}
               <div className="flex-1 px-6">
-                {/* Show messages only if suggestions are hidden or there are more messages */}
+                {/* Show messages only if suggestions are hidden or there are multiple messages */}
                 {(!showSuggestions || messages.length > 1) && (
                   <div className="space-y-6 py-6">
                     {messages.map((message) => (
+                      // Check if this message should use typing animation
                       typingMessageId === message.id ? (
                         <TypingMessage
                           key={message.id}
@@ -354,6 +492,7 @@ const Index = () => {
                           onComplete={() => handleTypingComplete(message.id)}
                         />
                       ) : (
+                        // Regular message display for completed messages
                         <ChatMessage
                           key={message.id}
                           message={message.text}
@@ -362,13 +501,15 @@ const Index = () => {
                         />
                       )
                     ))}
+                    {/* Show typing indicator when AI is processing but before response appears */}
                     {isTyping && <TypingIndicator />}
                   </div>
                 )}
+                {/* Invisible element used for auto-scrolling to bottom */}
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Modern Input area */}
+              {/* Message input area at bottom */}
               <div className="p-6">
                 <div className="max-w-4xl mx-auto">
                   <ChatInput onSendMessage={handleSendMessage} disabled={isTyping} />
@@ -381,6 +522,7 @@ const Index = () => {
           </div>
         </SidebarInset>
       </div>
+      {/* Toast notification system for user feedback */}
       <Toaster />
     </SidebarProvider>
   );
