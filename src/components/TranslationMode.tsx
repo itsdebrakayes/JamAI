@@ -15,16 +15,17 @@ interface Message {
 interface TranslationModeProps {
   messages: Message[];
   onClose: () => void;
+  chatLanguage?: 'patois' | 'english'; // Add language context
 }
 
-const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
+const TranslationMode = ({ messages, onClose, chatLanguage = 'patois' }: TranslationModeProps) => {
   const [translatedMessages, setTranslatedMessages] = useState<Message[]>([]);
   const [isTranslating, setIsTranslating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     translateMessages();
-  }, [messages]);
+  }, [messages, chatLanguage]);
 
   const translateMessages = async () => {
     setIsTranslating(true);
@@ -33,10 +34,19 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
     for (const message of messages) {
       if (!message.isUser) {
         try {
-          const englishText = await geminiService.translateToEnglish(message.text);
+          let translatedText: string;
+          
+          if (chatLanguage === 'patois') {
+            // Translate from Patois to English
+            translatedText = await geminiService.translateToEnglish(message.text);
+          } else {
+            // Translate from English to Patois
+            translatedText = await translateToPatois(message.text);
+          }
+          
           translated.push({
             ...message,
-            text: englishText
+            text: translatedText
           });
         } catch (error) {
           console.error('Translation error:', error);
@@ -54,6 +64,25 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
     setIsTranslating(false);
   };
 
+  const translateToPatois = async (englishText: string): Promise<string> => {
+    try {
+      const model = geminiService['genAI'].getGenerativeModel({ model: "gemini-1.5-flash" });
+      
+      const prompt = `Translate the following English text to natural Jamaican Patois. Keep the meaning and tone intact:
+
+"${englishText}"
+
+Provide only the Patois translation, nothing else.`;
+      
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      return response.text() || 'Translation not available.';
+    } catch (error) {
+      console.error('Patois Translation Error:', error);
+      return 'Sorry, translation is not available right now.';
+    }
+  };
+
   const copyToClipboard = async (text: string, messageId: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -64,6 +93,11 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
     }
   };
 
+  const originalLanguage = chatLanguage === 'patois' ? 'Patois' : 'English';
+  const translatedLanguage = chatLanguage === 'patois' ? 'English' : 'Patois';
+  const originalFlag = chatLanguage === 'patois' ? '🇯🇲' : '🇺🇸';
+  const translatedFlag = chatLanguage === 'patois' ? '🇺🇸' : '🇯🇲';
+
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col">
       {/* Header */}
@@ -72,7 +106,7 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
           <Languages className="w-6 h-6 text-primary" />
           <h2 className="text-xl font-semibold">Translation Mode</h2>
           <span className="text-sm text-muted-foreground">
-            Side-by-side Patois & English
+            Side-by-side {originalLanguage} & {translatedLanguage}
           </span>
         </div>
         <Button onClick={onClose} variant="ghost" size="sm">
@@ -82,12 +116,12 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
 
       {/* Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Original Patois */}
+        {/* Original Language */}
         <div className="flex-1 border-r border-border">
           <div className="p-4 border-b border-border bg-muted/30">
             <h3 className="font-medium flex items-center gap-2">
-              <span className="text-lg">🇯🇲</span>
-              Original (Patois)
+              <span className="text-lg">{originalFlag}</span>
+              Original ({originalLanguage})
             </h3>
           </div>
           <div className="p-4 overflow-y-auto h-full space-y-4">
@@ -117,12 +151,12 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
           </div>
         </div>
 
-        {/* English Translation */}
+        {/* Translated Language */}
         <div className="flex-1">
           <div className="p-4 border-b border-border bg-muted/30">
             <h3 className="font-medium flex items-center gap-2">
-              <span className="text-lg">🇺🇸</span>
-              English Translation
+              <span className="text-lg">{translatedFlag}</span>
+              {translatedLanguage} Translation
               {isTranslating && (
                 <span className="text-xs text-muted-foreground animate-pulse">
                   Translating...

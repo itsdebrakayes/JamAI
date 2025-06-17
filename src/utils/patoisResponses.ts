@@ -1,4 +1,5 @@
 
+
 // Jamaican Patois responses for the AI
 export const patoisGreetings = [
   "Wah gwaan! Mi deh yah fi help yuh out today!",
@@ -48,18 +49,84 @@ export const getPatoisFarewell = (): string => {
   return patoisFarewells[Math.floor(Math.random() * patoisFarewells.length)];
 };
 
+// Patois quiz questions and answers
+const quizQuestions = [
+  {
+    question: "Wah dis mean: 'Wah gwaan'?",
+    options: ["A) How are you?", "B) Where you going?", "C) What's happening?"],
+    answer: "C) What's happening?"
+  },
+  {
+    question: "How yuh seh 'I am going' inna Patois?",
+    options: ["A) Mi a go", "B) Mi going", "C) Mi gone"],
+    answer: "A) Mi a go"
+  },
+  {
+    question: "Wah 'big up' mean?",
+    options: ["A) Get bigger", "B) Respect/greetings", "C) Stand up"],
+    answer: "B) Respect/greetings"
+  },
+  {
+    question: "How yuh seh 'something' inna Patois?",
+    options: ["A) Someting", "B) Sumting", "C) Sometin"],
+    answer: "A) Someting"
+  },
+  {
+    question: "Wah 'cho' express?",
+    options: ["A) Happiness", "B) Frustration/annoyance", "C) Surprise"],
+    answer: "B) Frustration/annoyance"
+  },
+  {
+    question: "How yuh seh 'beautiful' inna Patois?",
+    options: ["A) Pretty", "B) Nice", "C) Buff"],
+    answer: "C) Buff"
+  },
+  {
+    question: "Wah 'bredrin' mean?",
+    options: ["A) Brother/friend", "B) Bread", "C) Breakfast"],
+    answer: "A) Brother/friend"
+  },
+  {
+    question: "How yuh seh 'very' inna Patois?",
+    options: ["A) Too much", "B) Whole heap", "C) Nuff"],
+    answer: "C) Nuff"
+  }
+];
+
+export const generatePatoisQuiz = (): string => {
+  const randomQuestion = quizQuestions[Math.floor(Math.random() * quizQuestions.length)];
+  
+  return `🧠 Patois Quiz Time! 🇯🇲\n\n${randomQuestion.question}\n\n${randomQuestion.options.join('\n')}\n\nTink bout it and tell mi yuh answer! Reply wid A, B, or C.`;
+};
+
+export const checkQuizAnswer = (userAnswer: string, lastQuestion?: string): string => {
+  if (!lastQuestion) return "Mi nuh have no question fi check right now!";
+  
+  const question = quizQuestions.find(q => lastQuestion.includes(q.question));
+  if (!question) return "Mi cyaan find dat question!";
+  
+  const answer = userAnswer.toUpperCase().trim();
+  const correctLetter = question.answer.charAt(0);
+  
+  if (answer === correctLetter) {
+    return `🎉 Correct! ${question.answer}\n\nBig up yuself! Yuh know yuh Patois! Want another question?`;
+  } else {
+    return `❌ Not quite! Di right answer is ${question.answer}\n\nNo worries, keep practicing! Want fi try another one?`;
+  }
+};
+
 export const generatePatoisResponse = (userMessage: string): string => {
   const lowerMessage = userMessage.toLowerCase();
   
-  // Check for suggestion-based responses
+  // Check for suggestion-based responses (exclude quiz)
   for (const suggestion of chatSuggestionsData.suggestions) {
-    if (lowerMessage.includes(suggestion.text.toLowerCase()) || 
+    if (suggestion.id !== 'quiz' && (
+        lowerMessage.includes(suggestion.text.toLowerCase()) || 
         (suggestion.id === 'patois' && (lowerMessage.includes('patois') || lowerMessage.includes('teach me'))) ||
         (suggestion.id === 'recipe' && (lowerMessage.includes('recipe') || lowerMessage.includes('cook'))) ||
         (suggestion.id === 'culture' && lowerMessage.includes('culture')) ||
         (suggestion.id === 'music' && lowerMessage.includes('music')) ||
-        (suggestion.id === 'places' && (lowerMessage.includes('places') || lowerMessage.includes('visit'))) ||
-        (suggestion.id === 'quiz' && (lowerMessage.includes('quiz') || lowerMessage.includes('test') || lowerMessage.includes('question')))) {
+        (suggestion.id === 'places' && (lowerMessage.includes('places') || lowerMessage.includes('visit'))))) {
       
       const randomIndex = Math.floor(Math.random() * suggestion.responses.length);
       return suggestion.responses[randomIndex];
@@ -78,6 +145,11 @@ export const generatePatoisResponse = (userMessage: string): string => {
   // Farewells
   if (lowerMessage.includes('bye') || lowerMessage.includes('goodbye') || lowerMessage.includes('see you')) {
     return getPatoisFarewell();
+  }
+  
+  // Quiz functionality - generate quiz questions
+  if (lowerMessage.includes('quiz') || lowerMessage.includes('test') || lowerMessage.includes('question')) {
+    return generatePatoisQuiz();
   }
   
   // Questions about Jamaica
@@ -103,3 +175,4 @@ export const generatePatoisResponse = (userMessage: string): string => {
   // Default responses
   return getRandomPatoisResponse();
 };
+
