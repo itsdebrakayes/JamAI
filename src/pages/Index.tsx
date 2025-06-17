@@ -57,7 +57,22 @@ const Index = () => {
           timestamp: new Date(msg.timestamp)
         }))
       }));
-      setChatHistory(parsedHistory);
+      
+      // Clean up chats older than 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const filteredHistory = parsedHistory.filter((chat: ChatHistory) => 
+        chat.createdAt > thirtyDaysAgo
+      );
+      
+      setChatHistory(filteredHistory);
+      
+      // Save the cleaned history back to localStorage if any chats were removed
+      if (filteredHistory.length !== parsedHistory.length) {
+        localStorage.setItem('jamAI-chat-history', JSON.stringify(filteredHistory));
+        console.log(`Cleaned up ${parsedHistory.length - filteredHistory.length} chats older than 30 days`);
+      }
     }
   }, []);
 
@@ -79,6 +94,29 @@ const Index = () => {
       setChatHistory(limitedHistory);
       localStorage.setItem('jamAI-chat-history', JSON.stringify(limitedHistory));
     }
+  };
+
+  const handleDeleteChats = (chatIds: string[]) => {
+    const updatedHistory = chatHistory.filter(chat => !chatIds.includes(chat.id));
+    setChatHistory(updatedHistory);
+    localStorage.setItem('jamAI-chat-history', JSON.stringify(updatedHistory));
+    
+    // If current chat is being deleted, start a new chat
+    if (chatIds.includes(currentChatId)) {
+      initializeChat();
+    }
+    
+    console.log(`Deleted ${chatIds.length} chat(s)`);
+  };
+
+  const handleClearAllHistory = () => {
+    setChatHistory([]);
+    localStorage.removeItem('jamAI-chat-history');
+    
+    // Start a new chat since all history is cleared
+    initializeChat();
+    
+    console.log('Cleared all chat history');
   };
 
   const initializeChat = () => {
@@ -208,6 +246,8 @@ const Index = () => {
           currentChatId={currentChatId}
           onNewChat={handleNewChat}
           onLoadChat={loadChatFromHistory}
+          onDeleteChats={handleDeleteChats}
+          onClearAllHistory={handleClearAllHistory}
         />
         
         <SidebarInset className="flex-1">
