@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -334,7 +335,7 @@ const Index = () => {
                     onClick={handleOpenChatSummary}
                     variant="ghost"
                     size="sm"
-                    className="group relative overflow-hidden bg-gradient-to-r from-blue-400 via-blue-300 to-blue-500 hover:from-blue-500 hover:via-blue-400 hover:to-blue-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
+                    className="group relative overflow-hidden bg-gradient-to-r from-green-400 via-green-300 to-green-500 hover:from-green-500 hover:via-green-400 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
                   >
                     <div className="flex items-center gap-2 relative z-10">
                       <FileText className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
