@@ -4,6 +4,7 @@ import { ElevenLabsClient } from 'elevenlabs';
 class ElevenLabsService {
   private client: ElevenLabsClient | null = null;
   private apiKey: string = '';
+  private currentAudio: HTMLAudioElement | null = null;
 
   constructor() {
     this.apiKey = 'sk_4fcefa57080e6d06ec2c4239d852eb307dd1c0fcf07bc4a9';
@@ -16,16 +17,22 @@ class ElevenLabsService {
       throw new Error('Client not initialized or empty text');
     }
 
+    // Stop any currently playing audio
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio = null;
+    }
+
     try {
       console.log('Starting ElevenLabs speech synthesis for:', text.substring(0, 50) + '...');
       
       const audio = await this.client.textToSpeech.convert(voiceId, {
         text,
-        model_id: 'eleven_turbo_v2_5',
+        model_id: 'eleven_multilingual_v2',
         voice_settings: {
-          stability: 0.5,
+          stability: 0.7,
           similarity_boost: 0.8,
-          style: 0.0,
+          style: 0.2,
           use_speaker_boost: true
         }
       });
@@ -48,76 +55,59 @@ class ElevenLabsService {
         offset += chunk.length;
       }
 
-      console.log('Audio data length:', audioData.length);
+      console.log('Audio data received, length:', audioData.length);
 
-      // Create audio element
+      // Create audio element with proper settings
       const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioElement = new Audio(audioUrl);
       
-      // Set volume and ensure it's audible
-      audioElement.volume = 1.0;
+      // Configure audio for natural playback
+      audioElement.volume = 0.8;
+      audioElement.playbackRate = 1.0; // Normal human speech rate
       audioElement.preload = 'auto';
       
-      // Return a promise that resolves with the audio element
-      return new Promise((resolve, reject) => {
-        const cleanup = () => {
-          URL.revokeObjectURL(audioUrl);
-        };
-
-        audioElement.addEventListener('ended', () => {
-          console.log('Audio playback completed');
-          cleanup();
-        });
-
-        audioElement.addEventListener('error', (e) => {
-          console.error('Audio element error:', e);
-          cleanup();
-          reject(new Error('Audio playback failed'));
-        });
-
-        // Try to play the audio
-        audioElement.play()
-          .then(() => {
-            console.log('ElevenLabs speech synthesis playback started successfully');
-            resolve(audioElement);
-          })
-          .catch((playError) => {
-            console.error('Audio playback failed:', playError);
-            
-            // Try user interaction to enable autoplay
-            const handleUserInteraction = () => {
-              audioElement.play()
-                .then(() => {
-                  console.log('Audio playback started after user interaction');
-                  document.removeEventListener('click', handleUserInteraction);
-                  document.removeEventListener('keydown', handleUserInteraction);
-                  resolve(audioElement);
-                })
-                .catch((retryError) => {
-                  console.error('Audio playback failed after user interaction:', retryError);
-                  cleanup();
-                  reject(new Error('Failed to play audio - check browser autoplay settings'));
-                });
-            };
-
-            // Add event listeners for user interaction
-            document.addEventListener('click', handleUserInteraction);
-            document.addEventListener('keydown', handleUserInteraction);
-            
-            // Show a message to user about clicking to enable audio
-            console.log('Audio requires user interaction - click anywhere to play');
-            
-            // Fallback: resolve anyway but audio won't play until interaction
-            setTimeout(() => {
-              resolve(audioElement);
-            }, 1000);
-          });
+      // Store reference to current audio
+      this.currentAudio = audioElement;
+      
+      // Cleanup when audio ends
+      audioElement.addEventListener('ended', () => {
+        console.log('Audio playback completed');
+        URL.revokeObjectURL(audioUrl);
+        if (this.currentAudio === audioElement) {
+          this.currentAudio = null;
+        }
       });
+
+      audioElement.addEventListener('error', (e) => {
+        console.error('Audio element error:', e);
+        URL.revokeObjectURL(audioUrl);
+        if (this.currentAudio === audioElement) {
+          this.currentAudio = null;
+        }
+      });
+
+      // Try to play immediately
+      try {
+        await audioElement.play();
+        console.log('ElevenLabs speech synthesis playback started successfully');
+        return audioElement;
+      } catch (playError) {
+        console.log('Autoplay blocked, audio ready but waiting for user interaction');
+        return audioElement;
+      }
       
     } catch (error) {
       console.error('ElevenLabs text-to-speech error:', error);
       throw new Error('Failed to synthesize speech');
+    }
+  }
+
+  stopCurrentAudio(): void {
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio.currentTime = 0;
+      this.currentAudio = null;
     }
   }
 
