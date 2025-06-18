@@ -20,6 +20,13 @@ interface LocationCoordinates {
   lng: number;
 }
 
+// Extend the global Window interface to include google
+declare global {
+  interface Window {
+    google: typeof google;
+  }
+}
+
 export class GoogleMapsService {
   private apiKey: string = 'AIzaSyBRXbxox2Sz4zDgmuvJGyoDIAJ3v2LQRt0';
   private placesService: google.maps.places.PlacesService | null = null;
@@ -33,14 +40,16 @@ export class GoogleMapsService {
    * Initialize Google Maps API
    */
   private async initializeGoogleMaps() {
-    if (typeof google === 'undefined') {
+    if (typeof window !== 'undefined' && !window.google) {
       await this.loadGoogleMapsScript();
     }
     
     // Initialize services
-    const map = new google.maps.Map(document.createElement('div'));
-    this.placesService = new google.maps.places.PlacesService(map);
-    this.geocoder = new google.maps.Geocoder();
+    if (window.google) {
+      const map = new google.maps.Map(document.createElement('div'));
+      this.placesService = new google.maps.places.PlacesService(map);
+      this.geocoder = new google.maps.Geocoder();
+    }
   }
 
   /**
@@ -48,13 +57,13 @@ export class GoogleMapsService {
    */
   private loadGoogleMapsScript(): Promise<void> {
     return new Promise((resolve, reject) => {
-      if (typeof google !== 'undefined') {
+      if (window.google) {
         resolve();
         return;
       }
 
       const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places`;
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${this.apiKey}&libraries=places&loading=async`;
       script.async = true;
       script.defer = true;
       script.onload = () => resolve();
@@ -95,6 +104,12 @@ export class GoogleMapsService {
   async searchNearbyPlaces(query: string): Promise<PlaceResult[]> {
     try {
       await this.initializeGoogleMaps();
+      
+      if (!window.google || !this.placesService) {
+        console.warn('Google Maps API not available');
+        return [];
+      }
+      
       const location = await this.getCurrentLocation();
 
       return new Promise((resolve, reject) => {
