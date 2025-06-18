@@ -48,18 +48,47 @@ class ElevenLabsService {
         offset += chunk.length;
       }
 
+      console.log('Audio data length:', audioData.length);
+
       // Create audio element and play
       const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioElement = new Audio(audioUrl);
       
-      await audioElement.play();
-      console.log('ElevenLabs speech synthesis completed');
+      // Set volume and ensure it's audible
+      audioElement.volume = 1.0;
+      audioElement.preload = 'auto';
       
-      // Clean up
+      // Handle playback with proper error handling
+      try {
+        await audioElement.play();
+        console.log('ElevenLabs speech synthesis playback started successfully');
+      } catch (playError) {
+        console.error('Audio playback failed:', playError);
+        // Try to play again after a brief delay (sometimes helps with autoplay restrictions)
+        setTimeout(async () => {
+          try {
+            await audioElement.play();
+            console.log('ElevenLabs speech synthesis playback started on retry');
+          } catch (retryError) {
+            console.error('Audio playback failed on retry:', retryError);
+            throw new Error('Failed to play audio - check browser autoplay settings');
+          }
+        }, 100);
+      }
+      
+      // Clean up when audio finishes
       audioElement.addEventListener('ended', () => {
         URL.revokeObjectURL(audioUrl);
+        console.log('Audio playback completed and resources cleaned up');
       });
+
+      // Also clean up on error
+      audioElement.addEventListener('error', (e) => {
+        console.error('Audio element error:', e);
+        URL.revokeObjectURL(audioUrl);
+      });
+      
     } catch (error) {
       console.error('ElevenLabs text-to-speech error:', error);
       throw new Error('Failed to synthesize speech');
