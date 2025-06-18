@@ -1,13 +1,13 @@
 
-import { ElevenLabsApi, play } from '@11labs/client';
+import { ElevenLabs } from '@11labs/client';
 
 class ElevenLabsService {
-  private client: ElevenLabsApi | null = null;
+  private client: ElevenLabs | null = null;
   private apiKey: string = '';
 
   constructor() {
     this.apiKey = 'sk_4fcefa57080e6d06ec2c4239d852eb307dd1c0fcf07bc4a9';
-    this.client = new ElevenLabsApi({ apiKey: this.apiKey });
+    this.client = new ElevenLabs({ apiKey: this.apiKey });
   }
 
   async textToSpeech(text: string, voiceId: string = '9BWtsMINqrJLrRacOk9x'): Promise<void> {
@@ -30,9 +30,18 @@ class ElevenLabsService {
         }
       });
 
-      // Play the audio
-      await play(audio);
+      // Create audio element and play
+      const audioBlob = new Blob([audio], { type: 'audio/mpeg' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audioElement = new Audio(audioUrl);
+      
+      await audioElement.play();
       console.log('ElevenLabs speech synthesis completed');
+      
+      // Clean up
+      audioElement.addEventListener('ended', () => {
+        URL.revokeObjectURL(audioUrl);
+      });
     } catch (error) {
       console.error('ElevenLabs text-to-speech error:', error);
       throw new Error('Failed to synthesize speech');
