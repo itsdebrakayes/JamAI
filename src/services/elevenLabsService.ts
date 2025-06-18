@@ -30,17 +30,15 @@ class ElevenLabsService {
         }
       });
 
-      // Convert the Readable stream to ArrayBuffer using browser APIs
-      const reader = audio.getReader();
+      // Handle Node.js Readable stream properly
       const chunks: Uint8Array[] = [];
       
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        chunks.push(value);
+      // Use async iterator to read from the Readable stream
+      for await (const chunk of audio) {
+        chunks.push(new Uint8Array(chunk));
       }
       
-      // Calculate total length and create single Uint8Array
+      // Combine all chunks into a single Uint8Array
       const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
       const audioData = new Uint8Array(totalLength);
       let offset = 0;
