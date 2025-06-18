@@ -1,6 +1,4 @@
 
-
-
 import { ElevenLabsClient } from 'elevenlabs';
 
 class ElevenLabsService {
@@ -32,15 +30,28 @@ class ElevenLabsService {
         }
       });
 
-      // Convert the Readable stream to buffer
-      const chunks: Buffer[] = [];
-      for await (const chunk of audio) {
-        chunks.push(chunk);
+      // Convert the Readable stream to ArrayBuffer using browser APIs
+      const reader = audio.getReader();
+      const chunks: Uint8Array[] = [];
+      
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
       }
-      const audioBuffer = Buffer.concat(chunks);
+      
+      // Calculate total length and create single Uint8Array
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const audioData = new Uint8Array(totalLength);
+      let offset = 0;
+      
+      for (const chunk of chunks) {
+        audioData.set(chunk, offset);
+        offset += chunk.length;
+      }
 
       // Create audio element and play
-      const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
+      const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioElement = new Audio(audioUrl);
       
@@ -63,5 +74,3 @@ class ElevenLabsService {
 }
 
 export const elevenLabsService = new ElevenLabsService();
-
-
