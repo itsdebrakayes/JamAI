@@ -1,13 +1,14 @@
 
-import { ElevenLabs } from '@11labs/client';
+
+import { ElevenLabsClient } from '@11labs/client';
 
 class ElevenLabsService {
-  private client: ElevenLabs | null = null;
+  private client: ElevenLabsClient | null = null;
   private apiKey: string = '';
 
   constructor() {
     this.apiKey = 'sk_4fcefa57080e6d06ec2c4239d852eb307dd1c0fcf07bc4a9';
-    this.client = new ElevenLabs({ apiKey: this.apiKey });
+    this.client = new ElevenLabsClient({ apiKey: this.apiKey });
   }
 
   async textToSpeech(text: string, voiceId: string = '9BWtsMINqrJLrRacOk9x'): Promise<void> {
@@ -54,3 +55,4 @@ class ElevenLabsService {
 }
 
 export const elevenLabsService = new ElevenLabsService();
+
