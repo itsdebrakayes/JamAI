@@ -25,10 +25,17 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
 
     try {
       console.log('Starting speech synthesis...');
+      setIsSpeaking(true); // Set this immediately so buttons appear
+      setIsPaused(false);
+      
       const audioElement = await elevenLabsService.textToSpeech(text, voiceId);
       audioRef.current = audioElement;
       
-      // Set up event listeners before attempting to play
+      // Ensure maximum volume
+      audioElement.volume = 1.0;
+      console.log('Audio element volume set to:', audioElement.volume);
+      
+      // Set up event listeners
       audioElement.addEventListener('ended', () => {
         console.log('Audio ended - updating state');
         setIsSpeaking(false);
@@ -46,7 +53,6 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
       audioElement.addEventListener('play', () => {
         console.log('Audio playing - updating state');
         setIsPaused(false);
-        setIsSpeaking(true);
       });
 
       audioElement.addEventListener('error', (e) => {
@@ -56,29 +62,30 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
         audioRef.current = null;
       });
 
-      // Try to play the audio
-      console.log('Attempting to play audio...');
+      // Try to play the audio with user interaction fallback
+      console.log('Attempting to play audio at volume:', audioElement.volume);
       try {
         await audioElement.play();
-        console.log('Audio play() resolved successfully');
-        setIsSpeaking(true);
-        setIsPaused(false);
+        console.log('Audio play() resolved successfully at volume:', audioElement.volume);
       } catch (playError) {
-        console.error('Audio play failed:', playError);
-        // If autoplay fails, still set the state so user can manually trigger
-        setIsSpeaking(true);
-        setIsPaused(false);
+        console.error('Audio play failed, setting up click handler:', playError);
         
-        // Try clicking on the document to enable audio context
-        const playWithUserGesture = () => {
-          audioElement.play().then(() => {
-            console.log('Audio started after user gesture');
-          }).catch(console.error);
-          document.removeEventListener('click', playWithUserGesture);
+        // Create a one-time click handler to enable audio
+        const enableAudio = async () => {
+          try {
+            await audioElement.play();
+            console.log('Audio started after user interaction at volume:', audioElement.volume);
+            document.removeEventListener('click', enableAudio);
+            document.removeEventListener('touchstart', enableAudio);
+          } catch (retryError) {
+            console.error('Audio still failed after user interaction:', retryError);
+          }
         };
-        document.addEventListener('click', playWithUserGesture);
         
-        console.log('Audio ready but may need user interaction - click anywhere to start');
+        document.addEventListener('click', enableAudio, { once: true });
+        document.addEventListener('touchstart', enableAudio, { once: true });
+        
+        console.log('Audio ready but needs user interaction - click anywhere to start playback');
       }
 
     } catch (error) {

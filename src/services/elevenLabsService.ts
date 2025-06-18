@@ -31,8 +31,8 @@ class ElevenLabsService {
         model_id: 'eleven_multilingual_v2',
         voice_settings: {
           stability: 0.5,
-          similarity_boost: 0.75,
-          style: 0.0,
+          similarity_boost: 0.8,
+          style: 0.2,
           use_speaker_boost: true
         }
       });
@@ -57,16 +57,22 @@ class ElevenLabsService {
 
       console.log('Audio data received, length:', audioData.length);
 
-      // Create audio element with proper settings
+      // Create audio element with maximum volume settings
       const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioElement = new Audio(audioUrl);
       
-      // Configure audio for maximum compatibility and volume
-      audioElement.volume = 1.0;
-      audioElement.playbackRate = 0.9; // Slightly slower for natural speech
-      audioElement.preload = 'metadata';
+      // Configure audio for maximum volume and compatibility
+      audioElement.volume = 1.0; // Maximum volume
+      audioElement.playbackRate = 0.85; // Natural speech pace
+      audioElement.preload = 'auto';
       audioElement.crossOrigin = 'anonymous';
+      
+      // Force audio context to be active
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+      }
       
       // Store reference to current audio
       this.currentAudio = audioElement;
@@ -77,15 +83,19 @@ class ElevenLabsService {
       });
 
       audioElement.addEventListener('canplay', () => {
-        console.log('Audio can start playing');
+        console.log('Audio can start playing - volume:', audioElement.volume);
+      });
+
+      audioElement.addEventListener('volumechange', () => {
+        console.log('Audio volume changed to:', audioElement.volume);
       });
 
       audioElement.addEventListener('play', () => {
-        console.log('Audio play event fired');
+        console.log('Audio play event fired - volume:', audioElement.volume);
       });
 
       audioElement.addEventListener('playing', () => {
-        console.log('Audio is actually playing');
+        console.log('Audio is actually playing at volume:', audioElement.volume);
       });
 
       audioElement.addEventListener('pause', () => {
@@ -109,9 +119,25 @@ class ElevenLabsService {
         }
       });
 
-      // Return the audio element - don't auto-play here
-      console.log('Audio element created successfully, ready for manual play');
-      return audioElement;
+      // Wait for audio to be ready
+      return new Promise((resolve, reject) => {
+        audioElement.addEventListener('canplaythrough', () => {
+          console.log('Audio is ready to play through at volume:', audioElement.volume);
+          resolve(audioElement);
+        });
+        
+        audioElement.addEventListener('error', () => {
+          reject(new Error('Failed to load audio'));
+        });
+        
+        // Fallback timeout
+        setTimeout(() => {
+          if (audioElement.readyState >= 2) { // HAVE_CURRENT_DATA
+            console.log('Audio ready via timeout at volume:', audioElement.volume);
+            resolve(audioElement);
+          }
+        }, 2000);
+      });
       
     } catch (error) {
       console.error('ElevenLabs text-to-speech error:', error);
