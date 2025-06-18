@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import SpeakButton from './SpeakButton';
 
 interface ChatMessageProps {
   message: string;
@@ -77,14 +78,33 @@ const ChatMessage = ({ message, isUser, timestamp }: ChatMessageProps) => {
                 </button>
               )}
             </div>
-            <div className={cn(
-              "mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200",
-              isUser ? "text-right" : "text-left"
-            )}>
-              <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg">
-                {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
+
+            {/* Speaker button for AI messages - positioned like ChatGPT */}
+            {!isUser && (
+              <div className="flex items-center justify-between mt-2">
+                <div className={cn(
+                  "opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                )}>
+                  <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg">
+                    {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <SpeakButton text={message} />
+                </div>
+              </div>
+            )}
+
+            {/* Timestamp for user messages */}
+            {isUser && (
+              <div className={cn(
+                "mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-right"
+              )}>
+                <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-lg">
+                  {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
+            )}
           </div>
           {isUser && (
             <div className="flex-shrink-0 order-2">
