@@ -33,18 +33,31 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
     const loadVoices = () => {
       const availableVoices = speechSynthesis.getVoices();
       setVoices(availableVoices);
+      console.log('Available voices:', availableVoices.length);
     };
 
+    // Load voices immediately
     loadVoices();
-    speechSynthesis.onvoiceschanged = loadVoices;
+    
+    // Also load when voices change (some browsers load them asynchronously)
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = loadVoices;
+    }
 
     return () => {
-      speechSynthesis.onvoiceschanged = null;
+      if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = null;
+      }
     };
   }, [isSupported]);
 
   const speak = (text: string, options: SpeechSynthesisOptions = {}) => {
-    if (!isSupported || !text.trim()) return;
+    if (!isSupported || !text.trim()) {
+      console.log('Speech synthesis not supported or empty text');
+      return;
+    }
+
+    console.log('Starting speech synthesis for:', text.substring(0, 50) + '...');
 
     // Cancel any ongoing speech
     speechSynthesis.cancel();
@@ -52,41 +65,66 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
     const utterance = new SpeechSynthesisUtterance(text);
     utteranceRef.current = utterance;
 
-    // Set options
-    utterance.voice = options.voice || null;
+    // Set options with defaults
     utterance.rate = options.rate || 1;
     utterance.pitch = options.pitch || 1;
     utterance.volume = options.volume || 1;
 
+    // Try to find a suitable voice
+    if (options.voice) {
+      utterance.voice = options.voice;
+    } else if (voices.length > 0) {
+      // Try to find an English voice
+      const englishVoice = voices.find(voice => 
+        voice.lang.startsWith('en-') && voice.localService
+      ) || voices.find(voice => 
+        voice.lang.startsWith('en-')
+      ) || voices[0];
+      
+      utterance.voice = englishVoice;
+      console.log('Selected voice:', englishVoice?.name, englishVoice?.lang);
+    }
+
     // Event handlers
     utterance.onstart = () => {
+      console.log('Speech started');
       setIsSpeaking(true);
       setIsPaused(false);
     };
 
     utterance.onend = () => {
+      console.log('Speech ended');
       setIsSpeaking(false);
       setIsPaused(false);
     };
 
-    utterance.onerror = () => {
+    utterance.onerror = (event) => {
+      console.error('Speech synthesis error:', event.error);
       setIsSpeaking(false);
       setIsPaused(false);
     };
 
     utterance.onpause = () => {
+      console.log('Speech paused');
       setIsPaused(true);
     };
 
     utterance.onresume = () => {
+      console.log('Speech resumed');
       setIsPaused(false);
     };
 
-    speechSynthesis.speak(utterance);
+    try {
+      speechSynthesis.speak(utterance);
+      console.log('Speech synthesis command sent');
+    } catch (error) {
+      console.error('Error starting speech synthesis:', error);
+    }
   };
 
   const cancel = () => {
     if (isSupported) {
+      console.log('Cancelling speech');
       speechSynthesis.cancel();
       setIsSpeaking(false);
       setIsPaused(false);
@@ -94,13 +132,15 @@ export const useSpeechSynthesis = (): SpeechSynthesisHook => {
   };
 
   const pause = () => {
-    if (isSupported && isSpeaking) {
+    if (isSupported && isSpeaking && !isPaused) {
+      console.log('Pausing speech');
       speechSynthesis.pause();
     }
   };
 
   const resume = () => {
     if (isSupported && isPaused) {
+      console.log('Resuming speech');
       speechSynthesis.resume();
     }
   };
