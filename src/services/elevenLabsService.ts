@@ -1,5 +1,6 @@
 
 
+
 import { ElevenLabsClient } from 'elevenlabs';
 
 class ElevenLabsService {
@@ -31,8 +32,15 @@ class ElevenLabsService {
         }
       });
 
+      // Convert the Readable stream to buffer
+      const chunks: Buffer[] = [];
+      for await (const chunk of audio) {
+        chunks.push(chunk);
+      }
+      const audioBuffer = Buffer.concat(chunks);
+
       // Create audio element and play
-      const audioBlob = new Blob([audio], { type: 'audio/mpeg' });
+      const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioElement = new Audio(audioUrl);
       
@@ -55,4 +63,5 @@ class ElevenLabsService {
 }
 
 export const elevenLabsService = new ElevenLabsService();
+
 
