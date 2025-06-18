@@ -19,10 +19,19 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
 
     try {
       setIsSpeaking(true);
-      await elevenLabsService.textToSpeech(text, voiceId);
+      const audioElement = await elevenLabsService.textToSpeech(text, voiceId);
+      
+      // Listen for when audio actually ends to update state
+      audioElement.addEventListener('ended', () => {
+        setIsSpeaking(false);
+      });
+
+      audioElement.addEventListener('error', () => {
+        setIsSpeaking(false);
+      });
+
     } catch (error) {
       console.error('Speech error:', error);
-    } finally {
       setIsSpeaking(false);
     }
   };

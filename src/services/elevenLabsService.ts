@@ -10,10 +10,10 @@ class ElevenLabsService {
     this.client = new ElevenLabsClient({ apiKey: this.apiKey });
   }
 
-  async textToSpeech(text: string, voiceId: string = '9BWtsMINqrJLrRacOk9x'): Promise<void> {
+  async textToSpeech(text: string, voiceId: string = '9BWtsMINqrJLrRacOk9x'): Promise<HTMLAudioElement> {
     if (!this.client || !text.trim()) {
       console.log('ElevenLabs client not initialized or empty text');
-      return;
+      throw new Error('Client not initialized or empty text');
     }
 
     try {
@@ -50,7 +50,7 @@ class ElevenLabsService {
 
       console.log('Audio data length:', audioData.length);
 
-      // Create audio element and play
+      // Create audio element
       const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioElement = new Audio(audioUrl);
@@ -59,34 +59,60 @@ class ElevenLabsService {
       audioElement.volume = 1.0;
       audioElement.preload = 'auto';
       
-      // Handle playback with proper error handling
-      try {
-        await audioElement.play();
-        console.log('ElevenLabs speech synthesis playback started successfully');
-      } catch (playError) {
-        console.error('Audio playback failed:', playError);
-        // Try to play again after a brief delay (sometimes helps with autoplay restrictions)
-        setTimeout(async () => {
-          try {
-            await audioElement.play();
-            console.log('ElevenLabs speech synthesis playback started on retry');
-          } catch (retryError) {
-            console.error('Audio playback failed on retry:', retryError);
-            throw new Error('Failed to play audio - check browser autoplay settings');
-          }
-        }, 100);
-      }
-      
-      // Clean up when audio finishes
-      audioElement.addEventListener('ended', () => {
-        URL.revokeObjectURL(audioUrl);
-        console.log('Audio playback completed and resources cleaned up');
-      });
+      // Return a promise that resolves with the audio element
+      return new Promise((resolve, reject) => {
+        const cleanup = () => {
+          URL.revokeObjectURL(audioUrl);
+        };
 
-      // Also clean up on error
-      audioElement.addEventListener('error', (e) => {
-        console.error('Audio element error:', e);
-        URL.revokeObjectURL(audioUrl);
+        audioElement.addEventListener('ended', () => {
+          console.log('Audio playback completed');
+          cleanup();
+        });
+
+        audioElement.addEventListener('error', (e) => {
+          console.error('Audio element error:', e);
+          cleanup();
+          reject(new Error('Audio playback failed'));
+        });
+
+        // Try to play the audio
+        audioElement.play()
+          .then(() => {
+            console.log('ElevenLabs speech synthesis playback started successfully');
+            resolve(audioElement);
+          })
+          .catch((playError) => {
+            console.error('Audio playback failed:', playError);
+            
+            // Try user interaction to enable autoplay
+            const handleUserInteraction = () => {
+              audioElement.play()
+                .then(() => {
+                  console.log('Audio playback started after user interaction');
+                  document.removeEventListener('click', handleUserInteraction);
+                  document.removeEventListener('keydown', handleUserInteraction);
+                  resolve(audioElement);
+                })
+                .catch((retryError) => {
+                  console.error('Audio playback failed after user interaction:', retryError);
+                  cleanup();
+                  reject(new Error('Failed to play audio - check browser autoplay settings'));
+                });
+            };
+
+            // Add event listeners for user interaction
+            document.addEventListener('click', handleUserInteraction);
+            document.addEventListener('keydown', handleUserInteraction);
+            
+            // Show a message to user about clicking to enable audio
+            console.log('Audio requires user interaction - click anywhere to play');
+            
+            // Fallback: resolve anyway but audio won't play until interaction
+            setTimeout(() => {
+              resolve(audioElement);
+            }, 1000);
+          });
       });
       
     } catch (error) {
