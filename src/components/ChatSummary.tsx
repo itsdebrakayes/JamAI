@@ -1,15 +1,18 @@
 
 import React, { useState } from 'react';
-import { FileText, Languages, Loader2, Copy, Check } from 'lucide-react';
+import { FileText, Languages, Loader2, Copy, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { geminiService } from '@/services/geminiService';
+import { detectLanguage } from '@/utils/languageDetection';
+import { Message } from '@/types/Message';
 
 interface ChatSummaryProps {
+  messages: Message[];
   onClose: () => void;
 }
 
-const ChatSummary = ({ onClose }: ChatSummaryProps) => {
+const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
   const [inputText, setInputText] = useState('');
   const [summary, setSummary] = useState('');
   const [translation, setTranslation] = useState('');
@@ -37,8 +40,16 @@ const ChatSummary = ({ onClose }: ChatSummaryProps) => {
     
     setIsProcessing(true);
     try {
-      const prompt = `Please translate the following text to Jamaican Patois, maintaining the original meaning and tone:\n\n${inputText}`;
-      const response = await geminiService.generateResponse(prompt, true, []);
+      const detectedLanguage = detectLanguage(inputText);
+      let prompt: string;
+      
+      if (detectedLanguage === 'patois') {
+        prompt = `Please translate the following Jamaican Patois text to English, maintaining the original meaning and tone:\n\n${inputText}`;
+      } else {
+        prompt = `Please translate the following English text to Jamaican Patois, maintaining the original meaning and tone:\n\n${inputText}`;
+      }
+      
+      const response = await geminiService.generateResponse(prompt, detectedLanguage === 'english', []);
       setTranslation(response.message);
     } catch (error) {
       console.error('Translation error:', error);
@@ -68,11 +79,11 @@ const ChatSummary = ({ onClose }: ChatSummaryProps) => {
               Chat Summary & Translation
             </h2>
             <Button onClick={onClose} variant="ghost" size="sm">
-              ×
+              <X className="w-4 h-4" />
             </Button>
           </div>
           <p className="text-muted-foreground mt-2">
-            Paste text below to get summaries or translations in Patois
+            Paste text below to get summaries or translations (auto-detects language)
           </p>
         </div>
 
@@ -116,7 +127,7 @@ const ChatSummary = ({ onClose }: ChatSummaryProps) => {
               ) : (
                 <Languages className="w-4 h-4 mr-2" />
               )}
-              Translate to Patois
+              Auto-Translate
             </Button>
           </div>
 

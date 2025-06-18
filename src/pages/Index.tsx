@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -58,6 +57,7 @@ const Index = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [typingMessage, setTypingMessage] = useState<Message | null>(null);
   const [showTranslationMode, setShowTranslationMode] = useState(false);
+  const [showChatSummary, setShowChatSummary] = useState(false);
   const [currentService, setCurrentService] = useState<AIService>('gemini');
   const [apiKey, setApiKey] = useState<string>('AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU');
   const [hasValidApiKey, setHasValidApiKey] = useState<boolean>(true);
@@ -221,6 +221,22 @@ const Index = () => {
     handleNewChat();
   };
 
+  const handleOpenChatSummary = () => {
+    setShowChatSummary(true);
+  };
+
+  const handleCloseChatSummary = () => {
+    setShowChatSummary(false);
+  };
+
+  const handleOpenTranslationMode = () => {
+    setShowTranslationMode(true);
+  };
+
+  const handleCloseTranslationMode = () => {
+    setShowTranslationMode(false);
+  };
+
   // ============================
   // EFFECTS
   // ============================
@@ -266,14 +282,6 @@ const Index = () => {
     }
   };
   
-  const handleOpenTranslationMode = () => {
-    setShowTranslationMode(true);
-  };
-
-  const handleCloseTranslationMode = () => {
-    setShowTranslationMode(false);
-  };
-
   // ============================
   // RENDER
   // ============================
@@ -322,20 +330,30 @@ const Index = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {messages.length > 1 && (
-                    <Button
-                      onClick={handleOpenTranslationMode}
-                      variant="ghost"
-                      size="sm"
-                      className="group relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
-                    >
-                      <div className="flex items-center gap-2 relative z-10">
-                        <Languages className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        <span className="hidden sm:inline font-medium">Translation</span>
-                      </div>
-                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handleOpenChatSummary}
+                    variant="ghost"
+                    size="sm"
+                    className="group relative overflow-hidden bg-gradient-to-r from-blue-400 via-blue-300 to-blue-500 hover:from-blue-500 hover:via-blue-400 hover:to-blue-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center gap-2 relative z-10">
+                      <FileText className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                      <span className="hidden sm:inline font-medium">Summary</span>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
+                  </Button>
+                  <Button
+                    onClick={handleOpenTranslationMode}
+                    variant="ghost"
+                    size="sm"
+                    className="group relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center gap-2 relative z-10">
+                      <Languages className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                      <span className="hidden sm:inline font-medium">Translation</span>
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
+                  </Button>
                   <ThemeToggle />
                   <Badge 
                     variant="secondary" 
@@ -403,28 +421,18 @@ const Index = () => {
                     onSendMessage={handleSendMessage} 
                     disabled={isTyping}
                   />
-                  {messages.length > 4 && (
-                    <div className="mt-4">
-                      <ChatSummary onClose={() => {}} />
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
           </div>
         </SidebarInset>
 
-        {/* Floating Translation Button */}
-        {messages.length > 1 && !showTranslationMode && (
-          <Button
-            onClick={handleOpenTranslationMode}
-            className="fixed bottom-24 right-6 z-40 w-14 h-14 rounded-full shadow-xl hover:shadow-2xl bg-gradient-to-br from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium transition-all duration-300 ease-out transform hover:scale-105 border border-white/30 backdrop-blur-sm group"
-            size="icon"
-            title="Open Translation Mode"
-          >
-            <Languages className="w-6 h-6 transition-transform duration-200 group-hover:scale-110" />
-            <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent opacity-50" />
-          </Button>
+        {/* Chat Summary Overlay */}
+        {showChatSummary && (
+          <ChatSummary
+            messages={messages}
+            onClose={handleCloseChatSummary}
+          />
         )}
 
         {/* Translation Mode Overlay */}
