@@ -1,6 +1,6 @@
 
 
-import { ElevenLabsClient } from '@11labs/client';
+import { ElevenLabsClient } from 'elevenlabs';
 
 class ElevenLabsService {
   private client: ElevenLabsClient | null = null;
