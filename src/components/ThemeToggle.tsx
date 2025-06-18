@@ -84,12 +84,12 @@ const ThemeToggle = () => {
       {/* Conditional rendering of icons with ultra-fast transition */}
       <div className="relative w-4 h-4">
         <Sun 
-          className={`absolute inset-0 h-4 w-4 transition-all duration-200 ease-out ${
+          className={`absolute inset-0 h-4 w-4 transition-all duration-200 ease-out text-foreground ${
             isDark ? 'rotate-90 scale-0 opacity-0' : 'rotate-0 scale-100 opacity-100'
           }`} 
         />
         <Moon 
-          className={`absolute inset-0 h-4 w-4 transition-all duration-200 ease-out ${
+          className={`absolute inset-0 h-4 w-4 transition-all duration-200 ease-out text-foreground ${
             isDark ? 'rotate-0 scale-100 opacity-100' : '-rotate-90 scale-0 opacity-0'
           }`} 
         />
