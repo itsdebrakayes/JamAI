@@ -30,9 +30,9 @@ class ElevenLabsService {
         text,
         model_id: 'eleven_multilingual_v2',
         voice_settings: {
-          stability: 0.7,
-          similarity_boost: 0.8,
-          style: 0.2,
+          stability: 0.5,
+          similarity_boost: 0.75,
+          style: 0.0,
           use_speaker_boost: true
         }
       });
@@ -62,15 +62,36 @@ class ElevenLabsService {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audioElement = new Audio(audioUrl);
       
-      // Configure audio for natural playback
-      audioElement.volume = 0.8;
-      audioElement.playbackRate = 1.0; // Normal human speech rate
-      audioElement.preload = 'auto';
+      // Configure audio for maximum compatibility and volume
+      audioElement.volume = 1.0;
+      audioElement.playbackRate = 0.9; // Slightly slower for natural speech
+      audioElement.preload = 'metadata';
+      audioElement.crossOrigin = 'anonymous';
       
       // Store reference to current audio
       this.currentAudio = audioElement;
       
-      // Cleanup when audio ends
+      // Add event listeners for debugging
+      audioElement.addEventListener('loadstart', () => {
+        console.log('Audio loading started');
+      });
+
+      audioElement.addEventListener('canplay', () => {
+        console.log('Audio can start playing');
+      });
+
+      audioElement.addEventListener('play', () => {
+        console.log('Audio play event fired');
+      });
+
+      audioElement.addEventListener('playing', () => {
+        console.log('Audio is actually playing');
+      });
+
+      audioElement.addEventListener('pause', () => {
+        console.log('Audio paused');
+      });
+
       audioElement.addEventListener('ended', () => {
         console.log('Audio playback completed');
         URL.revokeObjectURL(audioUrl);
@@ -81,21 +102,16 @@ class ElevenLabsService {
 
       audioElement.addEventListener('error', (e) => {
         console.error('Audio element error:', e);
+        console.error('Audio error details:', audioElement.error);
         URL.revokeObjectURL(audioUrl);
         if (this.currentAudio === audioElement) {
           this.currentAudio = null;
         }
       });
 
-      // Try to play immediately
-      try {
-        await audioElement.play();
-        console.log('ElevenLabs speech synthesis playback started successfully');
-        return audioElement;
-      } catch (playError) {
-        console.log('Autoplay blocked, audio ready but waiting for user interaction');
-        return audioElement;
-      }
+      // Return the audio element - don't auto-play here
+      console.log('Audio element created successfully, ready for manual play');
+      return audioElement;
       
     } catch (error) {
       console.error('ElevenLabs text-to-speech error:', error);
