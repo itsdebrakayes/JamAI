@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Volume2, VolumeX, Pause, Play } from 'lucide-react';
+import { Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import { useElevenLabsSpeech } from '@/hooks/useElevenLabsSpeech';
 
 interface SpeakButtonProps {
   text: string;
@@ -10,33 +10,17 @@ interface SpeakButtonProps {
 }
 
 const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
-  const {
-    speak,
-    cancel,
-    pause,
-    resume,
-    isSpeaking,
-    isPaused,
-    isSupported
-  } = useSpeechSynthesis();
+  const { speak, isSpeaking, isSupported } = useElevenLabsSpeech();
 
-  if (!isSupported) return null;
+  if (!isSupported) {
+    console.log('ElevenLabs not supported');
+    return null;
+  }
 
-  const handleClick = () => {
-    if (isSpeaking) {
-      if (isPaused) {
-        resume();
-      } else {
-        pause();
-      }
-    } else {
-      speak(text);
+  const handleClick = async () => {
+    if (!isSpeaking) {
+      await speak(text);
     }
-  };
-
-  const handleStop = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    cancel();
   };
 
   return (
@@ -46,30 +30,15 @@ const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
         variant="ghost"
         size="sm"
         className="h-8 w-8 p-0 opacity-60 hover:opacity-100 transition-opacity"
-        title={
-          isSpeaking 
-            ? (isPaused ? 'Resume' : 'Pause') 
-            : 'Read aloud'
-        }
+        disabled={isSpeaking}
+        title={isSpeaking ? 'Speaking...' : 'Read aloud'}
       >
         {isSpeaking ? (
-          isPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />
+          <Loader2 className="w-3 h-3 animate-spin" />
         ) : (
           <Volume2 className="w-3 h-3" />
         )}
       </Button>
-      
-      {isSpeaking && (
-        <Button
-          onClick={handleStop}
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0 opacity-60 hover:opacity-100 transition-opacity"
-          title="Stop"
-        >
-          <VolumeX className="w-3 h-3" />
-        </Button>
-      )}
     </div>
   );
 };

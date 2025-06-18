@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Mic, MicOff, Volume2, VolumeX, Pause, Play } from 'lucide-react';
+import { Mic, MicOff, Volume2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
+import { useElevenLabsSpeech } from '@/hooks/useElevenLabsSpeech';
 
 interface VoiceControlsProps {
   onTranscriptReady: (transcript: string) => void;
@@ -24,13 +24,9 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
 
   const {
     speak,
-    cancel,
-    pause,
-    resume,
     isSpeaking,
-    isPaused,
     isSupported: speechSynthesisSupported
-  } = useSpeechSynthesis();
+  } = useElevenLabsSpeech();
 
   // Handle transcript completion
   React.useEffect(() => {
@@ -51,20 +47,10 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
     }
   };
 
-  const handleSpeakClick = () => {
-    if (isSpeaking) {
-      if (isPaused) {
-        resume();
-      } else {
-        pause();
-      }
-    } else if (lastMessage) {
-      speak(lastMessage);
+  const handleSpeakClick = async () => {
+    if (!isSpeaking && lastMessage) {
+      await speak(lastMessage);
     }
-  };
-
-  const handleStopSpeaking = () => {
-    cancel();
   };
 
   if (!speechRecognitionSupported && !speechSynthesisSupported) {
@@ -111,38 +97,20 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
 
       {/* Text-to-Speech Controls */}
       {speechSynthesisSupported && lastMessage && (
-        <>
-          <Button
-            onClick={handleSpeakClick}
-            disabled={disabled || !lastMessage}
-            variant="ghost"
-            size="sm"
-            className="h-9 w-9 p-0 hover:bg-muted transition-all duration-200"
-            title={
-              isSpeaking 
-                ? (isPaused ? 'Resume speaking' : 'Pause speaking')
-                : 'Read message aloud'
-            }
-          >
-            {isSpeaking ? (
-              isPaused ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />
-            ) : (
-              <Volume2 className="w-4 h-4" />
-            )}
-          </Button>
-
-          {isSpeaking && (
-            <Button
-              onClick={handleStopSpeaking}
-              variant="ghost"
-              size="sm"
-              className="h-9 w-9 p-0 hover:bg-muted transition-all duration-200"
-              title="Stop speaking"
-            >
-              <VolumeX className="w-4 h-4" />
-            </Button>
+        <Button
+          onClick={handleSpeakClick}
+          disabled={disabled || !lastMessage || isSpeaking}
+          variant="ghost"
+          size="sm"
+          className="h-9 w-9 p-0 hover:bg-muted transition-all duration-200"
+          title={isSpeaking ? 'Speaking...' : 'Read message aloud'}
+        >
+          {isSpeaking ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Volume2 className="w-4 h-4" />
           )}
-        </>
+        </Button>
       )}
     </div>
   );
