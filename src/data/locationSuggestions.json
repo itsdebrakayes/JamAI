@@ -1,0 +1,11 @@
+
+[
+  { "id": 1, "label": "Explain Jamaica", "query": "Explain Jamaica in a nutshell" },
+  { "id": 2, "label": "Patois phrases", "query": "Give me some common Patois phrases and their meanings" },
+  { "id": 3, "label": "Best Jamaican food", "query": "What are the best Jamaican foods to try?" },
+  { "id": 4, "label": "Talk like a Jamaican", "query": "Respond to this message in a Jamaican Patois style" },
+  { "id": 5, "label": "Find patties nearby", "query": "Where can I get patties nearby?" },
+  { "id": 6, "label": "Jerk chicken spots", "query": "Find jerk chicken restaurants near me" },
+  { "id": 7, "label": "Local markets", "query": "Where are the local markets around here?" },
+  { "id": 8, "label": "Beaches nearby", "query": "What beaches are close to me?" }
+]

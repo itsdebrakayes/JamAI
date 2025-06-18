@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -22,6 +21,7 @@ import { detectLanguage } from '@/utils/languageDetection';
 import { generatePatoisResponse } from '@/utils/patoisResponses';
 import { geminiService } from '@/services/geminiService';
 import { openaiService } from '@/services/openaiService';
+import { locationAwareService } from '@/services/locationAwareService';
 
 // Define the structure of a suggestion item
 interface SuggestionItem {
@@ -149,15 +149,17 @@ const Index = () => {
     try {
       const language = await detectLanguage(text);
       
-      // ALL responses come from AI services - no special handling
-      const responseText = await (currentService === 'gemini' 
-        ? geminiService.generateResponse(text, language === 'patois', newMessages)
-        : openaiService.generateResponse(text, language === 'patois', newMessages)
-      ).then(response => response.message);
+      // Use location-aware service for all responses
+      const response = await locationAwareService.processQuery(
+        text, 
+        language === 'patois', 
+        newMessages, 
+        currentService
+      );
 
       const aiMessage: Message = {
         id: generateMessageId(),
-        text: responseText,
+        text: response.message,
         isUser: false,
         timestamp: new Date(),
       };
@@ -381,8 +383,8 @@ const Index = () => {
                           Welcome to JamAI
                         </h2>
                         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                          Your friendly Jamaican AI assistant. Ask me anything in English or Patois, 
-                          and I'll respond in authentic Jamaican style!
+                          Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, 
+                          find nearby places, and I'll respond in authentic Jamaican style!
                         </p>
                       </div>
                       <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
