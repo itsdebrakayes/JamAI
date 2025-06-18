@@ -342,18 +342,20 @@ const Index = () => {
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
                   </Button>
-                  <Button
-                    onClick={handleOpenTranslationMode}
-                    variant="ghost"
-                    size="sm"
-                    className="group relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
-                  >
-                    <div className="flex items-center gap-2 relative z-10">
-                      <Languages className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                      <span className="hidden sm:inline font-medium">Translation</span>
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
-                  </Button>
+                  {messages.length > 0 && (
+                    <Button
+                      onClick={handleOpenTranslationMode}
+                      variant="ghost"
+                      size="sm"
+                      className="group relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center gap-2 relative z-10">
+                        <Languages className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        <span className="hidden sm:inline font-medium">Translation</span>
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-50 group-hover:opacity-30 transition-opacity duration-300" />
+                    </Button>
+                  )}
                   <ThemeToggle />
                   <Badge 
                     variant="secondary" 
