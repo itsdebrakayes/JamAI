@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import VoiceControls from './VoiceControls';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -36,6 +37,10 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     }
   };
 
+  const handleVoiceTranscript = (transcript: string) => {
+    setMessage(transcript);
+  };
+
   return (
     <div className="relative">
       <form onSubmit={handleSubmit} className="flex items-end gap-3 glass-effect rounded-3xl p-4 modern-shadow-lg transition-all duration-300 hover:shadow-xl">
@@ -48,14 +53,22 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
           className="flex-1 border-0 bg-transparent resize-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground text-base px-2 py-3 min-h-[24px] max-h-32"
           rows={1}
         />
-        <Button 
-          type="submit" 
-          disabled={!message.trim() || disabled}
-          size="icon"
-          className="h-10 w-10 rounded-2xl bg-gradient-to-r from-secondary to-accent hover:from-secondary/90 hover:to-accent/90 text-secondary-foreground disabled:from-muted disabled:to-muted disabled:text-muted-foreground modern-shadow transition-all duration-200 hover:scale-105"
-        >
-          <Send className="w-5 h-5" />
-        </Button>
+        
+        <div className="flex items-center gap-2">
+          <VoiceControls 
+            onTranscriptReady={handleVoiceTranscript}
+            disabled={disabled}
+          />
+          
+          <Button 
+            type="submit" 
+            disabled={!message.trim() || disabled}
+            size="icon"
+            className="h-10 w-10 rounded-2xl bg-gradient-to-r from-secondary to-accent hover:from-secondary/90 hover:to-accent/90 text-secondary-foreground disabled:from-muted disabled:to-muted disabled:text-muted-foreground modern-shadow transition-all duration-200 hover:scale-105"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
+        </div>
       </form>
     </div>
   );

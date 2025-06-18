@@ -240,6 +240,11 @@ const Index = () => {
     setShowTranslationMode(false);
   };
 
+  // Get the last AI message for text-to-speech
+  const lastAiMessage = messages.length > 0 
+    ? messages.filter(m => !m.isUser).pop()?.text || ''
+    : '';
+
   // ============================
   // EFFECTS
   // ============================
