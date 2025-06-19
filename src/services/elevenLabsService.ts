@@ -55,55 +55,78 @@ class ElevenLabsService {
         offset += chunk.length;
       }
 
-      console.log('Audio data received, length:', audioData.length);
+      console.log('Audio data received, total bytes:', totalLength);
 
-      // Create audio element with maximum volume settings
+      // Create multiple audio elements with different configurations to test
       const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
-      const audioElement = new Audio(audioUrl);
       
-      // Configure audio for maximum volume and compatibility
+      // Try creating audio element with explicit settings
+      const audioElement = new Audio();
+      audioElement.src = audioUrl;
       audioElement.volume = 1.0; // Maximum volume
       audioElement.playbackRate = 0.85; // Natural speech pace
       audioElement.preload = 'auto';
-      audioElement.crossOrigin = 'anonymous';
+      audioElement.loop = false;
+      audioElement.muted = false; // Explicitly unmute
       
-      // Force audio context to be active
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
+      console.log('Audio element created with:');
+      console.log('- src:', audioElement.src ? 'SET' : 'NOT SET');
+      console.log('- volume:', audioElement.volume);
+      console.log('- muted:', audioElement.muted);
+      console.log('- readyState:', audioElement.readyState);
+      
+      // Try to initialize audio context and resume it
+      let audioContext;
+      try {
+        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+        console.log('AudioContext state:', audioContext.state);
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume();
+          console.log('AudioContext resumed, new state:', audioContext.state);
+        }
+      } catch (contextError) {
+        console.warn('AudioContext initialization failed:', contextError);
       }
       
       // Store reference to current audio
       this.currentAudio = audioElement;
       
-      // Add event listeners for debugging
+      // Add comprehensive event listeners for debugging
       audioElement.addEventListener('loadstart', () => {
-        console.log('Audio loading started');
+        console.log('🔵 Audio loading started');
+      });
+
+      audioElement.addEventListener('loadedmetadata', () => {
+        console.log('🔵 Audio metadata loaded - duration:', audioElement.duration);
       });
 
       audioElement.addEventListener('canplay', () => {
-        console.log('Audio can start playing - volume:', audioElement.volume);
+        console.log('🟢 Audio can start playing - volume:', audioElement.volume, 'muted:', audioElement.muted);
+      });
+
+      audioElement.addEventListener('canplaythrough', () => {
+        console.log('🟢 Audio can play through completely');
       });
 
       audioElement.addEventListener('volumechange', () => {
-        console.log('Audio volume changed to:', audioElement.volume);
+        console.log('🔊 Audio volume changed to:', audioElement.volume, 'muted:', audioElement.muted);
       });
 
       audioElement.addEventListener('play', () => {
-        console.log('Audio play event fired - volume:', audioElement.volume);
+        console.log('▶️ Audio play event fired - volume:', audioElement.volume, 'current time:', audioElement.currentTime);
       });
 
       audioElement.addEventListener('playing', () => {
-        console.log('Audio is actually playing at volume:', audioElement.volume);
+        console.log('🎵 Audio is actually playing at volume:', audioElement.volume, 'time:', audioElement.currentTime);
       });
 
       audioElement.addEventListener('pause', () => {
-        console.log('Audio paused');
+        console.log('⏸️ Audio paused at time:', audioElement.currentTime);
       });
 
       audioElement.addEventListener('ended', () => {
-        console.log('Audio playback completed');
+        console.log('⏹️ Audio playback completed');
         URL.revokeObjectURL(audioUrl);
         if (this.currentAudio === audioElement) {
           this.currentAudio = null;
@@ -111,42 +134,71 @@ class ElevenLabsService {
       });
 
       audioElement.addEventListener('error', (e) => {
-        console.error('Audio element error:', e);
-        console.error('Audio error details:', audioElement.error);
+        console.error('❌ Audio element error:', e);
+        console.error('❌ Audio error details:', audioElement.error);
+        console.error('❌ Error code:', audioElement.error?.code);
+        console.error('❌ Error message:', audioElement.error?.message);
         URL.revokeObjectURL(audioUrl);
         if (this.currentAudio === audioElement) {
           this.currentAudio = null;
         }
       });
 
-      // Wait for audio to be ready
+      // Wait for audio to be ready with multiple fallbacks
       return new Promise((resolve, reject) => {
-        audioElement.addEventListener('canplaythrough', () => {
-          console.log('Audio is ready to play through at volume:', audioElement.volume);
-          resolve(audioElement);
-        });
+        let resolved = false;
         
-        audioElement.addEventListener('error', () => {
-          reject(new Error('Failed to load audio'));
-        });
-        
-        // Fallback timeout
-        setTimeout(() => {
-          if (audioElement.readyState >= 2) { // HAVE_CURRENT_DATA
-            console.log('Audio ready via timeout at volume:', audioElement.volume);
+        const resolveOnce = () => {
+          if (!resolved) {
+            resolved = true;
+            console.log('✅ Audio element ready for playback');
             resolve(audioElement);
           }
-        }, 2000);
+        };
+        
+        audioElement.addEventListener('canplaythrough', resolveOnce);
+        audioElement.addEventListener('canplay', resolveOnce);
+        
+        audioElement.addEventListener('error', () => {
+          if (!resolved) {
+            resolved = true;
+            reject(new Error('Failed to load audio'));
+          }
+        });
+        
+        // Multiple fallback timeouts
+        setTimeout(() => {
+          if (!resolved && audioElement.readyState >= 2) { // HAVE_CURRENT_DATA
+            console.log('⏰ Audio ready via short timeout, readyState:', audioElement.readyState);
+            resolveOnce();
+          }
+        }, 1000);
+        
+        setTimeout(() => {
+          if (!resolved && audioElement.readyState >= 1) { // HAVE_METADATA
+            console.log('⏰ Audio ready via long timeout, readyState:', audioElement.readyState);
+            resolveOnce();
+          }
+        }, 3000);
+        
+        // Force resolve as last resort
+        setTimeout(() => {
+          if (!resolved) {
+            console.log('⏰ Audio forced ready as last resort, readyState:', audioElement.readyState);
+            resolveOnce();
+          }
+        }, 5000);
       });
       
     } catch (error) {
       console.error('ElevenLabs text-to-speech error:', error);
-      throw new Error('Failed to synthesize speech');
+      throw new Error('Failed to synthesize speech: ' + (error as Error).message);
     }
   }
 
   stopCurrentAudio(): void {
     if (this.currentAudio) {
+      console.log('🛑 Stopping current audio');
       this.currentAudio.pause();
       this.currentAudio.currentTime = 0;
       this.currentAudio = null;
