@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Mic, MicOff, Volume2, VolumeX, Pause, Play, Square } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Pause, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useElevenLabsSpeech } from '@/hooks/useElevenLabsSpeech';
@@ -114,7 +113,7 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
       {/* Text-to-Speech Controls */}
       {speechSynthesisSupported && lastMessage && (
         <div className="flex items-center gap-1">
-          {/* Show volume/mute icon when not speaking */}
+          {/* Show volume icon when not speaking */}
           {!isSpeaking && !isPaused && (
             <Button
               onClick={handleSpeakClick}
@@ -155,17 +154,6 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
                 ) : (
                   <Pause className="w-4 h-4" />
                 )}
-              </Button>
-              
-              <Button
-                onClick={handleStopClick}
-                disabled={disabled}
-                variant="ghost"
-                size="sm"
-                className="h-9 w-9 p-0 hover:bg-muted transition-all duration-200"
-                title="Stop"
-              >
-                <Square className="w-4 h-4" />
               </Button>
             </>
           )}

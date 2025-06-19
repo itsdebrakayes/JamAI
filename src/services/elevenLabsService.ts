@@ -61,11 +61,11 @@ class ElevenLabsService {
       const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       
-      // Try creating audio element with explicit settings
+      // Try creating audio element with explicit settings and faster playback
       const audioElement = new Audio();
       audioElement.src = audioUrl;
       audioElement.volume = 1.0; // Maximum volume
-      audioElement.playbackRate = 0.85; // Natural speech pace
+      audioElement.playbackRate = 1.15; // Slightly faster playback speed
       audioElement.preload = 'auto';
       audioElement.loop = false;
       audioElement.muted = false; // Explicitly unmute
@@ -73,6 +73,7 @@ class ElevenLabsService {
       console.log('Audio element created with:');
       console.log('- src:', audioElement.src ? 'SET' : 'NOT SET');
       console.log('- volume:', audioElement.volume);
+      console.log('- playbackRate:', audioElement.playbackRate);
       console.log('- muted:', audioElement.muted);
       console.log('- readyState:', audioElement.readyState);
       

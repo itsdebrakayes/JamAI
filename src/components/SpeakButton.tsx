@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Volume2, VolumeX, Pause, Play, Square } from 'lucide-react';
+import { Volume2, VolumeX, Pause, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useElevenLabsSpeech } from '@/hooks/useElevenLabsSpeech';
 
@@ -75,16 +75,6 @@ const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
             ) : (
               <Pause className="w-3 h-3" />
             )}
-          </Button>
-          
-          <Button
-            onClick={handleStopClick}
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 opacity-60 hover:opacity-100 transition-opacity"
-            title="Stop"
-          >
-            <Square className="w-3 h-3" />
           </Button>
         </>
       )}
