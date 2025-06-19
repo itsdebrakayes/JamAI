@@ -36,7 +36,7 @@ const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
   };
 
   return (
-    <div className={`flex items-center gap-1 ${className}`}>
+    <div className={`flex items-center gap-1 ${className}`} role="group" aria-label="Audio controls">
       {/* Show volume icon when not speaking */}
       {!isSpeaking && !isPaused && (
         <Button
@@ -44,9 +44,9 @@ const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
           variant="ghost"
           size="sm"
           className="h-8 w-8 p-0 opacity-60 hover:opacity-100 transition-opacity"
-          title="Read aloud"
+          aria-label="Read aloud"
         >
-          <Volume2 className="w-3 h-3" />
+          <Volume2 className="w-3 h-3" aria-hidden="true" />
         </Button>
       )}
 
@@ -58,9 +58,9 @@ const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 opacity-60 hover:opacity-100 transition-opacity"
-            title="Stop playback"
+            aria-label="Stop playback"
           >
-            <VolumeX className="w-3 h-3" />
+            <VolumeX className="w-3 h-3" aria-hidden="true" />
           </Button>
           
           <Button
@@ -68,12 +68,12 @@ const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
             variant="ghost"
             size="sm"
             className="h-8 w-8 p-0 opacity-60 hover:opacity-100 transition-opacity"
-            title={isPaused ? 'Resume' : 'Pause'}
+            aria-label={isPaused ? 'Resume playback' : 'Pause playback'}
           >
             {isPaused ? (
-              <Play className="w-3 h-3" />
+              <Play className="w-3 h-3" aria-hidden="true" />
             ) : (
-              <Pause className="w-3 h-3" />
+              <Pause className="w-3 h-3" aria-hidden="true" />
             )}
           </Button>
         </>

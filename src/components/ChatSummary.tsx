@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { FileText, Languages, Loader2, Copy, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { geminiService } from '@/services/geminiService';
 import { detectLanguage } from '@/utils/languageDetection';
 import { Message } from '@/types/Message';
@@ -69,37 +70,39 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-background border border-border rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-border">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold flex items-center gap-3">
-              <FileText className="w-6 h-6 text-primary" />
-              Chat Summary & Translation
-            </h2>
-            <Button onClick={onClose} variant="ghost" size="sm">
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          <p className="text-muted-foreground mt-2">
+    <Dialog open={true} onOpenChange={() => onClose()}>
+      <DialogContent 
+        className="w-full max-w-4xl max-h-[90vh] flex flex-col"
+        aria-describedby="chat-summary-description"
+      >
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-semibold flex items-center gap-3">
+            <FileText className="w-6 h-6 text-primary" aria-hidden="true" />
+            Chat Summary & Translation
+          </DialogTitle>
+          <p id="chat-summary-description" className="text-muted-foreground mt-2">
             Paste text below to get summaries or translations (auto-detects language)
           </p>
-        </div>
+        </DialogHeader>
 
         {/* Content */}
-        <div className="flex-1 p-6 overflow-hidden flex flex-col gap-6">
+        <div className="flex-1 overflow-hidden flex flex-col gap-6">
           {/* Input Area */}
           <div>
-            <label className="text-sm font-medium mb-2 block">
+            <label htmlFor="text-input" className="text-sm font-medium mb-2 block">
               Text to Process
             </label>
             <Textarea
+              id="text-input"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               placeholder="Paste your text here for summary or translation..."
               className="min-h-[120px] resize-none"
+              aria-describedby="text-input-help"
             />
+            <div id="text-input-help" className="sr-only">
+              Enter or paste text to summarize or translate
+            </div>
           </div>
 
           {/* Action Buttons */}
@@ -108,34 +111,49 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
               onClick={handleSummarize}
               disabled={!inputText.trim() || isProcessing}
               className="flex-1"
+              aria-describedby="summarize-help"
             >
               {isProcessing && activeTab === 'summary' ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />
+                  <span className="sr-only">Generating summary...</span>
+                </>
               ) : (
-                <FileText className="w-4 h-4 mr-2" />
+                <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
               )}
               Summarize
             </Button>
+            <div id="summarize-help" className="sr-only">
+              Generate a summary of the input text
+            </div>
+            
             <Button
               onClick={handleTranslate}
               disabled={!inputText.trim() || isProcessing}
               variant="outline"
               className="flex-1"
+              aria-describedby="translate-help"
             >
               {isProcessing && activeTab === 'translation' ? (
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />
+                  <span className="sr-only">Translating...</span>
+                </>
               ) : (
-                <Languages className="w-4 h-4 mr-2" />
+                <Languages className="w-4 h-4 mr-2" aria-hidden="true" />
               )}
               Auto-Translate
             </Button>
+            <div id="translate-help" className="sr-only">
+              Automatically translate the input text between English and Jamaican Patois
+            </div>
           </div>
 
           {/* Results */}
           {(summary || translation) && (
             <div className="flex-1 overflow-hidden">
               {/* Tabs */}
-              <div className="flex border-b border-border mb-4">
+              <div className="flex border-b border-border mb-4" role="tablist" aria-label="Results">
                 <button
                   onClick={() => setActiveTab('summary')}
                   className={`px-4 py-2 font-medium border-b-2 transition-colors ${
@@ -143,6 +161,10 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
+                  role="tab"
+                  aria-selected={activeTab === 'summary'}
+                  aria-controls="summary-panel"
+                  id="summary-tab"
                 >
                   Summary
                 </button>
@@ -153,6 +175,10 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
+                  role="tab"
+                  aria-selected={activeTab === 'translation'}
+                  aria-controls="translation-panel"
+                  id="translation-tab"
                 >
                   Translation
                 </button>
@@ -160,7 +186,12 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
 
               {/* Result Content */}
               <div className="relative">
-                <div className="bg-muted/30 rounded-lg p-4 overflow-y-auto max-h-[300px]">
+                <div 
+                  className="bg-muted/30 rounded-lg p-4 overflow-y-auto max-h-[300px]"
+                  role="tabpanel"
+                  aria-labelledby={activeTab === 'summary' ? 'summary-tab' : 'translation-tab'}
+                  id={activeTab === 'summary' ? 'summary-panel' : 'translation-panel'}
+                >
                   <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
                     {activeTab === 'summary' ? summary : translation}
                   </pre>
@@ -172,11 +203,18 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
                     variant="ghost"
                     size="sm"
                     className="absolute top-2 right-2"
+                    aria-label={`Copy ${activeTab} to clipboard`}
                   >
                     {copied ? (
-                      <Check className="w-4 h-4 text-green-600" />
+                      <>
+                        <Check className="w-4 h-4 text-green-600" aria-hidden="true" />
+                        <span className="sr-only">Copied to clipboard</span>
+                      </>
                     ) : (
-                      <Copy className="w-4 h-4" />
+                      <>
+                        <Copy className="w-4 h-4" aria-hidden="true" />
+                        <span className="sr-only">Copy to clipboard</span>
+                      </>
                     )}
                   </Button>
                 )}
@@ -184,8 +222,8 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

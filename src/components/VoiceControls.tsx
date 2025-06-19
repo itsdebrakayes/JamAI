@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Mic, MicOff, Volume2, VolumeX, Pause, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -73,7 +74,7 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" role="group" aria-label="Voice controls">
       {/* Speech Recognition Controls */}
       {speechRecognitionSupported && (
         <Button
@@ -86,33 +87,42 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
               ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' 
               : 'hover:bg-muted'
           }`}
-          title={isListening ? 'Stop recording' : 'Start voice input'}
+          aria-label={isListening ? 'Stop recording voice input' : 'Start voice input'}
+          aria-pressed={isListening}
         >
           {isListening ? (
-            <MicOff className="w-4 h-4" />
+            <MicOff className="w-4 h-4" aria-hidden="true" />
           ) : (
-            <Mic className="w-4 h-4" />
+            <Mic className="w-4 h-4" aria-hidden="true" />
           )}
         </Button>
       )}
 
       {/* Current transcript display */}
       {isListening && transcript && (
-        <div className="text-xs text-muted-foreground max-w-32 truncate">
+        <div 
+          className="text-xs text-muted-foreground max-w-32 truncate"
+          aria-live="polite"
+          aria-label={`Current transcript: ${transcript}`}
+        >
           "{transcript}"
         </div>
       )}
 
       {/* Speech error display */}
       {speechError && (
-        <div className="text-xs text-red-500 max-w-32 truncate">
+        <div 
+          className="text-xs text-red-500 max-w-32 truncate"
+          role="alert"
+          aria-live="assertive"
+        >
           {speechError}
         </div>
       )}
 
       {/* Text-to-Speech Controls */}
       {speechSynthesisSupported && lastMessage && (
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1" role="group" aria-label="Audio playback controls">
           {/* Show volume icon when not speaking */}
           {!isSpeaking && !isPaused && (
             <Button
@@ -121,13 +131,13 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
               variant="ghost"
               size="sm"
               className="h-9 w-9 p-0 hover:bg-muted transition-all duration-200"
-              title="Read message aloud"
+              aria-label="Read last message aloud"
             >
-              <Volume2 className="w-4 h-4" />
+              <Volume2 className="w-4 h-4" aria-hidden="true" />
             </Button>
           )}
           
-          {/* Show muted speaker and controls when speaking or paused */}
+          {/* Show controls when speaking or paused */}
           {(isSpeaking || isPaused) && (
             <>
               <Button
@@ -136,9 +146,9 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
                 variant="ghost"
                 size="sm"
                 className="h-9 w-9 p-0 hover:bg-muted transition-all duration-200"
-                title="Stop playback"
+                aria-label="Stop audio playback"
               >
-                <VolumeX className="w-4 h-4" />
+                <VolumeX className="w-4 h-4" aria-hidden="true" />
               </Button>
               
               <Button
@@ -147,12 +157,13 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
                 variant="ghost"
                 size="sm"
                 className="h-9 w-9 p-0 hover:bg-muted transition-all duration-200"
-                title={isPaused ? 'Resume' : 'Pause'}
+                aria-label={isPaused ? 'Resume audio playback' : 'Pause audio playback'}
+                aria-pressed={!isPaused}
               >
                 {isPaused ? (
-                  <Play className="w-4 h-4" />
+                  <Play className="w-4 h-4" aria-hidden="true" />
                 ) : (
-                  <Pause className="w-4 h-4" />
+                  <Pause className="w-4 h-4" aria-hidden="true" />
                 )}
               </Button>
             </>
