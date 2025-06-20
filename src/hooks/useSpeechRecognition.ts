@@ -17,8 +17,10 @@ export const useSpeechRecognition = (): SpeechRecognitionHook => {
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
+  // Enhanced browser support detection
   const isSupported = typeof window !== 'undefined' && 
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) &&
+    !(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream); // Exclude iOS devices
 
   useEffect(() => {
     if (!isSupported) return;
@@ -27,11 +29,15 @@ export const useSpeechRecognition = (): SpeechRecognitionHook => {
     recognitionRef.current = new SpeechRecognition();
 
     const recognition = recognitionRef.current;
-    recognition.continuous = true;
+    
+    // Optimized settings for better mobile compatibility
+    recognition.continuous = false; // Changed to false for better mobile support
     recognition.interimResults = true;
     recognition.lang = 'en-US';
+    recognition.maxAlternatives = 1;
 
     recognition.onstart = () => {
+      console.log('Speech recognition started');
       setIsListening(true);
       setError(null);
     };
@@ -53,11 +59,32 @@ export const useSpeechRecognition = (): SpeechRecognitionHook => {
     };
 
     recognition.onerror = (event) => {
-      setError(`Speech recognition error: ${event.error}`);
+      console.error('Speech recognition error:', event.error);
+      let errorMessage = 'Speech recognition error';
+      
+      switch (event.error) {
+        case 'not-allowed':
+          errorMessage = 'Microphone access denied. Please allow microphone access.';
+          break;
+        case 'no-speech':
+          errorMessage = 'No speech detected. Please try again.';
+          break;
+        case 'network':
+          errorMessage = 'Network error. Please check your connection.';
+          break;
+        case 'audio-capture':
+          errorMessage = 'Microphone not available.';
+          break;
+        default:
+          errorMessage = `Speech recognition error: ${event.error}`;
+      }
+      
+      setError(errorMessage);
       setIsListening(false);
     };
 
     recognition.onend = () => {
+      console.log('Speech recognition ended');
       setIsListening(false);
     };
 
@@ -72,7 +99,16 @@ export const useSpeechRecognition = (): SpeechRecognitionHook => {
     if (recognitionRef.current && !isListening) {
       setTranscript('');
       setError(null);
-      recognitionRef.current.start();
+      
+      // Request microphone permissions explicitly
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(() => {
+          recognitionRef.current?.start();
+        })
+        .catch((err) => {
+          console.error('Microphone permission denied:', err);
+          setError('Microphone access is required for voice input.');
+        });
     }
   };
 

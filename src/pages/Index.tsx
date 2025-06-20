@@ -70,6 +70,7 @@ const Index = () => {
   // ============================
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   // ============================
@@ -146,6 +147,17 @@ const Index = () => {
     scrollToBottom();
     setIsTyping(true);
 
+    // Set a timeout to prevent infinite typing
+    requestTimeoutRef.current = setTimeout(() => {
+      console.warn('Request timed out, stopping typing indicator');
+      setIsTyping(false);
+      toast({
+        title: 'Request Timeout',
+        description: 'The request took too long to complete. Please try again.',
+        duration: 5000,
+      });
+    }, 30000); // 30 second timeout
+
     try {
       const language = await detectLanguage(text);
       
@@ -157,6 +169,12 @@ const Index = () => {
         currentService
       );
 
+      // Clear the timeout if request succeeds
+      if (requestTimeoutRef.current) {
+        clearTimeout(requestTimeoutRef.current);
+        requestTimeoutRef.current = null;
+      }
+
       const aiMessage: Message = {
         id: generateMessageId(),
         text: response.message,
@@ -167,6 +185,13 @@ const Index = () => {
       setTypingMessage(aiMessage);
     } catch (error: any) {
       console.error('Error sending message:', error);
+      
+      // Clear the timeout on error
+      if (requestTimeoutRef.current) {
+        clearTimeout(requestTimeoutRef.current);
+        requestTimeoutRef.current = null;
+      }
+      
       toast({
         title: 'Error',
         description: error.message || 'Failed to send message. Please try again.',
@@ -265,6 +290,15 @@ const Index = () => {
     setChatHistory(savedHistory);
     const newChatId = generateChatId();
     setCurrentChatId(newChatId);
+  }, []);
+
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (requestTimeoutRef.current) {
+        clearTimeout(requestTimeoutRef.current);
+      }
+    };
   }, []);
 
   // ============================
