@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { X, Languages, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from './ChatMessage';
 import { geminiService } from '@/services/geminiService';
 import { detectLanguage } from '@/utils/languageDetection';
@@ -42,6 +44,7 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
           if (detectedLanguage === 'patois') {
             translatedText = await translateToEnglish(message.text);
           } else {
+            // If it's English (or detected as English), translate to Patois
             translatedText = await translateToPatois(message.text);
           }
           
@@ -89,7 +92,7 @@ Provide only the English translation, nothing else.`;
     try {
       const model = geminiService['genAI'].getGenerativeModel({ model: "gemini-1.5-flash" });
       
-      const prompt = `Translate the following English text to natural Jamaican Patois. Keep the meaning and tone intact:
+      const prompt = `Translate the following English text to authentic Jamaican Patois. Use natural Patois expressions, grammar, and vocabulary. Keep the meaning and tone intact:
 
 "${englishText}"
 
@@ -117,7 +120,7 @@ Provide only the Patois translation, nothing else.`;
   return (
     <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex flex-col">
       {/* Header */}
-      <div className="border-b border-border p-3 md:p-4 flex items-center justify-between">
+      <div className="border-b border-border p-3 md:p-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
           <Languages className="w-5 h-5 md:w-6 md:h-6 text-primary flex-shrink-0" />
           <div className="min-w-0">
@@ -134,81 +137,88 @@ Provide only the Patois translation, nothing else.`;
         </Button>
       </div>
 
-      {/* Content - Mobile: Stack vertically, Desktop: Side by side */}
-      <div className={`flex-1 flex overflow-hidden ${isMobile ? 'flex-col' : 'flex-row'}`}>
+      {/* Content - Always split view with proper scrolling */}
+      <div className={`flex-1 flex overflow-hidden ${isMobile ? 'flex-col' : 'flex-row'} min-h-0`}>
         {/* Original Messages */}
-        <div className={`${isMobile ? 'flex-1 border-b' : 'flex-1 border-r'} border-border flex flex-col`}>
-          <div className="p-3 md:p-4 border-b border-border bg-muted/30 flex-shrink-0">
-            <h3 className="font-medium flex items-center gap-2 text-sm md:text-base">
-              <span className="text-base md:text-lg">📝</span>
+        <div className={`${isMobile ? 'flex-1 min-h-0' : 'flex-1 border-r'} border-border flex flex-col`}>
+          <div className="p-2 md:p-3 border-b border-border bg-muted/30 flex-shrink-0">
+            <h3 className="font-medium flex items-center gap-2 text-sm">
+              <span className="text-sm">📝</span>
               Original Chat
             </h3>
           </div>
-          <div className="flex-1 p-2 md:p-4 overflow-y-auto space-y-2 md:space-y-4">
-            {messages.map((message) => (
-              <div key={`original-${message.id}`} className="relative group">
-                <div className="scale-90 md:scale-100 origin-top-left">
-                  <ChatMessage
-                    message={message.text}
-                    isUser={message.isUser}
-                    timestamp={message.timestamp}
-                  />
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-2 md:p-4 space-y-3">
+              {messages.map((message) => (
+                <div key={`original-${message.id}`} className="relative group">
+                  <div className={isMobile ? 'scale-90 origin-top-left' : ''}>
+                    <ChatMessage
+                      message={message.text}
+                      isUser={message.isUser}
+                      timestamp={message.timestamp}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => copyToClipboard(message.text, `original-${message.id}`)}
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 p-1"
+                  >
+                    {copiedId === `original-${message.id}` ? (
+                      <Check className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => copyToClipboard(message.text, `original-${message.id}`)}
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-1 right-1 md:top-2 md:right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 md:w-auto md:h-auto p-1 md:p-2"
-                >
-                  {copiedId === `original-${message.id}` ? (
-                    <Check className="w-3 h-3 text-green-600" />
-                  ) : (
-                    <Copy className="w-3 h-3" />
-                  )}
-                </Button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
 
+        {/* Separator for mobile */}
+        {isMobile && <div className="border-b border-border flex-shrink-0" />}
+
         {/* Translated Messages */}
-        <div className={`${isMobile ? 'flex-1' : 'flex-1'} flex flex-col`}>
-          <div className="p-3 md:p-4 border-b border-border bg-muted/30 flex-shrink-0">
-            <h3 className="font-medium flex items-center gap-2 text-sm md:text-base">
-              <span className="text-base md:text-lg">🔄</span>
+        <div className={`${isMobile ? 'flex-1 min-h-0' : 'flex-1'} flex flex-col`}>
+          <div className="p-2 md:p-3 border-b border-border bg-muted/30 flex-shrink-0">
+            <h3 className="font-medium flex items-center gap-2 text-sm">
+              <span className="text-sm">🔄</span>
               AI Translated
               {isTranslating && (
-                <span className="text-xs text-muted-foreground animate-pulse">
+                <span className="text-xs text-muted-foreground animate-pulse ml-2">
                   Translating...
                 </span>
               )}
             </h3>
           </div>
-          <div className="flex-1 p-2 md:p-4 overflow-y-auto space-y-2 md:space-y-4">
-            {translatedMessages.map((message) => (
-              <div key={`translated-${message.id}`} className="relative group">
-                <div className="scale-90 md:scale-100 origin-top-left">
-                  <ChatMessage
-                    message={message.text}
-                    isUser={message.isUser}
-                    timestamp={message.timestamp}
-                  />
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-2 md:p-4 space-y-3">
+              {translatedMessages.map((message) => (
+                <div key={`translated-${message.id}`} className="relative group">
+                  <div className={isMobile ? 'scale-90 origin-top-left' : ''}>
+                    <ChatMessage
+                      message={message.text}
+                      isUser={message.isUser}
+                      timestamp={message.timestamp}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => copyToClipboard(message.text, `translated-${message.id}`)}
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 p-1"
+                  >
+                    {copiedId === `translated-${message.id}` ? (
+                      <Check className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </Button>
                 </div>
-                <Button
-                  onClick={() => copyToClipboard(message.text, `translated-${message.id}`)}
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-1 right-1 md:top-2 md:right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 md:w-auto md:h-auto p-1 md:p-2"
-                >
-                  {copiedId === `translated-${message.id}` ? (
-                    <Check className="w-3 h-3 text-green-600" />
-                  ) : (
-                    <Copy className="w-3 h-3" />
-                  )}
-                </Button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       </div>
     </div>
