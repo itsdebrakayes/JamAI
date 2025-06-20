@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 
 interface SpeechRecognitionHook {
@@ -16,10 +17,9 @@ export const useSpeechRecognition = (): SpeechRecognitionHook => {
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 
-  // Enhanced browser support detection - fixed MSStream reference
+  // Enhanced browser support detection - now works on all mobile devices
   const isSupported = typeof window !== 'undefined' && 
-    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) &&
-    !(/iPad|iPhone|iPod/.test(navigator.userAgent)); // Simplified iOS detection
+    ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
   useEffect(() => {
     if (!isSupported) return;
@@ -29,8 +29,8 @@ export const useSpeechRecognition = (): SpeechRecognitionHook => {
 
     const recognition = recognitionRef.current;
     
-    // Optimized settings for better mobile compatibility
-    recognition.continuous = false; // Changed to false for better mobile support
+    // Optimized settings for mobile compatibility
+    recognition.continuous = false;
     recognition.interimResults = true;
     recognition.lang = 'en-US';
     recognition.maxAlternatives = 1;

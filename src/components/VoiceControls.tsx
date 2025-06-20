@@ -69,9 +69,6 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
     stop();
   };
 
-  // Detect if user is on iOS/Mac
-  const isAppleDevice = /iPad|iPhone|iPod|Mac/.test(navigator.userAgent);
-
   if (!speechRecognitionSupported && !speechSynthesisSupported) {
     return null;
   }
@@ -99,16 +96,6 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
             <Mic className="w-4 h-4" aria-hidden="true" />
           )}
         </Button>
-      )}
-
-      {/* Show message for unsupported devices */}
-      {!speechRecognitionSupported && isAppleDevice && (
-        <div 
-          className="text-xs text-muted-foreground max-w-40 truncate"
-          role="status"
-        >
-          Voice input not available on this device
-        </div>
       )}
 
       {/* Current transcript display */}
