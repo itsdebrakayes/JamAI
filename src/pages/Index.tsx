@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -33,7 +34,7 @@ import {
 import { migrateLocalStorageToSupabase, shouldRunMigration } from '@/utils/migrationUtils';
 import { detectLanguage } from '@/utils/languageDetection';
 import { locationAwareService } from '@/services/locationAwareService';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { Users } from 'lucide-react';
 
 // Define the structure of a suggestion item
