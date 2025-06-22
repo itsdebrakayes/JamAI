@@ -1,3 +1,4 @@
+
 import { geminiService } from './geminiService';
 import { openaiService } from './openaiService';
 import { googleMapsService } from './googleMapsService';
@@ -15,13 +16,13 @@ interface LocationData {
  */
 interface Place {
   name: string;
-  formatted_address: string;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
+  address: string;
+  rating?: number;
+  priceLevel?: number;
+  isOpen?: boolean;
+  phoneNumber?: string;
+  website?: string;
+  distance?: string;
 }
 
 /**
@@ -102,7 +103,19 @@ export class LocationAwareService {
    */
   private async getLocationData(query: string, type: 'restaurant' | 'hotel'): Promise<LocationData> {
     try {
-      return await googleMapsService.searchPlaces(query, type);
+      const results = await googleMapsService.searchNearbyPlaces(`${query} ${type}`);
+      return {
+        places: results.map(place => ({
+          name: place.name,
+          address: place.address,
+          rating: place.rating,
+          priceLevel: place.priceLevel,
+          isOpen: place.isOpen,
+          phoneNumber: place.phoneNumber,
+          website: place.website,
+          distance: place.distance
+        }))
+      };
     } catch (error) {
       console.error('Google Maps API error:', error);
       throw new Error('Failed to retrieve location data');
@@ -130,10 +143,10 @@ export class LocationAwareService {
     conversationHistory: Message[] = [],
     preferredService?: 'gemini' | 'openai'
   ) {
+    // Use Gemini as default unless specifically requested otherwise
+    const serviceToUse = preferredService || this.defaultService;
+    
     try {
-      // Use Gemini as default unless specifically requested otherwise
-      const serviceToUse = preferredService || this.defaultService;
-      
       // Check if this is a location-based query
       const locationQuery = this.extractLocationQuery(userMessage);
       
