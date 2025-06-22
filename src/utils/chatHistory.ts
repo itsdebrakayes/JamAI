@@ -1,5 +1,6 @@
 
 import { Message } from '@/types/Message';
+import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY = 'jamai_chat_history';
 const CHAT_HISTORY_KEY = 'jamai_chat_list';
@@ -11,6 +12,23 @@ interface ChatHistory {
   createdAt: Date;
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface DatabaseMessage {
+  id: string;
+  content: string;
+  is_user: boolean;
+  message_type: string;
+  metadata: any;
+  created_at: string;
+}
+
+// Legacy localStorage functions (kept for backward compatibility)
 export const getChatHistory = (): Message[] => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -74,5 +92,117 @@ export const loadChatHistory = (): ChatHistory[] => {
   } catch (error) {
     console.error('Error loading chat history list:', error);
     return [];
+  }
+};
+
+// New Supabase-based functions
+export const createChatSession = async (title: string): Promise<string | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .insert([{ title }])
+      .select('id')
+      .single();
+
+    if (error) throw error;
+    return data.id;
+  } catch (error) {
+    console.error('Error creating chat session:', error);
+    return null;
+  }
+};
+
+export const getChatSessions = async (): Promise<ChatSession[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching chat sessions:', error);
+    return [];
+  }
+};
+
+export const saveMessageToDatabase = async (
+  sessionId: string,
+  content: string,
+  isUser: boolean,
+  messageType: string = 'text',
+  metadata: any = {}
+): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('messages')
+      .insert([{
+        session_id: sessionId,
+        content,
+        is_user: isUser,
+        message_type: messageType,
+        metadata
+      }]);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error saving message to database:', error);
+    return false;
+  }
+};
+
+export const getMessagesForSession = async (sessionId: string): Promise<Message[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    return (data || []).map((msg: DatabaseMessage) => ({
+      id: msg.id,
+      content: msg.content,
+      isUser: msg.is_user,
+      timestamp: new Date(msg.created_at),
+      type: msg.message_type as 'text' | 'voice' | 'image',
+      metadata: msg.metadata
+    }));
+  } catch (error) {
+    console.error('Error fetching messages for session:', error);
+    return [];
+  }
+};
+
+export const deleteChatSession = async (sessionId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chat_sessions')
+      .delete()
+      .eq('id', sessionId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting chat session:', error);
+    return false;
+  }
+};
+
+export const updateChatSessionTitle = async (sessionId: string, title: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update({ title, updated_at: new Date().toISOString() })
+      .eq('id', sessionId);
+
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error updating chat session title:', error);
+    return false;
   }
 };
