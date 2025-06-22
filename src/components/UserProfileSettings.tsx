@@ -87,6 +87,32 @@ const UserProfileSettings = () => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!user?.email) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/auth?mode=reset`
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Password Reset Email Sent",
+        description: "Check your email for instructions to reset your password.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSignOutAllDevices = async () => {
     setLoading(true);
     try {
@@ -228,7 +254,7 @@ const UserProfileSettings = () => {
           <div className="space-y-2">
             <Label htmlFor="password" className="flex items-center gap-2">
               <Lock className="w-4 h-4" />
-              New Password
+              Current Password
             </Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -260,6 +286,17 @@ const UserProfileSettings = () => {
                 size="sm"
               >
                 Update
+              </Button>
+            </div>
+            <div className="flex justify-end">
+              <Button
+                variant="link"
+                size="sm"
+                onClick={handleForgotPassword}
+                disabled={loading}
+                className="px-0 h-auto text-sm text-muted-foreground hover:text-primary"
+              >
+                Forgot Password?
               </Button>
             </div>
           </div>
