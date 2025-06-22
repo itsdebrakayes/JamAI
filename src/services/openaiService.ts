@@ -1,102 +1,61 @@
-
-import OpenAI from 'openai';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Interface defining the structure of AI response objects
- * Ensures consistency between different AI service implementations
  */
 interface AIResponse {
-  message: string;              // The generated response text
-  isPatois: boolean;           // Whether response is in Jamaican Patois
-  translationOffered?: boolean; // Whether translation was offered (optional)
+  message: string;
+  isPatois: boolean;
+  translationOffered?: boolean;
 }
 
 /**
  * Interface defining the structure of chat messages
- * Used for maintaining conversation context in AI requests
  */
 interface Message {
-  id: string;          // Unique message identifier
-  text: string;        // Message content
-  isUser: boolean;     // True if from user, false if from AI
-  timestamp: Date;     // When message was created
+  id: string;
+  text: string;
+  isUser: boolean;
+  timestamp: Date;
 }
 
 /**
  * Interface for stored knowledge entries
- * Used to build long-term memory across chat sessions
  */
 interface KnowledgeEntry {
-  id: string;                                                              // Unique entry identifier
-  category: 'recipe' | 'preference' | 'recommendation' | 'fact' | 'conversation'; // Knowledge type
-  userQuery: string;                                                       // Original user question
-  aiResponse: string;                                                      // AI's full response
-  keywords: string[];                                                      // Extracted keywords for search
-  timestamp: string;                                                       // When entry was created
+  id: string;
+  category: 'recipe' | 'preference' | 'recommendation' | 'fact' | 'conversation';
+  userQuery: string;
+  aiResponse: string;
+  keywords: string[];
+  timestamp: string;
 }
 
 /**
  * OpenAIService Class
  * 
- * This service handles interactions with OpenAI's GPT models as an alternative
- * to the Gemini service. It provides the same interface and functionality
- * including conversation context, knowledge storage, and Patois support.
- * 
- * Features:
- * - GPT-4 integration with custom API keys
- * - Cross-session knowledge storage and retrieval
- * - Jamaican Patois language support
- * - Automatic conversation categorization
- * - Context-aware responses using chat history
- * 
- * Note: Requires user to provide their own OpenAI API key
+ * This service handles interactions with OpenAI's GPT models via edge functions.
+ * API keys are now managed server-side for security.
  */
 export class OpenAIService {
   /**
-   * OpenAI client instance (null until API key is provided)
-   */
-  private openai: OpenAI | null = null;
-  
-  /**
-   * User's OpenAI API key
-   */
-  private apiKey: string = '';
-
-  /**
-   * Constructor checks for stored API key in browser storage
+   * Constructor - no longer needs API key management
    */
   constructor() {
-    // Check for stored API key in localStorage
-    const storedKey = localStorage.getItem('openai-api-key');
-    if (storedKey) {
-      this.setApiKey(storedKey);
-    }
+    // Service now uses server-side API keys
   }
 
   /**
-   * Sets the OpenAI API key and initializes the client
-   * @param apiKey - User's OpenAI API key
-   */
-  setApiKey(apiKey: string) {
-    this.apiKey = apiKey;
-    this.openai = new OpenAI({
-      apiKey: apiKey,
-      dangerouslyAllowBrowser: true // Required for browser-based usage
-    });
-  }
-
-  /**
-   * Checks if the service has been configured with an API key
-   * @returns True if API key is set and client is initialized
+   * Checks if the service is properly configured
+   * @returns Always true since API keys are managed server-side
    */
   isConfigured(): boolean {
-    return !!this.openai && !!this.apiKey;
+    return true;
   }
 
   // ============================
   // KNOWLEDGE MANAGEMENT SYSTEM
   // ============================
-  // Note: These methods are identical to GeminiService for consistency
   
   /**
    * Retrieves and organizes stored knowledge from previous conversations
@@ -237,8 +196,7 @@ export class OpenAIService {
   // ============================
   
   /**
-   * Generates AI responses using OpenAI's GPT model with full context
-   * Integrates stored knowledge, conversation history, and language preferences
+   * Generates AI responses using OpenAI via edge function
    * 
    * @param userMessage - The current user message to respond to
    * @param isUserMessagePatois - Whether user wrote in Jamaican Patois
@@ -246,39 +204,23 @@ export class OpenAIService {
    * @returns Promise resolving to AI response object
    */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
-    if (!this.openai) {
-      throw new Error('OpenAI not configured. Please provide an API key.');
-    }
-
-    // Gather context from stored knowledge
-    const storedKnowledge = this.getStoredKnowledge();
-    
-    // Build system prompt based on user's language preference
-    const systemPrompt = isUserMessagePatois 
-      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
-
-IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before. When users reference previous conversations (like "the recipe I asked about" or "pair with what I mentioned"), actively use your stored knowledge to provide relevant context.
-
-${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowledge}\n` : ''}`
-      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.
-
-IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before. When users reference previous conversations (like "the recipe I asked about" or "pair with what I mentioned"), actively use your stored knowledge to provide relevant context.
-
-${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowledge}\n` : ''}`;
-
     try {
-      // Build message array for OpenAI API
-      const messages = this.buildConversationMessages(userMessage, conversationHistory, systemPrompt);
-      
-      // Make API call to OpenAI
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-4.1-2025-04-14", // Latest GPT-4 model
-        messages: messages,
-        max_tokens: 2000,             // Increased for detailed responses
-        temperature: 0.7,             // Balance creativity and consistency
+      // Call edge function instead of direct API call
+      const { data, error } = await supabase.functions.invoke('openai-chat', {
+        body: {
+          userMessage,
+          isUserMessagePatois,
+          conversationHistory: conversationHistory.slice(-8), // Limit history size
+          storedKnowledge: this.getStoredKnowledge()
+        }
       });
 
-      const responseText = completion.choices[0]?.message?.content || 'Sorry, mi cyaan understand dat right now.';
+      if (error) {
+        console.error('OpenAI edge function error:', error);
+        throw error;
+      }
+
+      const responseText = data.message || 'Sorry, mi cyaan understand dat right now.';
       
       // Store the exchange for future reference
       this.storeKnowledge(userMessage, responseText);
@@ -289,9 +231,9 @@ ${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowle
         translationOffered: isUserMessagePatois
       };
     } catch (error) {
-      console.error('OpenAI API Error:', error);
+      console.error('OpenAI Service Error:', error);
       
-      // Fallback response if OpenAI fails
+      // Fallback response if service fails
       const fallbackMessage = isUserMessagePatois 
         ? "Mi have some trouble connecting right now, but mi here fi help."
         : "I'm having some connection issues right now, but I'm here to help.";
@@ -307,6 +249,5 @@ ${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowle
 
 /**
  * Export singleton instance for use throughout the application
- * Maintains consistent service state across all components
  */
 export const openaiService = new OpenAIService();

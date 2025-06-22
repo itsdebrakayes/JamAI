@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Interface defining the structure of AI response objects
@@ -37,48 +38,21 @@ interface KnowledgeEntry {
 /**
  * GeminiService Class
  * 
- * This service handles all interactions with Google's Gemini AI model.
- * It provides enhanced functionality including:
- * - Conversation context management
- * - Long-term knowledge storage and retrieval
- * - Jamaican Patois language detection and response
- * - Automatic categorization of conversation topics
- * - Translation capabilities
- * 
- * The service maintains memory across chat sessions by storing important
- * exchanges in browser localStorage with intelligent categorization.
+ * This service handles all interactions with Google's Gemini AI model via edge functions.
+ * It provides enhanced functionality including conversation context management,
+ * long-term knowledge storage and retrieval, and Jamaican Patois language support.
  */
 export class GeminiService {
   /**
-   * Google Generative AI instance for making API calls
-   */
-  private genAI: GoogleGenerativeAI;
-  
-  /**
-   * API key for Google Gemini service
-   * Using the provided API key
-   */
-  private apiKey: string = 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
-
-  /**
-   * Constructor initializes the Gemini service with API key
+   * Constructor - no longer needs API key initialization
    */
   constructor() {
-    this.genAI = new GoogleGenerativeAI(this.apiKey);
+    // Service now uses server-side API keys
   }
 
   /**
-   * Sets API key for the service
-   * @param apiKey - The API key to set
-   */
-  setApiKey(apiKey: string) {
-    this.apiKey = apiKey || 'AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU';
-    this.genAI = new GoogleGenerativeAI(this.apiKey);
-  }
-
-  /**
-   * Checks if the service is properly configured with API key
-   * @returns Always true since we have a default key
+   * Checks if the service is properly configured
+   * @returns Always true since API keys are managed server-side
    */
   isConfigured(): boolean {
     return true;
@@ -257,8 +231,7 @@ Provide only the English translation, nothing else.`;
   // ============================
   
   /**
-   * Main method for generating AI responses with full context awareness
-   * Integrates conversation history, stored knowledge, and language preferences
+   * Main method for generating AI responses via edge function
    * 
    * @param userMessage - The current user message to respond to
    * @param isUserMessagePatois - Whether user wrote in Jamaican Patois
@@ -266,58 +239,36 @@ Provide only the English translation, nothing else.`;
    * @returns Promise resolving to AI response object
    */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
-    // Gather context from multiple sources
-    const storedKnowledge = this.getStoredKnowledge();
-    const conversationContext = this.buildConversationContext(conversationHistory);
-    
-    // Build comprehensive system prompt based on user's language preference
-    const systemPrompt = isUserMessagePatois 
-      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
-
-IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before. When users reference previous conversations (like "the recipe I asked about" or "pair with what I mentioned"), actively use your stored knowledge to provide relevant context.
-
-${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowledge}\n` : ''}
-
-${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`
-      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.
-
-IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before. When users reference previous conversations (like "the recipe I asked about" or "pair with what I mentioned"), actively use your stored knowledge to provide relevant context.
-
-${storedKnowledge ? `Previous Knowledge (organized by category):\n${storedKnowledge}\n` : ''}
-
-${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`;
-
     try {
-      // Initialize Gemini model with appropriate configuration
-      const model = this.genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        generationConfig: {
-          maxOutputTokens: 2000, // Increased for more detailed responses
-          temperature: 0.7,      // Balance between creativity and consistency
+      // Call edge function instead of direct API call
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: {
+          userMessage,
+          isUserMessagePatois,
+          conversationHistory: conversationHistory.slice(-10), // Limit history size
+          storedKnowledge: this.getStoredKnowledge()
         }
       });
-      
-      // Combine system prompt with user message
-      const prompt = `${systemPrompt}\n\nUser message: ${userMessage}`;
-      
-      // Generate response from Gemini
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const responseText = response.text() || 'Sorry, mi cyaan understand dat right now.';
+
+      if (error) {
+        console.error('Gemini edge function error:', error);
+        throw error;
+      }
+
+      const responseText = data.message || 'Sorry, mi cyaan understand dat right now.';
       
       // Store this exchange for future reference
       this.storeKnowledge(userMessage, responseText);
       
-      // Return structured response object
       return {
         message: responseText,
         isPatois: isUserMessagePatois,
         translationOffered: isUserMessagePatois
       };
     } catch (error) {
-      console.error('Gemini API Error:', error);
+      console.error('Gemini Service Error:', error);
       
-      // Fallback response if Gemini service fails
+      // Fallback response if service fails
       const fallbackMessage = isUserMessagePatois 
         ? "Mi have some trouble right now, but mi here fi help."
         : "I'm having some connection issues right now, but I'm here to help.";
@@ -333,6 +284,5 @@ ${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`
 
 /**
  * Export singleton instance for use throughout the application
- * This ensures consistent service state across all components
  */
 export const geminiService = new GeminiService();
