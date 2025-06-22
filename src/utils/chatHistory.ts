@@ -96,7 +96,7 @@ export const loadChatHistory = (): ChatHistory[] => {
   }
 };
 
-// New Supabase-based functions
+// New Supabase-based functions for authenticated users
 export const createChatSession = async (title: string): Promise<string | null> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -121,9 +121,16 @@ export const createChatSession = async (title: string): Promise<string | null> =
 
 export const getChatSessions = async (): Promise<ChatSession[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user found');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('chat_sessions')
       .select('*')
+      .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
 
     if (error) throw error;
@@ -165,7 +172,8 @@ export const saveMessageToDatabase = async (
     await supabase
       .from('chat_sessions')
       .update({ updated_at: new Date().toISOString() })
-      .eq('id', sessionId);
+      .eq('id', sessionId)
+      .eq('user_id', user.id);
 
     return true;
   } catch (error) {
@@ -176,17 +184,24 @@ export const saveMessageToDatabase = async (
 
 export const getMessagesForSession = async (sessionId: string): Promise<Message[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user found');
+      return [];
+    }
+
     const { data, error } = await supabase
       .from('messages')
       .select('*')
       .eq('session_id', sessionId)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
 
     return (data || []).map((msg: DatabaseMessage) => ({
       id: msg.id,
-      text: msg.content, // Map content to text to match Message interface
+      text: msg.content,
       isUser: msg.is_user,
       timestamp: new Date(msg.created_at)
     }));
@@ -198,10 +213,17 @@ export const getMessagesForSession = async (sessionId: string): Promise<Message[
 
 export const deleteChatSession = async (sessionId: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user found');
+      return false;
+    }
+
     const { error } = await supabase
       .from('chat_sessions')
       .delete()
-      .eq('id', sessionId);
+      .eq('id', sessionId)
+      .eq('user_id', user.id);
 
     if (error) throw error;
     return true;
@@ -213,10 +235,17 @@ export const deleteChatSession = async (sessionId: string): Promise<boolean> => 
 
 export const updateChatSessionTitle = async (sessionId: string, title: string): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user found');
+      return false;
+    }
+
     const { error } = await supabase
       .from('chat_sessions')
       .update({ title, updated_at: new Date().toISOString() })
-      .eq('id', sessionId);
+      .eq('id', sessionId)
+      .eq('user_id', user.id);
 
     if (error) throw error;
     return true;
