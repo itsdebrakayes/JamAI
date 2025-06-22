@@ -20,32 +20,12 @@ const UserProfileSettings = () => {
   const [newPassword, setNewPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
       setEmail(user.email || '');
-      fetchUserProfile();
     }
   }, [user]);
-
-  const fetchUserProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user?.id)
-        .single();
-      
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
-      } else if (data) {
-        setUserProfile(data);
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    }
-  };
 
   const handleUpdateEmail = async () => {
     if (!email || email === user?.email) return;
@@ -132,22 +112,22 @@ const UserProfileSettings = () => {
   };
 
   const getSubscriptionTier = () => {
-    if (!userProfile) return 'Free';
+    if (!limits) return 'Free';
     
-    switch (userProfile.subscription_tier) {
+    switch (limits.tier) {
       case 'jamai_plus':
-        return 'JamAI Plus';
+        return 'Plus';
       case 'jamai_ultra':
-        return 'JamAI Ultra';
+        return 'Ultra';
       default:
         return 'Free';
     }
   };
 
   const getSubscriptionColor = () => {
-    if (!userProfile) return 'secondary';
+    if (!limits) return 'secondary';
     
-    switch (userProfile.subscription_tier) {
+    switch (limits.tier) {
       case 'jamai_plus':
         return 'default';
       case 'jamai_ultra':
@@ -174,9 +154,9 @@ const UserProfileSettings = () => {
                 {getSubscriptionTier()}
               </Badge>
               <p className="text-sm text-muted-foreground mt-1">
-                {userProfile?.subscription_tier === 'jamai_ultra' 
+                {limits?.tier === 'jamai_ultra' 
                   ? 'Unlimited messages and features'
-                  : userProfile?.subscription_tier === 'jamai_plus'
+                  : limits?.tier === 'jamai_plus'
                   ? '500 messages per day'
                   : '50 messages per day'
                 }
