@@ -1,4 +1,3 @@
-
 import { Message } from '@/types/Message';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,8 +14,10 @@ interface ChatHistory {
 interface ChatSession {
   id: string;
   title: string;
+  auto_title: string | null;
   created_at: string;
   updated_at: string;
+  message_count: number | null;
 }
 
 interface DatabaseMessage {
@@ -123,7 +124,7 @@ export const getChatSessions = async (): Promise<ChatSession[]> => {
     const { data, error } = await supabase
       .from('chat_sessions')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -159,6 +160,13 @@ export const saveMessageToDatabase = async (
       }]);
 
     if (error) throw error;
+    
+    // Update chat session's updated_at timestamp
+    await supabase
+      .from('chat_sessions')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', sessionId);
+
     return true;
   } catch (error) {
     console.error('Error saving message to database:', error);
@@ -216,4 +224,32 @@ export const updateChatSessionTitle = async (sessionId: string, title: string): 
     console.error('Error updating chat session title:', error);
     return false;
   }
+};
+
+// Enhanced function to get user's API key for a service
+export const getUserApiKey = async (serviceName: string): Promise<string | null> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('user_api_keys')
+      .select('encrypted_key')
+      .eq('user_id', user.id)
+      .eq('service_name', serviceName)
+      .eq('is_active', true)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+    return data?.encrypted_key || null;
+  } catch (error) {
+    console.error(`Error fetching API key for ${serviceName}:`, error);
+    return null;
+  }
+};
+
+// Function to check if user has API key for service
+export const hasUserApiKey = async (serviceName: string): Promise<boolean> => {
+  const apiKey = await getUserApiKey(serviceName);
+  return !!apiKey;
 };

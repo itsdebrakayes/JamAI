@@ -11,22 +11,34 @@ export type Database = {
     Tables: {
       chat_sessions: {
         Row: {
+          auto_title: string | null
           created_at: string
           id: string
+          keywords: string[] | null
+          message_count: number | null
+          summary: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          auto_title?: string | null
           created_at?: string
           id?: string
+          keywords?: string[] | null
+          message_count?: number | null
+          summary?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          auto_title?: string | null
           created_at?: string
           id?: string
+          keywords?: string[] | null
+          message_count?: number | null
+          summary?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -110,12 +122,139 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_tracking: {
+        Row: {
+          created_at: string
+          id: string
+          media_uploads_used: number | null
+          messages_used: number | null
+          period_end: string
+          period_start: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_uploads_used?: number | null
+          messages_used?: number | null
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_uploads_used?: number | null
+          messages_used?: number | null
+          period_end?: string
+          period_start?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_api_keys: {
+        Row: {
+          created_at: string
+          encrypted_key: string
+          id: string
+          is_active: boolean | null
+          service_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_key: string
+          id?: string
+          is_active?: boolean | null
+          service_name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_key?: string
+          id?: string
+          is_active?: boolean | null
+          service_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      whitelabel_configs: {
+        Row: {
+          accent_color: string | null
+          brand_name: string
+          created_at: string
+          custom_css: string | null
+          domain: string
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          primary_color: string | null
+          secondary_color: string | null
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          brand_name?: string
+          created_at?: string
+          custom_css?: string | null
+          domain: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          brand_name?: string
+          created_at?: string
+          custom_css?: string | null
+          domain?: string
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      check_usage_limit: {
+        Args: { limit_type: string }
+        Returns: boolean
+      }
+      generate_chat_title: {
+        Args: { session_id: string }
+        Returns: string
+      }
+      get_subscription_limits: {
+        Args: { user_email: string }
+        Returns: {
+          tier: string
+          daily_message_limit: number
+          daily_media_limit: number
+        }[]
+      }
+      increment_usage: {
+        Args: { usage_type: string; amount?: number }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
