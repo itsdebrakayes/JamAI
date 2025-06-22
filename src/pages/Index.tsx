@@ -461,13 +461,22 @@ const Index = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {/* Guest status indicator */}
+                    {/* Guest status indicator with Sign Up button */}
                     {isGuest && (
-                      <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-full">
-                        <Users className="w-4 h-4 text-yellow-700" />
-                        <span className="text-sm font-medium text-yellow-700">
-                          Guest: {guestMessagesRemaining} messages left
-                        </span>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-full">
+                          <Users className="w-4 h-4 text-yellow-700" />
+                          <span className="text-sm font-medium text-yellow-700">
+                            Guest: {guestMessagesRemaining} messages left
+                          </span>
+                        </div>
+                        <Button
+                          onClick={() => window.location.href = '/auth'}
+                          size="sm"
+                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                        >
+                          Sign Up / Log In
+                        </Button>
                       </div>
                     )}
 
@@ -497,24 +506,47 @@ const Index = () => {
                           </div>
                         </Button>
                       )}
-                      {/* Settings Sheet - only show for authenticated users */}
-                      {!isGuest && (
-                        <Sheet open={showSettings} onOpenChange={setShowSettings}>
-                          <SheetTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Settings className="w-4 h-4" />
-                            </Button>
-                          </SheetTrigger>
-                          <SheetContent side="right" className="w-96 overflow-y-auto">
-                            <SheetHeader>
-                              <SheetTitle>Settings & Profile</SheetTitle>
-                            </SheetHeader>
-                            <div className="mt-6">
+                      {/* Settings Sheet - now visible for all users */}
+                      <Sheet open={showSettings} onOpenChange={setShowSettings}>
+                        <SheetTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <Settings className="w-4 h-4" />
+                          </Button>
+                        </SheetTrigger>
+                        <SheetContent side="right" className="w-96 overflow-y-auto">
+                          <SheetHeader>
+                            <SheetTitle>Settings & Profile</SheetTitle>
+                          </SheetHeader>
+                          <div className="mt-6">
+                            {isGuest ? (
+                              <div className="text-center py-12">
+                                <div className="mb-6">
+                                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4">
+                                    <span className="text-2xl">🇯🇲</span>
+                                  </div>
+                                  <h3 className="text-xl font-bold mb-2">Sign Up for Full Access</h3>
+                                  <p className="text-muted-foreground mb-6">
+                                    Create an account to access settings, unlimited messages, and more features!
+                                  </p>
+                                </div>
+                                <div className="space-y-3">
+                                  <Button
+                                    onClick={() => window.location.href = '/auth'}
+                                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                                  >
+                                    Sign Up Now
+                                  </Button>
+                                  <div className="text-sm text-muted-foreground">
+                                    <p>You have {guestMessagesRemaining} messages remaining</p>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
                               <UserProfileSettings />
-                            </div>
-                          </SheetContent>
-                        </Sheet>
-                      )}
+                            )}
+                          </div>
+                        </SheetContent>
+                      </Sheet>
                       
                       <ThemeToggle />
                       <SubscriptionBadge />
@@ -547,6 +579,13 @@ const Index = () => {
                               <p className="text-yellow-700 text-sm mt-1">
                                 You have {guestMessagesRemaining} free messages. Sign up for unlimited access!
                               </p>
+                              <Button
+                                onClick={() => window.location.href = '/auth'}
+                                size="sm"
+                                className="mt-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                              >
+                                Sign Up Now
+                              </Button>
                             </div>
                           )}
                         </div>
@@ -592,9 +631,33 @@ const Index = () => {
                     {isGuest && guestMessagesRemaining <= 0 && (
                       <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
                         <p className="text-red-800 font-medium">Guest limit reached!</p>
-                        <p className="text-red-700 text-sm">
-                          <a href="/auth" className="underline hover:text-red-800">Sign up now</a> for unlimited messages and features.
+                        <p className="text-red-700 text-sm mb-3">
+                          Sign up now for unlimited messages and features.
                         </p>
+                        <Button
+                          onClick={() => window.location.href = '/auth'}
+                          size="sm"
+                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                        >
+                          Sign Up Now
+                        </Button>
+                      </div>
+                    )}
+                    {/* Show sign up prompt when getting close to limit */}
+                    {isGuest && guestMessagesRemaining <= 3 && guestMessagesRemaining > 0 && (
+                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
+                        <p className="text-yellow-800 font-medium">Only {guestMessagesRemaining} messages left!</p>
+                        <p className="text-yellow-700 text-sm mb-3">
+                          Sign up now to get unlimited messages and keep the conversation going.
+                        </p>
+                        <Button
+                          onClick={() => window.location.href = '/auth'}
+                          size="sm"
+                          variant="outline"
+                          className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
+                        >
+                          Sign Up for Unlimited Messages
+                        </Button>
                       </div>
                     )}
                   </div>
