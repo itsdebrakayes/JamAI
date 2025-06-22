@@ -169,7 +169,7 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4 animate-pulse">
             <span className="text-2xl">🇯🇲</span>
@@ -183,8 +183,8 @@ const Auth = () => {
   // If user is already logged in, show logout option
   if (user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-yellow-50 to-green-100">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <Card className="w-full max-w-md border-2 border-green-200">
           <CardHeader className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4 mx-auto">
               <span className="text-2xl">🇯🇲</span>
@@ -219,8 +219,8 @@ const Auth = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-yellow-50 to-green-100">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+      <Card className="w-full max-w-md border-2 border-green-200">
         <CardHeader className="text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4 mx-auto">
             <span className="text-2xl">🇯🇲</span>
@@ -379,6 +379,13 @@ const Auth = () => {
           </div>
         </CardContent>
       </Card>
+      
+      {/* Powered by DS Technologies tag */}
+      <div className="mt-6 text-center">
+        <p className="text-sm text-gray-500">
+          Powered by <span className="font-semibold text-green-600">DS Technologies</span>
+        </p>
+      </div>
     </div>
   );
 };
