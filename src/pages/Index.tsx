@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -20,6 +21,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { Toaster } from '@/components/ui/sonner';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 import { Message } from '@/types/Message';
 import { 
   getChatSessions, 
@@ -70,20 +72,19 @@ const Index = () => {
   const [showTranslationMode, setShowTranslationMode] = useState(false);
   const [showChatSummary, setShowChatSummary] = useState(false);
   const [currentService, setCurrentService] = useState<AIService>('gemini');
-  const [apiKey, setApiKey] = useState<string>('AIzaSyDOhgop270EBYX5seQfbevXp3f8hfIYQfU');
-  const [hasValidApiKey, setHasValidApiKey] = useState<boolean>(true);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
   const [migrationCompleted, setMigrationCompleted] = useState(false);
 
   // ============================
-  // REFS
+  // HOOKS
   // ============================
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
+  const { limits, usage, loading, checkLimit, incrementUsage, refetch } = useSubscription();
 
   // ============================
   // UTILITY FUNCTIONS
@@ -101,8 +102,19 @@ const Index = () => {
     return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  const generateChatTitle = (firstMessage: string): string => {
-    return firstMessage.length > 30 ? firstMessage.substring(0, 30) + '...' : firstMessage;
+  const loadChatHistory = async () => {
+    try {
+      const sessions = await getChatSessions();
+      const chatHistoryData = sessions.map(session => ({
+        id: session.id,
+        title: session.auto_title || session.title,
+        messages: [] as Message[], // Messages loaded on demand
+        createdAt: new Date(session.created_at)
+      }));
+      setChatHistory(chatHistoryData);
+    } catch (error) {
+      console.error('Error loading chat history:', error);
+    }
   };
 
   // ============================
@@ -113,31 +125,6 @@ const Index = () => {
     if (typingMessage) {
       const finalMessages = [...messages, typingMessage];
       setMessages(finalMessages);
-      addToHistory(messages[messages.length - 1], typingMessage);
-
-      // Save chat history if this is the first message
-      if (messages.length === 1) {
-        const chatTitle = generateChatTitle(messages[0].text);
-        const newChat: ChatHistory = {
-          id: currentChatId,
-          title: chatTitle,
-          messages: finalMessages,
-          createdAt: new Date()
-        };
-        const updatedHistory = [newChat, ...chatHistory];
-        setChatHistory(updatedHistory);
-        saveChatHistory(updatedHistory);
-      } else {
-        // Update existing chat
-        const updatedHistory = chatHistory.map(chat => 
-          chat.id === currentChatId 
-            ? { ...chat, messages: finalMessages }
-            : chat
-        );
-        setChatHistory(updatedHistory);
-        saveChatHistory(updatedHistory);
-      }
-      
       setTypingMessage(null);
     }
     setIsTyping(false);
@@ -257,14 +244,6 @@ const Index = () => {
     handleSendMessage(suggestion);
   };
 
-  const handleClearHistory = () => {
-    setMessages([]);
-    setTypingMessage(null);
-    clearHistory();
-    setChatHistory([]);
-    saveChatHistory([]);
-  };
-
   const handleNewChat = () => {
     const newChatId = generateChatId();
     setCurrentChatId(newChatId);
@@ -353,11 +332,6 @@ const Index = () => {
     setShowTranslationMode(false);
   };
 
-  // Get the last AI message for text-to-speech
-  const lastAiMessage = messages.length > 0 
-    ? messages.filter(m => !m.isUser).pop()?.text || ''
-    : '';
-
   // ============================
   // EFFECTS
   // ============================
@@ -367,30 +341,7 @@ const Index = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Set the API key in the gemini service
-    geminiService.setApiKey(apiKey);
-    setHasValidApiKey(!!apiKey);
-  }, [apiKey, currentService]);
-
-  useEffect(() => {
-    // Load chat history on component mount
-    const savedHistory = loadChatHistory();
-    setChatHistory(savedHistory);
-    const newChatId = generateChatId();
-    setCurrentChatId(newChatId);
-  }, []);
-
-  // Cleanup timeout on component unmount
-  useEffect(() => {
-    return () => {
-      if (requestTimeoutRef.current) {
-        clearTimeout(requestTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Migration and initialization
-  useEffect(() => {
+    // Load chat history on component mount and set up new chat
     const initializeApp = async () => {
       // Check if migration is needed
       const needsMigration = await shouldRunMigration();
@@ -413,29 +364,15 @@ const Index = () => {
     initializeApp();
   }, []);
 
-  // ============================
-  // API KEY HANDLERS
-  // ============================
+  // Cleanup timeout on component unmount
+  useEffect(() => {
+    return () => {
+      if (requestTimeoutRef.current) {
+        clearTimeout(requestTimeoutRef.current);
+      }
+    };
+  }, []);
 
-  const handleApiKeySet = (newApiKey: string) => {
-    if (newApiKey) {
-      setApiKey(newApiKey);
-      localStorage.setItem(`${currentService}ApiKey`, newApiKey);
-      setHasValidApiKey(true);
-      toast({
-        title: 'API Key Set',
-        description: `API Key for ${currentService.toUpperCase()} has been successfully set.`,
-      });
-    } else {
-      setHasValidApiKey(false);
-      localStorage.removeItem(`${currentService}ApiKey`);
-      toast({
-        title: 'API Key Removed',
-        description: `API Key for ${currentService.toUpperCase()} has been successfully removed.`,
-      });
-    }
-  };
-  
   // ============================
   // RENDER
   // ============================
