@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Bot } from 'lucide-react';
+import { Eye, EyeOff, Bot, Users } from 'lucide-react';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
@@ -29,6 +28,20 @@ const Auth = () => {
     };
     checkUser();
   }, [navigate]);
+
+  const handleContinueAsGuest = () => {
+    // Set guest mode in localStorage
+    localStorage.setItem('guest_mode', 'true');
+    localStorage.setItem('guest_messages_used', '0');
+    localStorage.setItem('guest_session_start', new Date().toISOString());
+    
+    toast({
+      title: "Welcome, Guest!",
+      description: "You have 10 free messages to try JamAI. Sign up for unlimited access!",
+    });
+    
+    navigate('/');
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,38 +107,79 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-yellow-50 to-green-100 flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Jamaican flag accent elements */}
+      <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600"></div>
+      <div className="absolute bottom-0 left-0 w-full h-2 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600"></div>
+      
+      {/* Decorative elements with Jamaican colors */}
+      <div className="absolute top-10 left-10 w-20 h-20 bg-green-500/20 rounded-full blur-xl"></div>
+      <div className="absolute top-32 right-20 w-16 h-16 bg-yellow-400/30 rounded-full blur-lg"></div>
+      <div className="absolute bottom-20 left-20 w-24 h-24 bg-green-600/20 rounded-full blur-xl"></div>
+      <div className="absolute bottom-40 right-10 w-18 h-18 bg-yellow-500/25 rounded-full blur-lg"></div>
+
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-secondary to-accent rounded-2xl mb-4">
-            <Bot className="w-8 h-8 text-white" />
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-3xl mb-6 shadow-2xl">
+            <Bot className="w-10 h-10 text-white drop-shadow-lg" />
           </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
-            Welcome to JamAI
+          <h1 className="text-4xl font-bold mb-2">
+            <span className="bg-gradient-to-r from-green-700 via-yellow-500 to-green-700 bg-clip-text text-transparent">
+              Welcome to JamAI
+            </span>
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-gray-700 text-lg max-w-2xl mx-auto font-medium">
             Your intelligent Jamaican AI assistant
           </p>
+          <div className="flex items-center justify-center gap-2 mt-2">
+            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+            <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+            <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+          </div>
         </div>
 
-        <Card className="glass-effect border-0 modern-shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle>Get Started</CardTitle>
-            <CardDescription>
-              Sign in to your account or create a new one
+        <Card className="glass-effect border border-green-200/50 modern-shadow-lg backdrop-blur-sm bg-white/90">
+          <CardHeader className="text-center border-b border-green-100">
+            <CardTitle className="text-green-800">Get Started</CardTitle>
+            <CardDescription className="text-green-700">
+              Sign in to your account, create a new one, or try as guest
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          <CardContent className="pt-6">
+            {/* Continue as Guest Button */}
+            <div className="mb-6">
+              <Button 
+                onClick={handleContinueAsGuest}
+                className="w-full h-14 bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 hover:from-yellow-500 hover:via-yellow-600 hover:to-yellow-500 text-green-900 font-bold shadow-lg hover:shadow-xl transition-all duration-300 border-2 border-yellow-300"
+                disabled={loading}
+              >
+                <Users className="w-5 h-5 mr-2" />
+                Continue as Guest (10 Free Messages)
+              </Button>
+              <p className="text-xs text-center text-green-700 mt-2">
+                No signup required • Try JamAI instantly
+              </p>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-green-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-green-600 font-medium">Or continue with account</span>
+              </div>
+            </div>
+
+            <Tabs defaultValue="signin" className="w-full mt-6">
+              <TabsList className="grid w-full grid-cols-2 bg-green-50 border border-green-200">
+                <TabsTrigger value="signin" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="data-[state=active]:bg-green-600 data-[state=active]:text-white">Sign Up</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="signin-email" className="text-green-800">Email</Label>
                     <Input
                       id="signin-email"
                       type="email"
@@ -133,11 +187,11 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-12"
+                      className="h-12 border-green-200 focus:border-green-500 focus:ring-green-500/20"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signin-password" className="text-green-800">Password</Label>
                     <div className="relative">
                       <Input
                         id="signin-password"
@@ -146,13 +200,13 @@ const Auth = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="h-12 pr-10"
+                        className="h-12 pr-10 border-green-200 focus:border-green-500 focus:ring-green-500/20"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-green-600"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
@@ -165,7 +219,7 @@ const Auth = () => {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full h-12 bg-gradient-to-r from-secondary to-accent hover:from-secondary/90 hover:to-accent/90"
+                    className="w-full h-12 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold shadow-lg"
                     disabled={loading}
                   >
                     {loading ? "Signing in..." : "Sign In"}
@@ -176,7 +230,7 @@ const Auth = () => {
               <TabsContent value="signup">
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
+                    <Label htmlFor="signup-name" className="text-green-800">Full Name</Label>
                     <Input
                       id="signup-name"
                       type="text"
@@ -184,11 +238,11 @@ const Auth = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       required
-                      className="h-12"
+                      className="h-12 border-green-200 focus:border-green-500 focus:ring-green-500/20"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email" className="text-green-800">Email</Label>
                     <Input
                       id="signup-email"
                       type="email"
@@ -196,11 +250,11 @@ const Auth = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="h-12"
+                      className="h-12 border-green-200 focus:border-green-500 focus:ring-green-500/20"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
+                    <Label htmlFor="signup-password" className="text-green-800">Password</Label>
                     <div className="relative">
                       <Input
                         id="signup-password"
@@ -210,13 +264,13 @@ const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         minLength={6}
-                        className="h-12 pr-10"
+                        className="h-12 pr-10 border-green-200 focus:border-green-500 focus:ring-green-500/20"
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-green-600"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
@@ -229,7 +283,7 @@ const Auth = () => {
                   </div>
                   <Button 
                     type="submit" 
-                    className="w-full h-12 bg-gradient-to-r from-secondary to-accent hover:from-secondary/90 hover:to-accent/90"
+                    className="w-full h-12 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold shadow-lg"
                     disabled={loading}
                   >
                     {loading ? "Creating account..." : "Sign Up"}
@@ -239,6 +293,14 @@ const Auth = () => {
             </Tabs>
           </CardContent>
         </Card>
+
+        <div className="text-center mt-6">
+          <div className="flex items-center justify-center gap-2 text-green-700">
+            <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+            <span className="text-sm font-medium">Powered by Jamaican AI Technology</span>
+            <div className="w-2 h-2 bg-yellow-400 rounded-full"></div>
+          </div>
+        </div>
       </div>
     </div>
   );

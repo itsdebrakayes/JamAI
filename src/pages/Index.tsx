@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -34,6 +33,8 @@ import {
 import { migrateLocalStorageToSupabase, shouldRunMigration } from '@/utils/migrationUtils';
 import { detectLanguage } from '@/utils/languageDetection';
 import { locationAwareService } from '@/services/locationAwareService';
+import { useAuth } from '@/hooks/useAuth';
+import { Users } from 'lucide-react';
 
 // Define the structure of a suggestion item
 interface SuggestionItem {
@@ -85,6 +86,7 @@ const Index = () => {
   const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const { limits, usage, loading, checkLimit, incrementUsage, refetch } = useSubscription();
+  const { user, isGuest, guestMessagesRemaining, useGuestMessage } = useAuth();
 
   // ============================
   // UTILITY FUNCTIONS
@@ -134,15 +136,45 @@ const Index = () => {
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
-    // Check message limit before sending
-    const canSendMessage = await checkLimit('messages');
-    if (!canSendMessage) {
-      toast({
-        title: 'Message Limit Reached',
-        description: 'You have reached your daily message limit. Please upgrade your plan or wait until tomorrow.',
-        variant: 'destructive'
-      });
-      return;
+    // Handle guest mode message limit
+    if (isGuest) {
+      if (guestMessagesRemaining <= 0) {
+        toast({
+          title: 'Guest Limit Reached',
+          description: 'You have used all 10 free messages. Please sign up to continue using JamAI!',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      const canUseMessage = useGuestMessage();
+      if (!canUseMessage) {
+        toast({
+          title: 'Guest Limit Reached',
+          description: 'You have used all 10 free messages. Please sign up to continue using JamAI!',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Show remaining messages for guest
+      if (guestMessagesRemaining <= 3) {
+        toast({
+          title: `${guestMessagesRemaining - 1} messages remaining`,
+          description: 'Sign up for unlimited messages!',
+        });
+      }
+    } else {
+      // Check message limit for authenticated users
+      const canSendMessage = await checkLimit('messages');
+      if (!canSendMessage) {
+        toast({
+          title: 'Message Limit Reached',
+          description: 'You have reached your daily message limit. Please upgrade your plan or wait until tomorrow.',
+          variant: 'destructive'
+        });
+        return;
+      }
     }
 
     const userMessage: Message = {
@@ -157,9 +189,9 @@ const Index = () => {
     scrollToBottom();
     setIsTyping(true);
 
-    // Create new chat session if none exists
+    // Only create chat session for authenticated users
     let sessionId = currentChatId;
-    if (!sessionId) {
+    if (!isGuest && !sessionId) {
       sessionId = await createChatSession('New Chat');
       if (sessionId) {
         setCurrentChatId(sessionId);
@@ -173,8 +205,10 @@ const Index = () => {
       }
     }
 
-    // Save user message to database
-    await saveMessageToDatabase(sessionId, text, true, 'text', {});
+    // Save user message to database (only for authenticated users)
+    if (!isGuest && sessionId) {
+      await saveMessageToDatabase(sessionId, text, true, 'text', {});
+    }
 
     // Set timeout for request
     requestTimeoutRef.current = setTimeout(() => {
@@ -211,16 +245,18 @@ const Index = () => {
 
       setTypingMessage(aiMessage);
       
-      // Save AI message to database
-      await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
-      
-      // Increment usage count
-      await incrementUsage('messages');
+      // Save AI message to database (only for authenticated users)
+      if (!isGuest && sessionId) {
+        await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
+        
+        // Increment usage count for authenticated users
+        await incrementUsage('messages');
 
-      // Generate intelligent title if this is a new chat
-      if (messages.length === 0) {
-        await supabase.rpc('generate_chat_title', { session_id: sessionId });
-        await loadChatHistory(); // Refresh chat list
+        // Generate intelligent title if this is a new chat
+        if (messages.length === 0) {
+          await supabase.rpc('generate_chat_title', { session_id: sessionId });
+          await loadChatHistory(); // Refresh chat list
+        }
       }
 
     } catch (error: any) {
@@ -381,25 +417,27 @@ const Index = () => {
     <ProtectedRoute>
       <SidebarProvider>
         <div className="flex h-screen w-full relative">
-          {/* Chat History Sidebar */}
-          <Sidebar>
-            <SidebarHeader className="p-4 border-b">
-              <div className="flex items-center gap-2">
-                <FileText className="w-5 h-5 text-jamaican-green" />
-                <span className="font-semibold text-jamaican-green">Chat History</span>
-              </div>
-            </SidebarHeader>
-            <SidebarContent>
-              <ChatHistorySidebar
-                chatHistory={chatHistory}
-                currentChatId={currentChatId}
-                onNewChat={handleNewChat}
-                onLoadChat={handleLoadChat}
-                onDeleteChats={handleDeleteChats}
-                onClearAllHistory={handleClearAllHistory}
-              />
-            </SidebarContent>
-          </Sidebar>
+          {/* Chat History Sidebar - only show for authenticated users */}
+          {!isGuest && (
+            <Sidebar>
+              <SidebarHeader className="p-4 border-b">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-jamaican-green" />
+                  <span className="font-semibold text-jamaican-green">Chat History</span>
+                </div>
+              </SidebarHeader>
+              <SidebarContent>
+                <ChatHistorySidebar
+                  chatHistory={chatHistory}
+                  currentChatId={currentChatId}
+                  onNewChat={handleNewChat}
+                  onLoadChat={handleLoadChat}
+                  onDeleteChats={handleDeleteChats}
+                  onClearAllHistory={handleClearAllHistory}
+                />
+              </SidebarContent>
+            </Sidebar>
+          )}
 
           {/* Main Content Area */}
           <SidebarInset className="flex-1">
@@ -408,7 +446,7 @@ const Index = () => {
               <header className="glass-effect border-b px-4 py-3 modern-shadow">
                 <div className="flex items-center justify-between max-w-6xl mx-auto">
                   <div className="flex items-center gap-3">
-                    <SidebarTrigger />
+                    {!isGuest && <SidebarTrigger />}
                     <div 
                       className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={handleHeaderClick}
@@ -422,38 +460,15 @@ const Index = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    {/* Usage meter for mobile */}
-                    <div className="md:hidden">
-                      <Sheet>
-                        <SheetTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <SubscriptionBadge />
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent side="right" className="w-80">
-                          <SheetHeader>
-                            <SheetTitle>Usage & Settings</SheetTitle>
-                          </SheetHeader>
-                          <div className="mt-6 space-y-6">
-                            <UsageMeter />
-                            <Tabs defaultValue="settings">
-                              <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="settings">Settings</TabsTrigger>
-                                <TabsTrigger value="api-keys">API Keys</TabsTrigger>
-                              </TabsList>
-                              <TabsContent value="settings" className="mt-4">
-                                <div className="space-y-4">
-                                  <ThemeToggle />
-                                </div>
-                              </TabsContent>
-                              <TabsContent value="api-keys" className="mt-4">
-                                <ApiKeyManager />
-                              </TabsContent>
-                            </Tabs>
-                          </div>
-                        </SheetContent>
-                      </Sheet>
-                    </div>
+                    {/* Guest status indicator */}
+                    {isGuest && (
+                      <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-full">
+                        <Users className="w-4 h-4 text-yellow-700" />
+                        <span className="text-sm font-medium text-yellow-700">
+                          Guest: {guestMessagesRemaining} messages left
+                        </span>
+                      </div>
+                    )}
 
                     {/* Desktop controls */}
                     <div className="hidden md:flex items-center gap-3">
@@ -533,6 +548,16 @@ const Index = () => {
                             Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, 
                             find nearby places, and I'll respond in authentic Jamaican style!
                           </p>
+                          {isGuest && (
+                            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
+                              <p className="text-yellow-800 font-medium">
+                                👋 You're trying JamAI as a guest!
+                              </p>
+                              <p className="text-yellow-700 text-sm mt-1">
+                                You have {guestMessagesRemaining} free messages. Sign up for unlimited access!
+                              </p>
+                            </div>
+                          )}
                         </div>
                         <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
                       </>
@@ -571,8 +596,16 @@ const Index = () => {
                   <div className="max-w-4xl mx-auto">
                     <ChatInput 
                       onSendMessage={handleSendMessage} 
-                      disabled={isTyping}
+                      disabled={isTyping || (isGuest && guestMessagesRemaining <= 0)}
                     />
+                    {isGuest && guestMessagesRemaining <= 0 && (
+                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
+                        <p className="text-red-800 font-medium">Guest limit reached!</p>
+                        <p className="text-red-700 text-sm">
+                          <a href="/auth" className="underline hover:text-red-800">Sign up now</a> for unlimited messages and features.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
