@@ -1,3 +1,4 @@
+
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -209,17 +210,21 @@ export class GeminiService {
    */
   async translateToEnglish(patoisText: string): Promise<string> {
     try {
-      const model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      
-      const prompt = `Translate the following Jamaican Patois text to clear, natural English. Keep the meaning and tone intact:
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: {
+          userMessage: `Translate the following Jamaican Patois text to clear, natural English. Keep the meaning and tone intact: "${patoisText}". Provide only the English translation, nothing else.`,
+          isUserMessagePatois: false,
+          conversationHistory: [],
+          storedKnowledge: ''
+        }
+      });
 
-"${patoisText}"
+      if (error) {
+        console.error('Translation Error:', error);
+        return 'Translation not available.';
+      }
 
-Provide only the English translation, nothing else.`;
-      
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text() || 'Translation not available.';
+      return data.message || 'Translation not available.';
     } catch (error) {
       console.error('Translation Error:', error);
       return 'Sorry, translation is not available right now.';

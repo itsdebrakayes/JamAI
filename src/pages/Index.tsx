@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -36,6 +35,7 @@ import { detectLanguage } from '@/utils/languageDetection';
 import { locationAwareService } from '@/services/locationAwareService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Users } from 'lucide-react';
+import UserProfileSettings from '@/components/UserProfileSettings';
 
 // Define the structure of a suggestion item
 interface SuggestionItem {
@@ -497,35 +497,25 @@ const Index = () => {
                           </div>
                         </Button>
                       )}
-                      <Sheet open={showSettings} onOpenChange={setShowSettings}>
-                        <SheetTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Settings className="w-4 h-4" />
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent side="right" className="w-96">
-                          <SheetHeader>
-                            <SheetTitle>Settings & Usage</SheetTitle>
-                          </SheetHeader>
-                          <div className="mt-6 space-y-6">
-                            <UsageMeter />
-                            <Tabs defaultValue="settings">
-                              <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="settings">Settings</TabsTrigger>
-                                <TabsTrigger value="api-keys">API Keys</TabsTrigger>
-                              </TabsList>
-                              <TabsContent value="settings" className="mt-4">
-                                <div className="space-y-4">
-                                  <ThemeToggle />
-                                </div>
-                              </TabsContent>
-                              <TabsContent value="api-keys" className="mt-4">
-                                <ApiKeyManager />
-                              </TabsContent>
-                            </Tabs>
-                          </div>
-                        </SheetContent>
-                      </Sheet>
+                      {/* Settings Sheet - only show for authenticated users */}
+                      {!isGuest && (
+                        <Sheet open={showSettings} onOpenChange={setShowSettings}>
+                          <SheetTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <Settings className="w-4 h-4" />
+                            </Button>
+                          </SheetTrigger>
+                          <SheetContent side="right" className="w-96 overflow-y-auto">
+                            <SheetHeader>
+                              <SheetTitle>Settings & Profile</SheetTitle>
+                            </SheetHeader>
+                            <div className="mt-6">
+                              <UserProfileSettings />
+                            </div>
+                          </SheetContent>
+                        </Sheet>
+                      )}
+                      
                       <ThemeToggle />
                       <SubscriptionBadge />
                     </div>
