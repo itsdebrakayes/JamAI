@@ -26,6 +26,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+  DrawerClose,
+} from '@/components/ui/drawer';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 /**
  * Interface defining the structure of chat history entries
@@ -73,17 +82,15 @@ const ChatHistorySidebar = ({
   onDeleteChats,
   onClearAllHistory
 }: ChatHistorySidebarProps) => {
+  const { setOpenMobile } = useSidebar();
+  const isMobile = useIsMobile();
+  
   // ============================
   // STATE MANAGEMENT
   // ============================
   
   /**
    * Hook to control mobile sidebar visibility
-   */
-  const { setOpenMobile } = useSidebar();
-  
-  /**
-   * Set of currently selected chat IDs for bulk operations
    */
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set());
   
@@ -219,9 +226,201 @@ const ChatHistorySidebar = ({
   // RENDER
   // ============================
   
+  if (isMobile) {
+    return (
+      <>
+        <Drawer>
+          <DrawerTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="fixed top-4 left-4 z-50 bg-background/80 backdrop-blur-sm border"
+            >
+              <MessageSquare className="w-5 h-5" />
+            </Button>
+          </DrawerTrigger>
+          <DrawerContent className="h-[85vh]">
+            <DrawerHeader className="pb-4">
+              <DrawerTitle className="text-left flex items-center gap-2">
+                <span className="text-lg font-bold">🇯🇲</span>
+                <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
+              </DrawerTitle>
+            </DrawerHeader>
+            
+            <div className="flex-1 overflow-hidden flex flex-col px-4">
+              {/* New chat button */}
+              <Button 
+                onClick={() => {
+                  handleNewChat();
+                  // Close drawer
+                  document.querySelector('[data-vaul-drawer-wrapper]')?.click();
+                }}
+                className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-4 transition-all duration-200"
+                variant="outline"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="font-medium">New Chat</span>
+              </Button>
+
+              {/* Chat management controls */}
+              {chatHistory.length > 0 && (
+                <div className="flex gap-2 mb-4">
+                  {!isSelectionMode && (
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <MoreVertical className="w-3 h-3" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-48" align="start">
+                        <Button 
+                          onClick={handleClearAll}
+                          className="w-full justify-start gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30"
+                          variant="ghost"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Clear All History
+                        </Button>
+                      </PopoverContent>
+                    </Popover>
+                  )}
+                  
+                  <Button 
+                    onClick={() => setIsSelectionMode(!isSelectionMode)}
+                    className="justify-start gap-2 h-8 text-sm px-3"
+                    variant="ghost"
+                    size="sm"
+                  >
+                    {isSelectionMode ? 'Cancel' : 'Select'}
+                  </Button>
+                  
+                  {isSelectionMode && (
+                    <>
+                      <Button 
+                        onClick={toggleSelectAll}
+                        className="justify-start gap-2 h-8 text-sm px-3"
+                        variant="ghost"
+                        size="sm"
+                      >
+                        {selectedChats.size === chatHistory.length ? 'Deselect All' : 'Select All'}
+                      </Button>
+                      
+                      {selectedChats.size > 0 && (
+                        <Button 
+                          onClick={handleDeleteSelected}
+                          className="h-8 px-2"
+                          variant="destructive"
+                          size="sm"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Chat list */}
+              <div className="flex-1 overflow-y-auto">
+                <div className="space-y-2">
+                  {chatHistory.map((chat) => (
+                    <div key={chat.id} className="flex items-center gap-2 group">
+                      {isSelectionMode && (
+                        <input
+                          type="checkbox"
+                          checked={selectedChats.has(chat.id)}
+                          onChange={() => handleChatSelect(chat.id)}
+                          className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                        />
+                      )}
+                      
+                      <button
+                        onClick={() => {
+                          handleChatSelect(chat.id);
+                          if (!isSelectionMode) {
+                            // Close drawer
+                            document.querySelector('[data-vaul-drawer-wrapper]')?.click();
+                          }
+                        }}
+                        className={`flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted rounded-lg transition-colors ${
+                          chat.id === currentChatId && !isSelectionMode ? 'bg-accent text-accent-foreground font-medium' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate text-sm">{chat.title}</span>
+                        </div>
+                      </button>
+                      
+                      {!isSelectionMode && (
+                        <Button
+                          onClick={(e) => handleDeleteSingle(chat.id, e)}
+                          variant="ghost"
+                          size="sm"
+                          className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+
+        {/* Delete confirmation dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Chat{selectedChats.size > 1 || chatToDelete ? 's' : ''}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {chatToDelete 
+                  ? "Are you sure you want to delete this chat? This action cannot be undone."
+                  : `Are you sure you want to delete ${selectedChats.size} chat${selectedChats.size > 1 ? 's' : ''}? This action cannot be undone.`
+                }
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={chatToDelete ? confirmDeleteSingle : confirmDeleteSelected}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Clear all confirmation dialog */}
+        <AlertDialog open={clearAllDialogOpen} onOpenChange={setClearAllDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Clear All Chat History?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete all chat history? This will permanently remove all {chatHistory.length} chat{chatHistory.length !== 1 ? 's' : ''} and cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={confirmClearAll}
+                className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+              >
+                Clear All
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
+    );
+  }
+
+  // Desktop sidebar (keep existing implementation)
   return (
     <>
-      {/* Main sidebar component with dark mode support */}
       <Sidebar side="left" className="border-r border-border bg-background/95 backdrop-blur-md">
         {/* Sidebar header with new chat button and controls */}
         <SidebarHeader className="p-4 bg-background/90 border-b border-border/30">

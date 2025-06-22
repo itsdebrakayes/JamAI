@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { elevenLabsService } from '@/services/elevenLabsService';
 
 interface ElevenLabsSpeechHook {
@@ -16,6 +16,30 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const userInteractionRef = useRef<boolean>(false);
+
+  // Enable user interaction tracking for mobile
+  const enableUserInteraction = useCallback(() => {
+    if (!userInteractionRef.current) {
+      console.log('🖱️ User interaction enabled for mobile audio');
+      userInteractionRef.current = true;
+      
+      // Remove event listeners after first interaction
+      document.removeEventListener('touchstart', enableUserInteraction);
+      document.removeEventListener('click', enableUserInteraction);
+    }
+  }, []);
+
+  // Set up user interaction listeners on component mount
+  React.useEffect(() => {
+    document.addEventListener('touchstart', enableUserInteraction, { once: true });
+    document.addEventListener('click', enableUserInteraction, { once: true });
+    
+    return () => {
+      document.removeEventListener('touchstart', enableUserInteraction);
+      document.removeEventListener('click', enableUserInteraction);
+    };
+  }, [enableUserInteraction]);
 
   const speak = async (text: string, voiceId: string = '9BWtsMINqrJLrRacOk9x') => {
     if (!text.trim()) {
@@ -24,8 +48,10 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
     }
 
     if (isSpeaking) {
-      console.log('❌ Already speaking, ignoring new request');
-      return;
+      console.log('❌ Already speaking, stopping current and starting new');
+      stop();
+      // Small delay to ensure cleanup
+      await new Promise(resolve => setTimeout(resolve, 100));
     }
 
     try {
@@ -36,9 +62,20 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
       const audioElement = await elevenLabsService.textToSpeech(text, voiceId);
       audioRef.current = audioElement;
       
-      console.log('🔊 Audio element received, setting up event listeners');
+      console.log('🔊 Audio element received, setting up mobile-optimized playback');
       
-      // Set up event listeners with detailed logging
+      // Mobile-optimized audio setup
+      audioElement.preload = 'auto';
+      audioElement.volume = 1.0;
+      audioElement.playbackRate = 1.0;
+      
+      // Optimize for mobile browsers
+      if ('webkitAudioContext' in window) {
+        audioElement.setAttribute('webkit-playsinline', 'true');
+        audioElement.setAttribute('playsinline', 'true');
+      }
+      
+      // Set up event listeners with mobile considerations
       audioElement.addEventListener('ended', () => {
         console.log('🏁 Audio ended - cleaning up state');
         setIsSpeaking(false);
@@ -66,38 +103,42 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
         audioRef.current = null;
       });
 
-      // Multiple attempt strategy to play audio
-      console.log('🎵 Attempting to play audio...');
+      // Mobile-friendly playback strategy
+      console.log('🎵 Attempting mobile-optimized audio playback...');
       
       try {
-        // First attempt - direct play
-        const playPromise = audioElement.play();
-        await playPromise;
-        console.log('✅ Audio playing successfully via direct play');
+        // For mobile devices, ensure user interaction has occurred
+        if (!userInteractionRef.current) {
+          console.log('⏳ Waiting for user interaction before playing audio on mobile');
+          
+          const playAfterInteraction = async () => {
+            console.log('🖱️ User interaction detected, playing audio');
+            userInteractionRef.current = true;
+            try {
+              await audioElement.play();
+              console.log('✅ Audio playing after user interaction');
+            } catch (error) {
+              console.error('❌ Audio failed even after user interaction:', error);
+              setIsSpeaking(false);
+              setIsPaused(false);
+            }
+          };
+          
+          // Wait for next user interaction
+          document.addEventListener('touchstart', playAfterInteraction, { once: true });
+          document.addEventListener('click', playAfterInteraction, { once: true });
+          
+        } else {
+          // User interaction already occurred, play directly
+          const playPromise = audioElement.play();
+          await playPromise;
+          console.log('✅ Audio playing successfully');
+        }
       } catch (playError) {
-        console.warn('⚠️ Direct play failed:', playError);
-        console.log('🖱️ Setting up user interaction handler...');
-        
-        // Second attempt - wait for user interaction
-        const playAfterInteraction = async (event: Event) => {
-          console.log('🖱️ User interaction detected:', event.type);
-          try {
-            await audioElement.play();
-            console.log('✅ Audio playing after user interaction');
-            document.removeEventListener('click', playAfterInteraction);
-            document.removeEventListener('keydown', playAfterInteraction);
-            document.removeEventListener('touchstart', playAfterInteraction);
-          } catch (interactionError) {
-            console.error('❌ Audio still failed after user interaction:', interactionError);
-          }
-        };
-        
-        // Listen for multiple types of user interaction
-        document.addEventListener('click', playAfterInteraction, { once: true });
-        document.addEventListener('keydown', playAfterInteraction, { once: true });
-        document.addEventListener('touchstart', playAfterInteraction, { once: true });
-        
-        console.log('⏳ Audio ready but waiting for user interaction - click, tap, or press any key');
+        console.error('❌ Direct play failed:', playError);
+        setIsSpeaking(false);
+        setIsPaused(false);
+        throw playError;
       }
 
     } catch (error) {
@@ -125,7 +166,6 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
     console.log('⏸️ Pause requested');
     if (audioRef.current && !audioRef.current.paused) {
       audioRef.current.pause();
-      // State will be updated by the pause event listener
     }
   };
 
@@ -134,15 +174,11 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
     if (audioRef.current && audioRef.current.paused && !audioRef.current.ended) {
       audioRef.current.play().then(() => {
         console.log('✅ Resume successful');
-        // State will be updated by the play event listener
       }).catch((error) => {
         console.error('❌ Resume failed:', error);
       });
     }
   };
-
-  // Debug current state
-  console.log('🔍 Hook state - isSpeaking:', isSpeaking, 'isPaused:', isPaused, 'hasAudio:', !!audioRef.current);
 
   return {
     speak,

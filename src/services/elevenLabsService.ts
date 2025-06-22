@@ -57,43 +57,40 @@ class ElevenLabsService {
 
       console.log('Audio data received, total bytes:', totalLength);
 
-      // Create multiple audio elements with different configurations to test
+      // Create optimized audio element for mobile
       const audioBlob = new Blob([audioData], { type: 'audio/mpeg' });
       const audioUrl = URL.createObjectURL(audioBlob);
       
-      // Try creating audio element with explicit settings and faster playback
       const audioElement = new Audio();
+      
+      // Mobile-optimized settings
       audioElement.src = audioUrl;
-      audioElement.volume = 1.0; // Maximum volume
-      audioElement.playbackRate = 1.15; // Slightly faster playback speed
+      audioElement.volume = 1.0;
+      audioElement.playbackRate = 1.0;
       audioElement.preload = 'auto';
       audioElement.loop = false;
-      audioElement.muted = false; // Explicitly unmute
+      audioElement.muted = false;
       
-      console.log('Audio element created with:');
+      // Mobile-specific attributes
+      audioElement.setAttribute('playsinline', 'true');
+      audioElement.setAttribute('webkit-playsinline', 'true');
+      
+      // iOS Safari specific optimization
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        console.log('📱 iOS device detected, applying iOS-specific optimizations');
+        audioElement.load(); // Ensure audio is loaded on iOS
+      }
+      
+      console.log('Audio element created with mobile optimizations:');
       console.log('- src:', audioElement.src ? 'SET' : 'NOT SET');
       console.log('- volume:', audioElement.volume);
-      console.log('- playbackRate:', audioElement.playbackRate);
-      console.log('- muted:', audioElement.muted);
+      console.log('- playsinline:', audioElement.getAttribute('playsinline'));
       console.log('- readyState:', audioElement.readyState);
-      
-      // Try to initialize audio context and resume it
-      let audioContext;
-      try {
-        audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-        console.log('AudioContext state:', audioContext.state);
-        if (audioContext.state === 'suspended') {
-          await audioContext.resume();
-          console.log('AudioContext resumed, new state:', audioContext.state);
-        }
-      } catch (contextError) {
-        console.warn('AudioContext initialization failed:', contextError);
-      }
       
       // Store reference to current audio
       this.currentAudio = audioElement;
       
-      // Add comprehensive event listeners for debugging
+      // Add comprehensive event listeners for mobile debugging
       audioElement.addEventListener('loadstart', () => {
         console.log('🔵 Audio loading started');
       });
@@ -108,10 +105,6 @@ class ElevenLabsService {
 
       audioElement.addEventListener('canplaythrough', () => {
         console.log('🟢 Audio can play through completely');
-      });
-
-      audioElement.addEventListener('volumechange', () => {
-        console.log('🔊 Audio volume changed to:', audioElement.volume, 'muted:', audioElement.muted);
       });
 
       audioElement.addEventListener('play', () => {
@@ -145,20 +138,22 @@ class ElevenLabsService {
         }
       });
 
-      // Wait for audio to be ready with multiple fallbacks
+      // Wait for audio to be ready with mobile-optimized timeouts
       return new Promise((resolve, reject) => {
         let resolved = false;
         
         const resolveOnce = () => {
           if (!resolved) {
             resolved = true;
-            console.log('✅ Audio element ready for playback');
+            console.log('✅ Audio element ready for mobile playback');
             resolve(audioElement);
           }
         };
         
+        // Multiple ready state checks for mobile compatibility
         audioElement.addEventListener('canplaythrough', resolveOnce);
         audioElement.addEventListener('canplay', resolveOnce);
+        audioElement.addEventListener('loadeddata', resolveOnce);
         
         audioElement.addEventListener('error', () => {
           if (!resolved) {
@@ -167,28 +162,28 @@ class ElevenLabsService {
           }
         });
         
-        // Multiple fallback timeouts
+        // Mobile-friendly timeouts
         setTimeout(() => {
-          if (!resolved && audioElement.readyState >= 2) { // HAVE_CURRENT_DATA
-            console.log('⏰ Audio ready via short timeout, readyState:', audioElement.readyState);
+          if (!resolved && audioElement.readyState >= 2) {
+            console.log('⏰ Audio ready via timeout (mobile), readyState:', audioElement.readyState);
             resolveOnce();
           }
-        }, 1000);
+        }, 500); // Shorter timeout for mobile
         
         setTimeout(() => {
-          if (!resolved && audioElement.readyState >= 1) { // HAVE_METADATA
-            console.log('⏰ Audio ready via long timeout, readyState:', audioElement.readyState);
+          if (!resolved && audioElement.readyState >= 1) {
+            console.log('⏰ Audio ready via longer timeout (mobile), readyState:', audioElement.readyState);
+            resolveOnce();
+          }
+        }, 1500);
+        
+        // Final fallback for mobile
+        setTimeout(() => {
+          if (!resolved) {
+            console.log('⏰ Audio forced ready (mobile fallback), readyState:', audioElement.readyState);
             resolveOnce();
           }
         }, 3000);
-        
-        // Force resolve as last resort
-        setTimeout(() => {
-          if (!resolved) {
-            console.log('⏰ Audio forced ready as last resort, readyState:', audioElement.readyState);
-            resolveOnce();
-          }
-        }, 5000);
       });
       
     } catch (error) {
