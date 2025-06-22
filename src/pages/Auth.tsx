@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -31,17 +30,27 @@ const Auth = () => {
   }, [navigate]);
 
   const handleContinueAsGuest = () => {
-    // Set guest mode in localStorage
-    localStorage.setItem('guest_mode', 'true');
-    localStorage.setItem('guest_messages_used', '0');
-    localStorage.setItem('guest_session_start', new Date().toISOString());
-    
-    toast({
-      title: "Welcome, Guest!",
-      description: "You have 10 free messages to try JamAI. Sign up for unlimited access!",
-    });
-    
-    navigate('/');
+    try {
+      // Set guest mode in localStorage
+      localStorage.setItem('guest_mode', 'true');
+      localStorage.setItem('guest_messages_used', '0');
+      localStorage.setItem('guest_session_start', new Date().toISOString());
+      
+      toast({
+        title: "Welcome, Guest!",
+        description: "You have 10 free messages to try JamAI. Sign up for unlimited access!",
+      });
+      
+      // Force a page reload to ensure the auth context picks up the guest state
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error setting guest mode:', error);
+      toast({
+        title: "Error",
+        description: "Failed to continue as guest. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
