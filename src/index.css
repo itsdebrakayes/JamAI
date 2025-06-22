@@ -7,7 +7,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%;
+    --background: 0 0% 100%;
     --foreground: 0 0% 8%;
 
     --card: 0 0% 100%;
@@ -24,8 +24,8 @@
     --secondary: 140 85% 25%;
     --secondary-foreground: 0 0% 100%;
 
-    /* Refined muted colors with green tint */
-    --muted: 140 15% 96%;
+    /* Refined muted colors with subtle green tint */
+    --muted: 140 10% 96%;
     --muted-foreground: 140 8% 35%;
 
     --accent: 140 85% 30%;
@@ -34,8 +34,8 @@
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 140 20% 88%;
-    --input: 140 20% 90%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 51 100% 50%;
 
     --radius: 0.75rem;
@@ -85,11 +85,11 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-white text-foreground antialiased;
   }
 }
 
-/* Modern Jamaican gradients */
+/* Modern Jamaican gradients - kept for accents */
 .jamaican-gradient {
   background: linear-gradient(135deg, hsl(var(--jamaican-gold)) 0%, hsl(var(--jamaican-green-light)) 50%, hsl(var(--jamaican-green)) 100%);
 }
@@ -124,11 +124,11 @@
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 
-/* Modern glass effect */
+/* Modern glass effect with white background */
 .glass-effect {
   backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .dark .glass-effect {
