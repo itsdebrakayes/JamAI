@@ -1,5 +1,5 @@
 
-import { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { elevenLabsService } from '@/services/elevenLabsService';
 
 interface ElevenLabsSpeechHook {

@@ -249,18 +249,16 @@ const ChatHistorySidebar = ({
             
             <div className="flex-1 overflow-hidden flex flex-col px-4">
               {/* New chat button */}
-              <Button 
-                onClick={() => {
-                  handleNewChat();
-                  // Close drawer
-                  document.querySelector('[data-vaul-drawer-wrapper]')?.click();
-                }}
-                className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-4 transition-all duration-200"
-                variant="outline"
-              >
-                <Plus className="w-4 h-4" />
-                <span className="font-medium">New Chat</span>
-              </Button>
+              <DrawerClose asChild>
+                <Button 
+                  onClick={handleNewChat}
+                  className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-4 transition-all duration-200"
+                  variant="outline"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="font-medium">New Chat</span>
+                </Button>
+              </DrawerClose>
 
               {/* Chat management controls */}
               {chatHistory.length > 0 && (
@@ -334,23 +332,19 @@ const ChatHistorySidebar = ({
                         />
                       )}
                       
-                      <button
-                        onClick={() => {
-                          handleChatSelect(chat.id);
-                          if (!isSelectionMode) {
-                            // Close drawer
-                            document.querySelector('[data-vaul-drawer-wrapper]')?.click();
-                          }
-                        }}
-                        className={`flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted rounded-lg transition-colors ${
-                          chat.id === currentChatId && !isSelectionMode ? 'bg-accent text-accent-foreground font-medium' : ''
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate text-sm">{chat.title}</span>
-                        </div>
-                      </button>
+                      <DrawerClose asChild>
+                        <button
+                          onClick={() => handleChatSelect(chat.id)}
+                          className={`flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted rounded-lg transition-colors ${
+                            chat.id === currentChatId && !isSelectionMode ? 'bg-accent text-accent-foreground font-medium' : ''
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate text-sm">{chat.title}</span>
+                          </div>
+                        </button>
+                      </DrawerClose>
                       
                       {!isSelectionMode && (
                         <Button
