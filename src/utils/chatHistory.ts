@@ -98,9 +98,15 @@ export const loadChatHistory = (): ChatHistory[] => {
 // New Supabase-based functions
 export const createChatSession = async (title: string): Promise<string | null> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user found');
+      return null;
+    }
+
     const { data, error } = await supabase
       .from('chat_sessions')
-      .insert([{ title }])
+      .insert([{ title, user_id: user.id }])
       .select('id')
       .single();
 
@@ -135,6 +141,12 @@ export const saveMessageToDatabase = async (
   metadata: any = {}
 ): Promise<boolean> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.error('No authenticated user found');
+      return false;
+    }
+
     const { error } = await supabase
       .from('messages')
       .insert([{
@@ -142,7 +154,8 @@ export const saveMessageToDatabase = async (
         content,
         is_user: isUser,
         message_type: messageType,
-        metadata
+        metadata,
+        user_id: user.id
       }]);
 
     if (error) throw error;
@@ -165,11 +178,9 @@ export const getMessagesForSession = async (sessionId: string): Promise<Message[
 
     return (data || []).map((msg: DatabaseMessage) => ({
       id: msg.id,
-      content: msg.content,
+      text: msg.content, // Map content to text to match Message interface
       isUser: msg.is_user,
-      timestamp: new Date(msg.created_at),
-      type: msg.message_type as 'text' | 'voice' | 'image',
-      metadata: msg.metadata
+      timestamp: new Date(msg.created_at)
     }));
   } catch (error) {
     console.error('Error fetching messages for session:', error);
