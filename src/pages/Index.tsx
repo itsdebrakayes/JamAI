@@ -52,14 +52,6 @@ interface SuggestionItem {
 // Type definition for the AI service
 type AIService = 'gemini' | 'openai';
 
-// Chat history interface for sidebar
-interface ChatHistory {
-  id: string;
-  title: string;
-  messages: Message[];
-  createdAt: Date;
-}
-
 // Initial suggestions for the chat
 const initialSuggestions: SuggestionItem[] = [
   { id: 1, label: 'Explain Jamaica', query: 'Explain Jamaica in a nutshell' },
