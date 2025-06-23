@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Mic, MicOff, Volume2, VolumeX, Pause, Play } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Pause, Play, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useElevenLabsSpeech } from '@/hooks/useElevenLabsSpeech';
@@ -29,7 +29,8 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
     resume,
     isSpeaking,
     isPaused,
-    isSupported: speechSynthesisSupported
+    isSupported: speechSynthesisSupported,
+    error: ttsError
   } = useElevenLabsSpeech();
 
   // Handle transcript completion
@@ -53,6 +54,7 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
 
   const handleSpeakClick = async () => {
     if (!isSpeaking && !isPaused && lastMessage) {
+      console.log('🎤 VoiceControls: Starting speech for message:', lastMessage.substring(0, 50));
       await speak(lastMessage);
     }
   };
@@ -112,10 +114,11 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
       {/* Speech error display */}
       {speechError && (
         <div 
-          className="text-xs text-red-500 max-w-32 truncate"
+          className="text-xs text-red-500 max-w-32 truncate flex items-center gap-1"
           role="alert"
           aria-live="assertive"
         >
+          <AlertCircle className="w-3 h-3" />
           {speechError}
         </div>
       )}
@@ -168,6 +171,18 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
               </Button>
             </>
           )}
+        </div>
+      )}
+
+      {/* TTS error display */}
+      {ttsError && (
+        <div 
+          className="text-xs text-red-500 max-w-32 truncate flex items-center gap-1"
+          role="alert"
+          aria-live="assertive"
+        >
+          <AlertCircle className="w-3 h-3" />
+          {ttsError}
         </div>
       )}
     </div>

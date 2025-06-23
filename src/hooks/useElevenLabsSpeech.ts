@@ -10,11 +10,13 @@ interface ElevenLabsSpeechHook {
   isSpeaking: boolean;
   isPaused: boolean;
   isSupported: boolean;
+  error: string | null;
 }
 
 export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const userInteractionRef = useRef<boolean>(false);
 
@@ -44,8 +46,11 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
   const speak = async (text: string, voiceId: string = '9BWtsMINqrJLrRacOk9x') => {
     if (!text.trim()) {
       console.log('❌ Empty text provided to speak function');
+      setError('No text provided');
       return;
     }
+
+    setError(null);
 
     if (isSpeaking) {
       console.log('❌ Already speaking, stopping current and starting new');
@@ -62,20 +67,9 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
       const audioElement = await elevenLabsService.textToSpeech(text, voiceId);
       audioRef.current = audioElement;
       
-      console.log('🔊 Audio element received, setting up mobile-optimized playback');
+      console.log('🔊 Audio element received, attempting playback');
       
-      // Mobile-optimized audio setup
-      audioElement.preload = 'auto';
-      audioElement.volume = 1.0;
-      audioElement.playbackRate = 1.0;
-      
-      // Optimize for mobile browsers
-      if ('webkitAudioContext' in window) {
-        audioElement.setAttribute('webkit-playsinline', 'true');
-        audioElement.setAttribute('playsinline', 'true');
-      }
-      
-      // Set up event listeners with mobile considerations
+      // Set up event listeners
       audioElement.addEventListener('ended', () => {
         console.log('🏁 Audio ended - cleaning up state');
         setIsSpeaking(false);
@@ -93,49 +87,27 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
       audioElement.addEventListener('play', () => {
         console.log('▶️ Audio play event - updating state to playing');
         setIsPaused(false);
+        setError(null);
       });
 
       audioElement.addEventListener('error', (e) => {
         console.error('❌ Audio error in hook:', e);
         console.error('❌ Audio error object:', audioElement.error);
+        const errorMsg = 'Audio playback failed';
+        setError(errorMsg);
         setIsSpeaking(false);
         setIsPaused(false);
         audioRef.current = null;
       });
 
-      // Mobile-friendly playback strategy
-      console.log('🎵 Attempting mobile-optimized audio playback...');
-      
+      // Try to play the audio
       try {
-        // For mobile devices, ensure user interaction has occurred
-        if (!userInteractionRef.current) {
-          console.log('⏳ Waiting for user interaction before playing audio on mobile');
-          
-          const playAfterInteraction = async () => {
-            console.log('🖱️ User interaction detected, playing audio');
-            userInteractionRef.current = true;
-            try {
-              await audioElement.play();
-              console.log('✅ Audio playing after user interaction');
-            } catch (error) {
-              console.error('❌ Audio failed even after user interaction:', error);
-              setIsSpeaking(false);
-              setIsPaused(false);
-            }
-          };
-          
-          // Wait for next user interaction
-          document.addEventListener('touchstart', playAfterInteraction, { once: true });
-          document.addEventListener('click', playAfterInteraction, { once: true });
-          
-        } else {
-          // User interaction already occurred, play directly
-          const playPromise = audioElement.play();
-          await playPromise;
-          console.log('✅ Audio playing successfully');
-        }
+        console.log('🎵 Attempting to play audio...');
+        await audioElement.play();
+        console.log('✅ Audio playing successfully');
       } catch (playError) {
-        console.error('❌ Direct play failed:', playError);
+        console.error('❌ Audio play failed:', playError);
+        setError('Audio playback failed. Please try again.');
         setIsSpeaking(false);
         setIsPaused(false);
         throw playError;
@@ -143,10 +115,10 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
 
     } catch (error) {
       console.error('❌ Speech synthesis failed:', error);
+      setError('Speech synthesis failed. Please check your connection.');
       setIsSpeaking(false);
       setIsPaused(false);
       audioRef.current = null;
-      throw error;
     }
   };
 
@@ -159,6 +131,7 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
     }
     setIsSpeaking(false);
     setIsPaused(false);
+    setError(null);
     elevenLabsService.stopCurrentAudio();
   };
 
@@ -176,6 +149,7 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
         console.log('✅ Resume successful');
       }).catch((error) => {
         console.error('❌ Resume failed:', error);
+        setError('Resume failed');
       });
     }
   };
@@ -187,6 +161,7 @@ export const useElevenLabsSpeech = (): ElevenLabsSpeechHook => {
     resume,
     isSpeaking,
     isPaused,
-    isSupported: elevenLabsService.isSupported()
+    isSupported: elevenLabsService.isSupported(),
+    error
   };
 };
