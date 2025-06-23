@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -185,6 +186,10 @@ const Auth = () => {
 
   // If user is already logged in, show logout option
   if (user) {
+    // Extract first name from email or use full email
+    const userName = user.email?.split('@')[0] || 'there';
+    const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <Card className="w-full max-w-md border-2 border-green-200">
@@ -197,7 +202,7 @@ const Auth = () => {
               />
             </div>
             <CardTitle className="text-2xl font-bold jamaican-text-gradient">
-              Welcome Back!
+              Welcome back {displayName}!
             </CardTitle>
             <CardDescription>
               You're already signed in as {user.email}
