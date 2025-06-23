@@ -336,40 +336,43 @@ const Index = () => {
   };
 
   const handleNewChat = async () => {
-    // Save current chat if it has messages and a valid session ID
-    if (messages.length > 0 && currentChatId) {
+    // Save current chat only for guests (to localStorage)
+    if (isGuest && messages.length > 0 && currentChatId) {
       try {
-        if (!isGuest && currentChatId.includes('-')) {
-          // For authenticated users, messages are already saved to database
-          // Just reload chat history to ensure we have the latest data
-          await loadChatHistoryData();
-        } else if (isGuest) {
-          // For guests, save to localStorage
-          const updatedHistory = [...chatHistory];
-          const currentChatIndex = updatedHistory.findIndex(chat => chat.id === currentChatId);
-          
-          if (currentChatIndex >= 0) {
-            // Update existing chat
-            updatedHistory[currentChatIndex].messages = messages;
-          } else {
-            // Create new chat entry
-            const firstUserMessage = messages.find(m => m.isUser);
-            const newChat = {
-              id: currentChatId,
-              title: firstUserMessage ? 
-                firstUserMessage.text.substring(0, 30) + (firstUserMessage.text.length > 30 ? '...' : '') : 
-                'New Chat',
-              messages: messages,
-              createdAt: new Date()
-            };
-            updatedHistory.unshift(newChat);
-          }
-          
-          setChatHistory(updatedHistory);
-          saveChatHistory(updatedHistory);
+        const updatedHistory = [...chatHistory];
+        const currentChatIndex = updatedHistory.findIndex(chat => chat.id === currentChatId);
+        
+        if (currentChatIndex >= 0) {
+          // Update existing chat
+          updatedHistory[currentChatIndex].messages = messages;
+        } else {
+          // Create new chat entry
+          const firstUserMessage = messages.find(m => m.isUser);
+          const newChat = {
+            id: currentChatId,
+            title: firstUserMessage ? 
+              firstUserMessage.text.substring(0, 30) + (firstUserMessage.text.length > 30 ? '...' : '') : 
+              'New Chat',
+            messages: messages,
+            createdAt: new Date()
+          };
+          updatedHistory.unshift(newChat);
         }
+        
+        setChatHistory(updatedHistory);
+        saveChatHistory(updatedHistory);
       } catch (error) {
-        console.error('❌ Error saving current chat before starting new one:', error);
+        console.error('❌ Error saving guest chat to localStorage:', error);
+      }
+    }
+
+    // For authenticated users, messages are already saved to database in real-time
+    // Just reload chat history to get the latest data
+    if (!isGuest) {
+      try {
+        await loadChatHistoryData();
+      } catch (error) {
+        console.error('❌ Error reloading chat history:', error);
       }
     }
 
@@ -706,7 +709,7 @@ const Index = () => {
                               <p className="text-yellow-800 font-medium">
                                 👋 You're trying JamAI as a guest!
                               </p>
-                              <p className="text-yellow-700 text-sm mt-1">
+                              <p className="text-yellow-700 text-sm mb-3">
                                 You have {guestMessagesRemaining} free messages. Sign up for unlimited access!
                               </p>
                               <Button
