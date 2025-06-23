@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -419,7 +420,11 @@ export class MemoryService {
       }
 
       // Properly type check and return the data
-      return Array.isArray(data) ? data : [];
+      if (data && Array.isArray(data)) {
+        return data;
+      }
+      
+      return [];
     } catch (error) {
       console.error('Error getting memories from database:', error);
       return [];
