@@ -68,10 +68,15 @@ export class GeminiService {
    * @returns Formatted string of categorized knowledge entries
    */
   private getStoredKnowledge(): string {
+    console.log('🧠 Gemini: Retrieving stored knowledge for context...');
     const knowledge = localStorage.getItem('jamAI-enhanced-knowledge');
-    if (!knowledge) return '';
+    if (!knowledge) {
+      console.log('🧠 Gemini: No stored knowledge found');
+      return '';
+    }
     
     const knowledgeEntries: KnowledgeEntry[] = JSON.parse(knowledge);
+    console.log(`🧠 Gemini: Found ${knowledgeEntries.length} knowledge entries`);
     
     // Group knowledge entries by category for better organization
     const categorized = knowledgeEntries.reduce((acc, entry) => {
@@ -89,6 +94,7 @@ export class GeminiService {
       }
     });
     
+    console.log(`🧠 Gemini: Generated context string length: ${contextString.length} characters`);
     return contextString;
   }
 
@@ -148,7 +154,10 @@ export class GeminiService {
    */
   private storeKnowledge(userQuery: string, aiResponse: string) {
     // Only store substantial exchanges (filters out greetings, short responses)
-    if (userQuery.length < 10 || aiResponse.length < 20) return;
+    if (userQuery.length < 10 || aiResponse.length < 20) {
+      console.log('🧠 Gemini: Exchange too short, not storing knowledge');
+      return;
+    }
     
     // Get existing knowledge or initialize empty array
     const existing = localStorage.getItem('jamAI-enhanced-knowledge');
@@ -165,13 +174,16 @@ export class GeminiService {
     };
     
     knowledgeArray.push(newEntry);
+    console.log(`🧠 Gemini: Storing new ${newEntry.category} knowledge entry`);
     
     // Keep only last 150 entries (increased from 50)
     if (knowledgeArray.length > 150) {
       knowledgeArray.splice(0, knowledgeArray.length - 150);
+      console.log('🧠 Gemini: Trimmed knowledge array to 150 entries');
     }
     
     localStorage.setItem('jamAI-enhanced-knowledge', JSON.stringify(knowledgeArray));
+    console.log(`🧠 Gemini: Total knowledge entries: ${knowledgeArray.length}`);
   }
 
   // ============================
@@ -244,13 +256,16 @@ export class GeminiService {
    */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
     try {
+      const storedKnowledge = this.getStoredKnowledge();
+      console.log(`🤖 Gemini: Generating response with ${storedKnowledge.length} chars of stored knowledge`);
+      
       // Call edge function instead of direct API call
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
           userMessage,
           isUserMessagePatois,
           conversationHistory: conversationHistory.slice(-10), // Limit history size
-          storedKnowledge: this.getStoredKnowledge()
+          storedKnowledge
         }
       });
 
@@ -262,6 +277,7 @@ export class GeminiService {
       const responseText = data.message || 'Sorry, mi cyaan understand dat right now.';
       
       // Store this exchange for future reference
+      console.log('🧠 Gemini: Storing conversation exchange...');
       this.storeKnowledge(userMessage, responseText);
       
       return {

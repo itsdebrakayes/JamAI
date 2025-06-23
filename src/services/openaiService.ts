@@ -63,10 +63,15 @@ export class OpenAIService {
    * @returns Formatted string of categorized knowledge entries
    */
   private getStoredKnowledge(): string {
+    console.log('🧠 OpenAI: Retrieving stored knowledge for context...');
     const knowledge = localStorage.getItem('jamAI-enhanced-knowledge');
-    if (!knowledge) return '';
+    if (!knowledge) {
+      console.log('🧠 OpenAI: No stored knowledge found');
+      return '';
+    }
     
     const knowledgeEntries: KnowledgeEntry[] = JSON.parse(knowledge);
+    console.log(`🧠 OpenAI: Found ${knowledgeEntries.length} knowledge entries`);
     
     // Group knowledge entries by category for better organization
     const categorized = knowledgeEntries.reduce((acc, entry) => {
@@ -84,6 +89,7 @@ export class OpenAIService {
       }
     });
     
+    console.log(`🧠 OpenAI: Generated context string length: ${contextString.length} characters`);
     return contextString;
   }
 
@@ -134,7 +140,10 @@ export class OpenAIService {
    */
   private storeKnowledge(userQuery: string, aiResponse: string) {
     // Only store substantial exchanges (filters out greetings, short responses)
-    if (userQuery.length < 10 || aiResponse.length < 20) return;
+    if (userQuery.length < 10 || aiResponse.length < 20) {
+      console.log('🧠 OpenAI: Exchange too short, not storing knowledge');
+      return;
+    }
     
     const existing = localStorage.getItem('jamAI-enhanced-knowledge');
     const knowledgeArray: KnowledgeEntry[] = existing ? JSON.parse(existing) : [];
@@ -149,13 +158,16 @@ export class OpenAIService {
     };
     
     knowledgeArray.push(newEntry);
+    console.log(`🧠 OpenAI: Storing new ${newEntry.category} knowledge entry`);
     
     // Keep only last 150 entries (increased from 50)
     if (knowledgeArray.length > 150) {
       knowledgeArray.splice(0, knowledgeArray.length - 150);
+      console.log('🧠 OpenAI: Trimmed knowledge array to 150 entries');
     }
     
     localStorage.setItem('jamAI-enhanced-knowledge', JSON.stringify(knowledgeArray));
+    console.log(`🧠 OpenAI: Total knowledge entries: ${knowledgeArray.length}`);
   }
 
   // ============================
@@ -205,13 +217,16 @@ export class OpenAIService {
    */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
     try {
+      const storedKnowledge = this.getStoredKnowledge();
+      console.log(`🤖 OpenAI: Generating response with ${storedKnowledge.length} chars of stored knowledge`);
+      
       // Call edge function instead of direct API call
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           userMessage,
           isUserMessagePatois,
           conversationHistory: conversationHistory.slice(-8), // Limit history size
-          storedKnowledge: this.getStoredKnowledge()
+          storedKnowledge
         }
       });
 
@@ -223,6 +238,7 @@ export class OpenAIService {
       const responseText = data.message || 'Sorry, mi cyaan understand dat right now.';
       
       // Store the exchange for future reference
+      console.log('🧠 OpenAI: Storing conversation exchange...');
       this.storeKnowledge(userMessage, responseText);
       
       return {
