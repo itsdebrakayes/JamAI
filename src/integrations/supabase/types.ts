@@ -88,11 +88,10 @@ export type Database = {
       }
       profiles: {
         Row: {
-          api_keys: Json | null
           avatar_url: string | null
           created_at: string
           email: string
-          first_name: string | null
+          first_name: string
           id: string
           last_name: string | null
           preferences: Json | null
@@ -100,11 +99,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          api_keys?: Json | null
           avatar_url?: string | null
           created_at?: string
           email: string
-          first_name?: string | null
+          first_name: string
           id: string
           last_name?: string | null
           preferences?: Json | null
@@ -112,11 +110,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          api_keys?: Json | null
           avatar_url?: string | null
           created_at?: string
           email?: string
-          first_name?: string | null
+          first_name?: string
           id?: string
           last_name?: string | null
           preferences?: Json | null
