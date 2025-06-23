@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { supabase } from '@/integrations/supabase/client';
+import { memoryService } from './memoryService';
 
 /**
  * Interface defining the structure of AI response objects
@@ -38,16 +39,24 @@ interface KnowledgeEntry {
 /**
  * GeminiService Class
  * 
- * This service handles all interactions with Google's Gemini AI model via edge functions.
- * It provides enhanced functionality including conversation context management,
- * long-term knowledge storage and retrieval, and Jamaican Patois language support.
+ * Enhanced with intelligent memory management and context injection
  */
 export class GeminiService {
-  /**
-   * Constructor - no longer needs API key initialization
-   */
   constructor() {
-    // Service now uses server-side API keys
+    // Initialize memory sync when service starts
+    this.initializeMemorySync();
+  }
+
+  /**
+   * Initialize memory synchronization from database
+   */
+  private async initializeMemorySync() {
+    try {
+      await memoryService.syncMemoriesFromDatabase();
+      console.log('🧠 Gemini: Memory sync initialized');
+    } catch (error) {
+      console.error('Gemini: Memory sync initialization failed:', error);
+    }
   }
 
   /**
@@ -256,16 +265,17 @@ export class GeminiService {
    */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
     try {
-      const storedKnowledge = this.getStoredKnowledge();
-      console.log(`🤖 Gemini: Generating response with ${storedKnowledge.length} chars of stored knowledge`);
+      // Get relevant memories for context
+      const memoryContext = await memoryService.getRelevantMemories(userMessage, 5);
+      console.log(`🤖 Gemini: Generated response with ${memoryContext.length} chars of memory context`);
       
-      // Call edge function instead of direct API call
+      // Call edge function with enhanced context
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
           userMessage,
           isUserMessagePatois,
-          conversationHistory: conversationHistory.slice(-10), // Limit history size
-          storedKnowledge
+          conversationHistory: conversationHistory.slice(-10),
+          storedKnowledge: memoryContext
         }
       });
 
@@ -276,9 +286,9 @@ export class GeminiService {
 
       const responseText = data.message || 'Sorry, mi cyaan understand dat right now.';
       
-      // Store this exchange for future reference
-      console.log('🧠 Gemini: Storing conversation exchange...');
-      this.storeKnowledge(userMessage, responseText);
+      // Store the exchange in enhanced memory system
+      console.log('🧠 Gemini: Storing conversation in enhanced memory...');
+      await memoryService.storeMemory(userMessage, responseText);
       
       return {
         message: responseText,
@@ -288,7 +298,6 @@ export class GeminiService {
     } catch (error) {
       console.error('Gemini Service Error:', error);
       
-      // Fallback response if service fails
       const fallbackMessage = isUserMessagePatois 
         ? "Mi have some trouble right now, but mi here fi help."
         : "I'm having some connection issues right now, but I'm here to help.";

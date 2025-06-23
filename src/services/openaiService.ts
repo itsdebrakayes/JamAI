@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { memoryService } from './memoryService';
 
 /**
  * Interface defining the structure of AI response objects
@@ -34,15 +35,24 @@ interface KnowledgeEntry {
 /**
  * OpenAIService Class
  * 
- * This service handles interactions with OpenAI's GPT models via edge functions.
- * API keys are now managed server-side for security.
+ * Enhanced with intelligent memory management and context injection
  */
 export class OpenAIService {
-  /**
-   * Constructor - no longer needs API key management
-   */
   constructor() {
-    // Service now uses server-side API keys
+    // Initialize memory sync when service starts
+    this.initializeMemorySync();
+  }
+
+  /**
+   * Initialize memory synchronization from database
+   */
+  private async initializeMemorySync() {
+    try {
+      await memoryService.syncMemoriesFromDatabase();
+      console.log('🧠 OpenAI: Memory sync initialized');
+    } catch (error) {
+      console.error('OpenAI: Memory sync initialization failed:', error);
+    }
   }
 
   /**
@@ -208,25 +218,21 @@ export class OpenAIService {
   // ============================
   
   /**
-   * Generates AI responses using OpenAI via edge function
-   * 
-   * @param userMessage - The current user message to respond to
-   * @param isUserMessagePatois - Whether user wrote in Jamaican Patois
-   * @param conversationHistory - Array of previous messages in this chat
-   * @returns Promise resolving to AI response object
+   * Enhanced response generation with intelligent memory context
    */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
     try {
-      const storedKnowledge = this.getStoredKnowledge();
-      console.log(`🤖 OpenAI: Generating response with ${storedKnowledge.length} chars of stored knowledge`);
+      // Get relevant memories for context
+      const memoryContext = await memoryService.getRelevantMemories(userMessage, 5);
+      console.log(`🤖 OpenAI: Generated response with ${memoryContext.length} chars of memory context`);
       
-      // Call edge function instead of direct API call
+      // Call edge function with enhanced context
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           userMessage,
           isUserMessagePatois,
-          conversationHistory: conversationHistory.slice(-8), // Limit history size
-          storedKnowledge
+          conversationHistory: conversationHistory.slice(-8),
+          storedKnowledge: memoryContext
         }
       });
 
@@ -237,9 +243,9 @@ export class OpenAIService {
 
       const responseText = data.message || 'Sorry, mi cyaan understand dat right now.';
       
-      // Store the exchange for future reference
-      console.log('🧠 OpenAI: Storing conversation exchange...');
-      this.storeKnowledge(userMessage, responseText);
+      // Store the exchange in enhanced memory system
+      console.log('🧠 OpenAI: Storing conversation in enhanced memory...');
+      await memoryService.storeMemory(userMessage, responseText);
       
       return {
         message: responseText,
@@ -249,7 +255,6 @@ export class OpenAIService {
     } catch (error) {
       console.error('OpenAI Service Error:', error);
       
-      // Fallback response if service fails
       const fallbackMessage = isUserMessagePatois 
         ? "Mi have some trouble connecting right now, but mi here fi help."
         : "I'm having some connection issues right now, but I'm here to help.";

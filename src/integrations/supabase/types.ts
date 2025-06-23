@@ -185,6 +185,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_memories: {
+        Row: {
+          ai_response: string
+          category: string
+          created_at: string
+          id: string
+          importance_score: number
+          is_permanent: boolean
+          keywords: string[]
+          updated_at: string
+          user_id: string
+          user_query: string
+        }
+        Insert: {
+          ai_response: string
+          category: string
+          created_at?: string
+          id?: string
+          importance_score?: number
+          is_permanent?: boolean
+          keywords?: string[]
+          updated_at?: string
+          user_id: string
+          user_query: string
+        }
+        Update: {
+          ai_response?: string
+          category?: string
+          created_at?: string
+          id?: string
+          importance_score?: number
+          is_permanent?: boolean
+          keywords?: string[]
+          updated_at?: string
+          user_id?: string
+          user_query?: string
+        }
+        Relationships: []
+      }
       whitelabel_configs: {
         Row: {
           accent_color: string | null
@@ -243,6 +282,15 @@ export type Database = {
         Args: { session_id: string }
         Returns: string
       }
+      get_recent_memories_by_category: {
+        Args: { days_back?: number; limit_per_category?: number }
+        Returns: {
+          category: string
+          user_query: string
+          ai_response: string
+          created_at: string
+        }[]
+      }
       get_subscription_limits: {
         Args: { user_email: string }
         Returns: {
@@ -254,6 +302,23 @@ export type Database = {
       increment_usage: {
         Args: { usage_type: string; amount?: number }
         Returns: boolean
+      }
+      search_user_memories: {
+        Args: {
+          search_keywords: string[]
+          search_category?: string
+          limit_count?: number
+        }
+        Returns: {
+          id: string
+          category: string
+          user_query: string
+          ai_response: string
+          keywords: string[]
+          importance_score: number
+          is_permanent: boolean
+          created_at: string
+        }[]
       }
     }
     Enums: {
