@@ -1,10 +1,11 @@
+
 import { Message } from '@/types/Message';
 import { supabase } from '@/integrations/supabase/client';
 
 const STORAGE_KEY = 'jamai_chat_history';
 const CHAT_HISTORY_KEY = 'jamai_chat_list';
 
-interface ChatHistory {
+export interface ChatHistory {
   id: string;
   title: string;
   messages: Message[];
@@ -204,7 +205,7 @@ export const loadChatHistory = (): ChatHistory[] => {
   }
 };
 
-// Enhanced Supabase functions with intelligent naming
+// Enhanced Supabase functions with better error handling and real-time saving
 export const createChatSession = async (title: string): Promise<string | null> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();

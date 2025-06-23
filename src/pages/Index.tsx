@@ -32,9 +32,10 @@ import {
   getChatHistory,
   addToHistory,
   loadChatHistory,
-  saveChatHistory
+  saveChatHistory,
+  ChatHistory
 } from '@/utils/chatHistory';
-import { migrateLocalStorageToSupabase, shouldRunMigration } from '@/utils/migrationUtils';
+import { migrateLocalStorageToSupabase, shouldRunMigration, forceMigration } from '@/utils/migrationUtils';
 import { detectLanguage } from '@/utils/languageDetection';
 import { locationAwareService } from '@/services/locationAwareService';
 import { useAuth } from '@/contexts/AuthContext';
@@ -256,10 +257,13 @@ const Index = () => {
       setCurrentChatId(sessionId);
     }
 
-    // Save user message to database for authenticated users
+    // Save user message to database IMMEDIATELY for authenticated users
     if (!isGuest && sessionId && sessionId.includes('-')) {
       try {
-        await saveMessageToDatabase(sessionId, text, true, 'text', {});
+        const saveSuccess = await saveMessageToDatabase(sessionId, text, true, 'text', {});
+        if (!saveSuccess) {
+          console.warn('Failed to save user message to database');
+        }
       } catch (error) {
         console.error('Failed to save user message to database:', error);
       }
@@ -299,16 +303,19 @@ const Index = () => {
 
       setTypingMessage(aiMessage);
       
-      // Save AI message to database for authenticated users
+      // Save AI message to database IMMEDIATELY for authenticated users
       if (!isGuest && sessionId && sessionId.includes('-')) {
         try {
-          await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
-          await incrementUsage('messages');
-
-          // Reload chat history to get updated titles after AI response
-          setTimeout(async () => {
-            await loadChatHistoryData();
-          }, 1000);
+          const saveSuccess = await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
+          if (saveSuccess) {
+            await incrementUsage('messages');
+            // Reload chat history after successful save to ensure UI is updated
+            setTimeout(async () => {
+              await loadChatHistoryData();
+            }, 500);
+          } else {
+            console.warn('Failed to save AI message to database');
+          }
         } catch (error) {
           console.error('Failed to save AI message to database:', error);
         }
@@ -348,7 +355,7 @@ const Index = () => {
         } else {
           // Create new chat entry
           const firstUserMessage = messages.find(m => m.isUser);
-          const newChat = {
+          const newChat: ChatHistory = {
             id: currentChatId,
             title: firstUserMessage ? 
               firstUserMessage.text.substring(0, 30) + (firstUserMessage.text.length > 30 ? '...' : '') : 
@@ -361,6 +368,7 @@ const Index = () => {
         
         setChatHistory(updatedHistory);
         saveChatHistory(updatedHistory);
+        console.log('💾 Saved guest chat to localStorage');
       } catch (error) {
         console.error('❌ Error saving guest chat to localStorage:', error);
       }
@@ -371,6 +379,7 @@ const Index = () => {
     if (!isGuest) {
       try {
         await loadChatHistoryData();
+        console.log('🔄 Reloaded chat history for authenticated user');
       } catch (error) {
         console.error('❌ Error reloading chat history:', error);
       }
@@ -511,15 +520,31 @@ const Index = () => {
       try {
         // Run migration for authenticated users only
         if (!isGuest) {
-          const needsMigration = await shouldRunMigration();
-          if (needsMigration) {
-            console.log('🔄 Running localStorage to Supabase migration...');
-            const migrationSuccess = await migrateLocalStorageToSupabase();
+          // Check if there's any localStorage data that needs migration
+          const oldMessages = getChatHistory();
+          const oldChatHistory = loadChatHistory();
+          
+          if (oldMessages.length > 0 || oldChatHistory.length > 0) {
+            console.log('🔄 Found localStorage data, running force migration...');
+            const migrationSuccess = await forceMigration();
             if (migrationSuccess) {
               toast({
                 title: 'Data Migrated',
-                description: 'Your chat history has been migrated to your account!',
+                description: 'Your chat history has been successfully migrated to your account!',
               });
+            }
+          } else {
+            // Standard migration check
+            const needsMigration = await shouldRunMigration();
+            if (needsMigration) {
+              console.log('🔄 Running standard localStorage to Supabase migration...');
+              const migrationSuccess = await migrateLocalStorageToSupabase();
+              if (migrationSuccess) {
+                toast({
+                  title: 'Data Migrated',
+                  description: 'Your chat history has been migrated to your account!',
+                });
+              }
             }
           }
         }
