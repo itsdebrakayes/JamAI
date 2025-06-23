@@ -491,7 +491,7 @@ export class MemoryService {
 
         if (error) {
           console.error('Stats query error:', error);
-        } else if (data) {
+        } else if (data && Array.isArray(data)) {
           const byCategory = data.reduce((acc, item) => {
             acc[item.category] = (acc[item.category] || 0) + 1;
             return acc;
