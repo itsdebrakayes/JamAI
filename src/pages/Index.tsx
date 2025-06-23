@@ -453,104 +453,106 @@ const Index = () => {
                       onClick={handleHeaderClick}
                       title="Start new chat"
                     >
-                      <span className="text-lg font-bold">🇯🇲</span>
+                      <img 
+                        src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+                        alt="JamAI Logo" 
+                        className="w-6 h-6 object-contain"
+                      />
                       <div>
                         <h1 className="font-bold text-lg jamaican-text-gradient">JamAI</h1>
                         <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    {/* Guest status indicator with Sign Up button */}
-                    {isGuest && (
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-full">
-                          <Users className="w-4 h-4 text-yellow-700" />
-                          <span className="text-sm font-medium text-yellow-700">
-                            Guest: {guestMessagesRemaining} messages left
-                          </span>
-                        </div>
-                        <Button
-                          onClick={() => window.location.href = '/auth'}
-                          size="sm"
-                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
-                        >
-                          Sign Up / Log In
-                        </Button>
+                  {/* Guest status indicator with Sign Up button */}
+                  {isGuest && (
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-full">
+                        <Users className="w-4 h-4 text-yellow-700" />
+                        <span className="text-sm font-medium text-yellow-700">
+                          Guest: {guestMessagesRemaining} messages left
+                        </span>
                       </div>
-                    )}
-
-                    {/* Desktop controls */}
-                    <div className="hidden md:flex items-center gap-3">
                       <Button
-                        onClick={handleOpenChatSummary}
+                        onClick={() => window.location.href = '/auth'}
+                        size="sm"
+                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                      >
+                        Sign Up / Log In
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Desktop controls */}
+                  <div className="hidden md:flex items-center gap-3">
+                    <Button
+                      onClick={handleOpenChatSummary}
+                      variant="ghost"
+                      size="sm"
+                      className="group relative overflow-hidden bg-gradient-to-r from-green-400 via-green-300 to-green-500 hover:from-green-500 hover:via-green-400 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center gap-2 relative z-10">
+                        <FileText className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                        <span className="hidden sm:inline font-medium">Summary</span>
+                      </div>
+                    </Button>
+                    {messages.length > 0 && (
+                      <Button
+                        onClick={handleOpenTranslationMode}
                         variant="ghost"
                         size="sm"
-                        className="group relative overflow-hidden bg-gradient-to-r from-green-400 via-green-300 to-green-500 hover:from-green-500 hover:via-green-400 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
+                        className="group relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
                       >
                         <div className="flex items-center gap-2 relative z-10">
-                          <FileText className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                          <span className="hidden sm:inline font-medium">Summary</span>
+                          <Languages className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
+                          <span className="hidden sm:inline font-medium">Translation</span>
                         </div>
                       </Button>
-                      {messages.length > 0 && (
-                        <Button
-                          onClick={handleOpenTranslationMode}
-                          variant="ghost"
-                          size="sm"
-                          className="group relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
-                        >
-                          <div className="flex items-center gap-2 relative z-10">
-                            <Languages className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                            <span className="hidden sm:inline font-medium">Translation</span>
-                          </div>
+                    )}
+                    {/* Settings Sheet - now visible for all users */}
+                    <Sheet open={showSettings} onOpenChange={setShowSettings}>
+                      <SheetTrigger asChild>
+                        <Button variant="ghost" size="sm">
+                          <Settings className="w-4 h-4" />
                         </Button>
-                      )}
-                      {/* Settings Sheet - now visible for all users */}
-                      <Sheet open={showSettings} onOpenChange={setShowSettings}>
-                        <SheetTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <Settings className="w-4 h-4" />
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent side="right" className="w-96 overflow-y-auto">
-                          <SheetHeader>
-                            <SheetTitle>Settings & Profile</SheetTitle>
-                          </SheetHeader>
-                          <div className="mt-6">
-                            {isGuest ? (
-                              <div className="text-center py-12">
-                                <div className="mb-6">
-                                  <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4">
-                                    <span className="text-2xl">🇯🇲</span>
-                                  </div>
-                                  <h3 className="text-xl font-bold mb-2">Sign Up for Full Access</h3>
-                                  <p className="text-muted-foreground mb-6">
-                                    Create an account to access settings, unlimited messages, and more features!
-                                  </p>
+                      </SheetTrigger>
+                      <SheetContent side="right" className="w-96 overflow-y-auto">
+                        <SheetHeader>
+                          <SheetTitle>Settings & Profile</SheetTitle>
+                        </SheetHeader>
+                        <div className="mt-6">
+                          {isGuest ? (
+                            <div className="text-center py-12">
+                              <div className="mb-6">
+                                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4">
+                                  <span className="text-2xl">🇯🇲</span>
                                 </div>
-                                <div className="space-y-3">
-                                  <Button
-                                    onClick={() => window.location.href = '/auth'}
-                                    className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
-                                  >
-                                    Sign Up Now
-                                  </Button>
-                                  <div className="text-sm text-muted-foreground">
-                                    <p>You have {guestMessagesRemaining} messages remaining</p>
-                                  </div>
+                                <h3 className="text-xl font-bold mb-2">Sign Up for Full Access</h3>
+                                <p className="text-muted-foreground mb-6">
+                                  Create an account to access settings, unlimited messages, and more features!
+                                </p>
+                              </div>
+                              <div className="space-y-3">
+                                <Button
+                                  onClick={() => window.location.href = '/auth'}
+                                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                                >
+                                  Sign Up Now
+                                </Button>
+                                <div className="text-sm text-muted-foreground">
+                                  <p>You have {guestMessagesRemaining} messages remaining</p>
                                 </div>
                               </div>
-                            ) : (
-                              <UserProfileSettings />
-                            )}
-                          </div>
-                        </SheetContent>
-                      </Sheet>
-                      
-                      <ThemeToggle />
-                      <SubscriptionBadge />
-                    </div>
+                            </div>
+                          ) : (
+                            <UserProfileSettings />
+                          )}
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                    
+                    <ThemeToggle />
+                    <SubscriptionBadge />
                   </div>
                 </div>
               </header>
@@ -563,7 +565,13 @@ const Index = () => {
                     {messages.length === 0 && !typingMessage && (
                       <>
                         <div className="text-center py-12">
-                          <span className="text-6xl font-bold block mb-6">🇯🇲</span>
+                          <div className="mb-6 flex justify-center">
+                            <img 
+                              src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+                              alt="JamAI Logo" 
+                              className="w-20 h-20 object-contain"
+                            />
+                          </div>
                           <h2 className="text-3xl font-bold mb-4 jamaican-text-gradient">
                             Welcome to JamAI
                           </h2>
