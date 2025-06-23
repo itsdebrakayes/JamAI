@@ -35,7 +35,18 @@ import {
   DrawerClose,
 } from '@/components/ui/drawer';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { groupChatsByTime, type ChatHistory } from '@/utils/chatGrouping';
+import { groupChatsByTime } from '@/utils/chatGrouping';
+
+// Import the correct ChatHistory interface from chatHistory.ts
+interface ChatHistory {
+  id: string;
+  title: string;
+  messages: any[];
+  createdAt: Date;
+  autoTitle?: string;
+  keywords?: string[];
+  summary?: string;
+}
 
 /**
  * Props interface for the ChatHistorySidebar component
