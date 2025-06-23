@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -152,16 +153,23 @@ export class MemoryService {
    */
   private async storeInDatabase(entry: MemoryEntry) {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('No authenticated user found');
+        return;
+      }
+
       const { error } = await supabase
         .from('user_memories')
-        .insert([{
+        .insert({
+          user_id: user.id,
           category: entry.category,
           user_query: entry.userQuery,
           ai_response: entry.aiResponse,
           keywords: entry.keywords,
           importance_score: entry.importanceScore || 1,
           is_permanent: entry.isPermanent || false
-        }]);
+        });
 
       if (error) throw error;
       console.log('🧠 Memory: Stored in database successfully');
@@ -216,7 +224,7 @@ export class MemoryService {
 
     // Fallback to localStorage if no database memories
     if (memories.length === 0) {
-      memories = this.getMemoriesFromLocalStorage(currentQuery, limit);
+      memories = await this.getMemoriesFromLocalStorage(currentQuery, limit);
     }
 
     if (memories.length === 0) {
@@ -277,10 +285,10 @@ export class MemoryService {
   /**
    * Get memories from localStorage with basic keyword matching
    */
-  private getMemoriesFromLocalStorage(query: string, limit: number): Promise<MemoryEntry[]> {
+  private async getMemoriesFromLocalStorage(query: string, limit: number): Promise<MemoryEntry[]> {
     try {
       const stored = localStorage.getItem(this.localStorageKey);
-      if (!stored) return Promise.resolve([]);
+      if (!stored) return [];
 
       const memories: MemoryEntry[] = JSON.parse(stored);
       const queryKeywords = this.extractKeywords(query);
@@ -294,15 +302,13 @@ export class MemoryService {
       });
 
       // Sort by score and return top results
-      return Promise.resolve(
-        scoredMemories
-          .sort((a, b) => b.score - a.score)
-          .slice(0, limit)
-          .map(item => item.memory)
-      );
+      return scoredMemories
+        .sort((a, b) => b.score - a.score)
+        .slice(0, limit)
+        .map(item => item.memory);
     } catch (error) {
       console.error('Error getting memories from localStorage:', error);
-      return Promise.resolve([]);
+      return [];
     }
   }
 
