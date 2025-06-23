@@ -335,7 +335,45 @@ const Index = () => {
     handleSendMessage(suggestion);
   };
 
-  const handleNewChat = () => {
+  const handleNewChat = async () => {
+    // Save current chat if it has messages and a valid session ID
+    if (messages.length > 0 && currentChatId) {
+      try {
+        if (!isGuest && currentChatId.includes('-')) {
+          // For authenticated users, messages are already saved to database
+          // Just reload chat history to ensure we have the latest data
+          await loadChatHistoryData();
+        } else if (isGuest) {
+          // For guests, save to localStorage
+          const updatedHistory = [...chatHistory];
+          const currentChatIndex = updatedHistory.findIndex(chat => chat.id === currentChatId);
+          
+          if (currentChatIndex >= 0) {
+            // Update existing chat
+            updatedHistory[currentChatIndex].messages = messages;
+          } else {
+            // Create new chat entry
+            const firstUserMessage = messages.find(m => m.isUser);
+            const newChat = {
+              id: currentChatId,
+              title: firstUserMessage ? 
+                firstUserMessage.text.substring(0, 30) + (firstUserMessage.text.length > 30 ? '...' : '') : 
+                'New Chat',
+              messages: messages,
+              createdAt: new Date()
+            };
+            updatedHistory.unshift(newChat);
+          }
+          
+          setChatHistory(updatedHistory);
+          saveChatHistory(updatedHistory);
+        }
+      } catch (error) {
+        console.error('❌ Error saving current chat before starting new one:', error);
+      }
+    }
+
+    // Start new chat
     const newChatId = generateChatId();
     setCurrentChatId(newChatId);
     setMessages([]);
