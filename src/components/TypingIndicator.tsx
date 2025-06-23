@@ -6,11 +6,11 @@ const TypingIndicator = () => {
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="flex gap-4">
         <div className="flex-shrink-0">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-secondary to-accent text-secondary-foreground flex items-center justify-center text-lg font-medium modern-shadow overflow-hidden">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary to-accent text-secondary-foreground flex items-center justify-center text-lg font-medium modern-shadow overflow-hidden">
             <img 
               src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
               alt="JamAI Logo" 
-              className="w-14 h-14 object-contain"
+              className="w-18 h-18 object-contain"
             />
           </div>
         </div>
