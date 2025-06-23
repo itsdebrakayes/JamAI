@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -200,214 +201,247 @@ const UserProfileSettings = () => {
   return (
     <div className="space-y-6">
       {/* Subscription Info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
-            Subscription Plan
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <Badge variant={getSubscriptionColor()}>
-                {getSubscriptionTier()}
-              </Badge>
-              <p className="text-sm text-muted-foreground mt-1">
-                {limits?.tier === 'jamai_ultra' 
-                  ? 'Unlimited messages and features'
-                  : limits?.tier === 'jamai_plus'
-                  ? '500 messages per day'
-                  : '50 messages per day'
-                }
-              </p>
-            </div>
-          </div>
-          
-          {/* Usage Stats */}
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="text-center p-3 bg-muted rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                {limits?.daily_message_limit === -1 ? '∞' : usage?.messages_used || 0}
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Messages Used Today
-                {limits?.daily_message_limit !== -1 && ` / ${limits?.daily_message_limit}`}
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Subscription Plan
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <Badge variant={getSubscriptionColor()}>
+                  {getSubscriptionTier()}
+                </Badge>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {limits?.tier === 'jamai_ultra' 
+                    ? 'Unlimited messages and features'
+                    : limits?.tier === 'jamai_plus'
+                    ? '500 messages per day'
+                    : '50 messages per day'
+                  }
+                </p>
               </div>
             </div>
-            <div className="text-center p-3 bg-muted rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
-                {limits?.daily_media_limit === -1 ? '∞' : usage?.media_uploads_used || 0}
+            
+            {/* Usage Stats */}
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {limits?.daily_message_limit === -1 ? '∞' : usage?.messages_used || 0}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Messages Used Today
+                  {limits?.daily_message_limit !== -1 && ` / ${limits?.daily_message_limit}`}
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                Media Uploads Today
-                {limits?.daily_media_limit !== -1 && ` / ${limits?.daily_media_limit}`}
+              <div className="text-center p-3 bg-muted rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">
+                  {limits?.daily_media_limit === -1 ? '∞' : usage?.media_uploads_used || 0}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Media Uploads Today
+                  {limits?.daily_media_limit !== -1 && ` / ${limits?.daily_media_limit}`}
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Account Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Account Settings
-          </CardTitle>
-          <CardDescription>
-            Manage your account information and security settings
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Email */}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="flex items-center gap-2">
-              <Mail className="w-4 h-4" />
-              Email Address
-            </Label>
-            <div className="flex gap-2">
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1"
-              />
-              <Button 
-                onClick={handleUpdateEmail}
-                disabled={loading || email === user?.email}
-                size="sm"
-              >
-                Update
-              </Button>
-            </div>
-          </div>
-
-          {/* Password */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className="flex items-center gap-2">
-              <Lock className="w-4 h-4" />
-              Current Password
-            </Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Account Settings
+            </CardTitle>
+            <CardDescription>
+              Manage your account information and security settings
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Email Address
+              </Label>
+              <div className="flex gap-2">
                 <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password (min 6 characters)"
-                  className="pr-10"
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1"
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
+                <Button 
+                  onClick={handleUpdateEmail}
+                  disabled={loading || email === user?.email}
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
+                  Update
                 </Button>
               </div>
-              <Button 
-                onClick={handleUpdatePassword}
-                disabled={loading || !newPassword}
-                size="sm"
-              >
-                Update
-              </Button>
             </div>
-            <div className="flex justify-end">
-              <Button
-                variant="link"
-                size="sm"
-                onClick={handleForgotPassword}
-                disabled={loading}
-                className="px-0 h-auto text-sm text-muted-foreground hover:text-primary"
-              >
-                Forgot Password?
-              </Button>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="flex items-center gap-2">
+                <Lock className="w-4 h-4" />
+                Current Password
+              </Label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password (min 6 characters)"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <Button 
+                  onClick={handleUpdatePassword}
+                  disabled={loading || !newPassword}
+                  size="sm"
+                >
+                  Update
+                </Button>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  variant="link"
+                  size="sm"
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                  className="px-0 h-auto text-sm text-muted-foreground hover:text-primary"
+                >
+                  Forgot Password?
+                </Button>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Security Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5" />
-            Security Actions
-          </CardTitle>
-          <CardDescription>
-            Manage your account security and sessions
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="border rounded-lg border-gray-200 bg-gray-50">
-            <div className="w-full p-4 border-b border-gray-200">
-              <h4 className="text-sm font-medium text-gray-800">Sign out of account</h4>
+      {user && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5" />
+              Security Actions
+            </CardTitle>
+            <CardDescription>
+              Manage your account security and sessions
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="border rounded-lg border-gray-200 bg-gray-50">
+              <div className="w-full p-4 border-b border-gray-200">
+                <h4 className="text-sm font-medium text-gray-800">Sign out of account</h4>
+              </div>
+              <div className="flex items-center justify-between p-4">
+                <p className="text-sm text-gray-600">
+                  This will sign you out and redirect you to the login page
+                </p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      disabled={loading}
+                      variant="outline"
+                      size="sm"
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will sign you out of your account and redirect you to the login page. 
+                        You'll need to sign in again to access your account.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleSignOut} className="bg-gray-600 hover:bg-gray-700">
+                        Yes, Sign Out
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
-            <div className="flex items-center justify-between p-4">
-              <p className="text-sm text-gray-600">
-                This will sign you out and redirect you to the login page
-              </p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    disabled={loading}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will sign you out of your account and redirect you to the login page. 
-                      You'll need to sign in again to access your account.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleSignOut} className="bg-gray-600 hover:bg-gray-700">
-                      Yes, Sign Out
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
 
-          <div className="border rounded-lg border-red-200 bg-red-50">
-            <div className="w-full p-4 border-b border-red-200">
-              <h4 className="text-sm font-medium text-red-800">Sign out all devices</h4>
+            <div className="border rounded-lg border-red-200 bg-red-50">
+              <div className="w-full p-4 border-b border-red-200">
+                <h4 className="text-sm font-medium text-red-800">Sign out all devices</h4>
+              </div>
+              <div className="flex items-center justify-between p-4">
+                <p className="text-sm text-red-600">
+                  This will sign you out from all devices and sessions
+                </p>
+                <Button 
+                  onClick={handleSignOutAllDevices}
+                  disabled={loading}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out All
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center justify-between p-4">
-              <p className="text-sm text-red-600">
-                This will sign you out from all devices and sessions
-              </p>
-              <Button 
-                onClick={handleSignOutAllDevices}
-                disabled={loading}
-                variant="destructive"
-                size="sm"
-              >
-                <LogOut className="w-4 h-4 mr-2" />
-                Sign Out All
-              </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Guest Mode Message */}
+      {!user && (
+        <div className="text-center py-12">
+          <div className="mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4">
+              <img 
+                src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+                alt="JamAI Logo" 
+                className="w-10 h-10 object-contain"
+              />
             </div>
+            <h3 className="text-xl font-bold mb-2">Sign Up for Full Access</h3>
+            <p className="text-muted-foreground mb-6">
+              Create an account to access settings, unlimited messages, and more features!
+            </p>
           </div>
-        </CardContent>
-      </Card>
+          <div className="space-y-3">
+            <Button
+              onClick={() => window.location.href = '/auth'}
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+            >
+              Sign Up Now
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
