@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -465,7 +464,7 @@ export class MemoryService {
         return { memory, score: overlap + (memory.importanceScore || 1) };
       });
 
-      // Sort by score and return top results
+      // Sort by score and return top results - now we can safely use .slice()
       return scoredMemories
         .sort((a, b) => b.score - a.score)
         .slice(0, limit)
