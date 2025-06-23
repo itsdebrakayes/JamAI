@@ -227,9 +227,9 @@ const ChatHistorySidebar = ({
   };
 
   // Helper function to get display title for a chat
-  const getDisplayTitle = (chat: any) => {
-    // Prefer auto_title over title for intelligent naming
-    return chat.auto_title || chat.autoTitle || chat.title || 'New Chat';
+  const getDisplayTitle = (chat: ChatHistory) => {
+    // Prefer autoTitle over title for intelligent naming
+    return chat.autoTitle || chat.title || 'New Chat';
   };
 
   // ============================
