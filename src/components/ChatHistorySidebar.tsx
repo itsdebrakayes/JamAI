@@ -80,7 +80,13 @@ const ChatHistorySidebar = ({
   
   console.log('📊 ChatHistorySidebar render:', {
     totalChats: chatHistory.length,
-    groupedChats: groupedChats.map(g => ({ label: g.label, count: g.chats.length }))
+    groupedChats: groupedChats.map(g => ({ label: g.label, count: g.chats.length })),
+    sampleTitles: chatHistory.slice(0, 3).map(c => ({ 
+      id: c.id, 
+      title: c.title, 
+      autoTitle: c.autoTitle,
+      displayTitle: c.autoTitle || c.title 
+    }))
   });
 
   // ============================
@@ -220,6 +226,12 @@ const ChatHistorySidebar = ({
     }
   };
 
+  // Helper function to get display title for a chat
+  const getDisplayTitle = (chat: any) => {
+    // Prefer auto_title over title for intelligent naming
+    return chat.auto_title || chat.autoTitle || chat.title || 'New Chat';
+  };
+
   // ============================
   // RENDER
   // ============================
@@ -351,7 +363,7 @@ const ChatHistorySidebar = ({
                                 >
                                   <div className="flex items-center gap-3">
                                     <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                                    <span className="truncate text-sm">{chat.title}</span>
+                                    <span className="truncate text-sm">{getDisplayTitle(chat)}</span>
                                   </div>
                                 </button>
                               </DrawerClose>
@@ -541,7 +553,7 @@ const ChatHistorySidebar = ({
                             className="flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium"
                           >
                             <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate text-sm">{chat.title}</span>
+                            <span className="truncate text-sm">{getDisplayTitle(chat)}</span>
                           </SidebarMenuButton>
                           
                           {/* Individual delete button - only shown on hover and not in selection mode */}

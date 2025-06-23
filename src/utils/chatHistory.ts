@@ -291,6 +291,7 @@ export const saveMessageToDatabase = async (
       return false;
     }
 
+    // Save the message
     const { error } = await supabase
       .from('messages')
       .insert([{
@@ -306,20 +307,55 @@ export const saveMessageToDatabase = async (
       console.error('❌ Error saving message to database:', error);
       return false;
     }
-    
-    // Update chat session's updated_at timestamp and trigger title generation
+
+    // Update chat session's updated_at timestamp
     await supabase
       .from('chat_sessions')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', sessionId)
       .eq('user_id', user.id);
 
-    // Generate intelligent title if this is a new conversation
-    if (isUser) {
+    // Generate intelligent title and metadata after AI response
+    if (!isUser) {
       try {
-        await supabase.rpc('generate_chat_title', { session_id: sessionId });
+        // Get all messages for this session to generate intelligent data
+        const { data: sessionMessages } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('session_id', sessionId)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (sessionMessages && sessionMessages.length > 0) {
+          const messages: Message[] = sessionMessages.map((msg: DatabaseMessage) => ({
+            id: msg.id,
+            text: msg.content,
+            isUser: msg.is_user,
+            timestamp: new Date(msg.created_at)
+          }));
+
+          // Generate intelligent data
+          const autoTitle = generateIntelligentTitle(messages);
+          const keywords = extractKeywords(messages);
+          const summary = generateSummary(messages);
+
+          // Update the chat session with intelligent data
+          await supabase
+            .from('chat_sessions')
+            .update({ 
+              auto_title: autoTitle,
+              keywords: keywords,
+              summary: summary,
+              message_count: messages.length,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', sessionId)
+            .eq('user_id', user.id);
+
+          console.log(`🤖 Generated intelligent title: "${autoTitle}" for session ${sessionId}`);
+        }
       } catch (titleError) {
-        console.log('Note: Could not generate auto title:', titleError);
+        console.log('⚠️ Could not generate intelligent title:', titleError);
       }
     }
 
