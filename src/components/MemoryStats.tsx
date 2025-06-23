@@ -7,13 +7,22 @@ import { memoryService } from '@/services/memoryService';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface MemoryStats {
-  total: number;
-  byCategory: Record<string, number>;
+  totalMemories: number;
+  categoryCounts: Record<string, number>;
+  averageImportance: number;
+  oldestMemory: string | null;
+  newestMemory: string | null;
 }
 
 export const MemoryStats: React.FC = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState<MemoryStats>({ total: 0, byCategory: {} });
+  const [stats, setStats] = useState<MemoryStats>({ 
+    totalMemories: 0, 
+    categoryCounts: {},
+    averageImportance: 0,
+    oldestMemory: null,
+    newestMemory: null
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,7 +32,7 @@ export const MemoryStats: React.FC = () => {
   const loadStats = async () => {
     setLoading(true);
     try {
-      const memoryStats = await memoryService.getMemoryStats();
+      const memoryStats = memoryService.getMemoryStats();
       setStats(memoryStats);
     } catch (error) {
       console.error('Error loading memory stats:', error);
@@ -69,7 +78,7 @@ export const MemoryStats: React.FC = () => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <p className="font-medium">Total Memories: {stats.total}</p>
+          <p className="font-medium">Total Memories: {stats.totalMemories}</p>
           {user && (
             <p className="text-sm text-muted-foreground">
               Synced across all your devices
@@ -77,16 +86,24 @@ export const MemoryStats: React.FC = () => {
           )}
         </div>
 
-        {Object.keys(stats.byCategory).length > 0 && (
+        {Object.keys(stats.categoryCounts).length > 0 && (
           <div>
             <p className="font-medium mb-2">By Category:</p>
             <div className="flex flex-wrap gap-2">
-              {Object.entries(stats.byCategory).map(([category, count]) => (
+              {Object.entries(stats.categoryCounts).map(([category, count]) => (
                 <Badge key={category} variant="secondary">
                   {category}: {count}
                 </Badge>
               ))}
             </div>
+          </div>
+        )}
+
+        {stats.averageImportance > 0 && (
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Average Importance: {stats.averageImportance.toFixed(1)}/5
+            </p>
           </div>
         )}
 
