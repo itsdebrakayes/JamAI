@@ -456,7 +456,7 @@ const Index = () => {
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-6 h-6 object-contain"
+                        className="w-12 h-12 object-contain"
                       />
                       <div>
                         <h1 className="font-bold text-lg jamaican-text-gradient">JamAI</h1>
@@ -569,7 +569,7 @@ const Index = () => {
                             <img 
                               src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                               alt="JamAI Logo" 
-                              className="w-20 h-20 object-contain"
+                              className="w-32 h-32 object-contain"
                             />
                           </div>
                           <h2 className="text-3xl font-bold mb-4 jamaican-text-gradient">
