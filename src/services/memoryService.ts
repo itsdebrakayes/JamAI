@@ -36,8 +36,18 @@ export class MemoryService {
    * Check if user is authenticated for database operations
    */
   private async checkAuthStatus() {
-    const { data: { user } } = await supabase.auth.getUser();
-    this.isAuthenticated = !!user;
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.error('Auth check error:', error);
+        this.isAuthenticated = false;
+        return;
+      }
+      this.isAuthenticated = !!user;
+    } catch (error) {
+      console.error('Auth status check failed:', error);
+      this.isAuthenticated = false;
+    }
   }
 
   /**
@@ -153,7 +163,11 @@ export class MemoryService {
    */
   private async storeInDatabase(entry: MemoryEntry) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) {
+        console.error('Auth error:', authError);
+        return;
+      }
       if (!user) {
         console.error('No authenticated user found');
         return;
@@ -171,7 +185,10 @@ export class MemoryService {
           is_permanent: entry.isPermanent || false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database insert error:', error);
+        return;
+      }
       console.log('🧠 Memory: Stored in database successfully');
     } catch (error) {
       console.error('Error storing memory in database:', error);
@@ -190,10 +207,13 @@ export class MemoryService {
         limit_per_category: 10
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('RPC error:', error);
+        return;
+      }
 
       if (data && data.length > 0) {
-        const localMemories: MemoryEntry[] = data.map(item => ({
+        const localMemories: MemoryEntry[] = data.map((item: any) => ({
           category: item.category as MemoryEntry['category'],
           userQuery: item.user_query,
           aiResponse: item.ai_response,
@@ -264,9 +284,12 @@ export class MemoryService {
         limit_count: limit
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Search RPC error:', error);
+        return [];
+      }
 
-      return (data || []).map(item => ({
+      return (data || []).map((item: any) => ({
         id: item.id,
         category: item.category as MemoryEntry['category'],
         userQuery: item.user_query,
@@ -325,7 +348,10 @@ export class MemoryService {
           .delete()
           .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all user's memories
 
-        if (error) throw error;
+        if (error) {
+          console.error('Delete error:', error);
+          return;
+        }
         console.log('🧠 Memory: Cleared all memories from database');
       } catch (error) {
         console.error('Error clearing memories from database:', error);
@@ -343,17 +369,19 @@ export class MemoryService {
           .from('user_memories')
           .select('category');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Stats query error:', error);
+        } else if (data) {
+          const byCategory = data.reduce((acc, item) => {
+            acc[item.category] = (acc[item.category] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
 
-        const byCategory = (data || []).reduce((acc, item) => {
-          acc[item.category] = (acc[item.category] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-
-        return {
-          total: data?.length || 0,
-          byCategory
-        };
+          return {
+            total: data.length,
+            byCategory
+          };
+        }
       } catch (error) {
         console.error('Error getting memory stats:', error);
       }
