@@ -391,7 +391,7 @@ export class MemoryService {
     // Build enhanced context string
     let contextString = '\n=== RELEVANT USER HISTORY ===\n';
     Object.entries(categorized).forEach(([category, entries]) => {
-      if (entries.length > 0) {
+      if (Array.isArray(entries) && entries.length > 0) {
         contextString += `\n${category.toUpperCase()} MEMORIES:\n${entries.slice(0, 3).join('\n')}\n`;
       }
     });
