@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 interface Memory {
@@ -22,6 +23,14 @@ interface DatabaseMemory {
   is_permanent: boolean;
   expires_at: string | null;
   created_at: string;
+}
+
+interface MemoryStats {
+  totalMemories: number;
+  categoryCounts: Record<string, number>;
+  averageImportance: number;
+  oldestMemory: string | null;
+  newestMemory: string | null;
 }
 
 export class MemoryService {
@@ -125,7 +134,7 @@ export class MemoryService {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await this.saveToDatabase(memory);
+        await this.saveToDatabase(memory, user.id);
       }
     } catch (error) {
       console.log('🧠 Memory: Could not save to database, using localStorage only');
@@ -134,11 +143,12 @@ export class MemoryService {
     console.log(`🧠 Memory: Stored new ${memory.category} memory`);
   }
 
-  private async saveToDatabase(memory: Memory) {
+  private async saveToDatabase(memory: Memory, userId: string) {
     try {
       const { error } = await supabase
         .from('user_memories')
-        .insert([{
+        .insert({
+          user_id: userId,
           category: memory.category,
           title: memory.userQuery.substring(0, 100),
           user_query: memory.userQuery,
@@ -151,7 +161,7 @@ export class MemoryService {
           importance_score: memory.importance,
           is_permanent: false,
           expires_at: null
-        }]);
+        });
 
       if (error) {
         console.error('🧠 Memory: Database save error:', error);
@@ -203,6 +213,65 @@ export class MemoryService {
 
     console.log(`🧠 Memory: Generated context from ${relevantMemories.length} relevant memories`);
     return contextString;
+  }
+
+  getMemoryStats(): MemoryStats {
+    const categoryCounts: Record<string, number> = {};
+    let totalImportance = 0;
+    let oldestDate: Date | null = null;
+    let newestDate: Date | null = null;
+
+    this.memories.forEach(memory => {
+      // Count categories
+      categoryCounts[memory.category] = (categoryCounts[memory.category] || 0) + 1;
+      
+      // Sum importance
+      totalImportance += memory.importance;
+      
+      // Track dates
+      const memoryDate = new Date(memory.timestamp);
+      if (!oldestDate || memoryDate < oldestDate) {
+        oldestDate = memoryDate;
+      }
+      if (!newestDate || memoryDate > newestDate) {
+        newestDate = memoryDate;
+      }
+    });
+
+    return {
+      totalMemories: this.memories.length,
+      categoryCounts,
+      averageImportance: this.memories.length > 0 ? totalImportance / this.memories.length : 0,
+      oldestMemory: oldestDate ? oldestDate.toISOString() : null,
+      newestMemory: newestDate ? newestDate.toISOString() : null
+    };
+  }
+
+  async clearAllMemories(): Promise<void> {
+    try {
+      // Clear local storage
+      this.memories = [];
+      this.saveToLocalStorage();
+      
+      // Clear database if authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('user_memories')
+          .delete()
+          .eq('user_id', user.id);
+        
+        if (error) {
+          console.error('🧠 Memory: Error clearing database memories:', error);
+        } else {
+          console.log('🧠 Memory: Cleared all memories from database');
+        }
+      }
+      
+      console.log('🧠 Memory: Cleared all memories');
+    } catch (error) {
+      console.error('🧠 Memory: Error clearing memories:', error);
+    }
   }
 
   private extractKeywords(text: string): string[] {

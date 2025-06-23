@@ -9,6 +9,9 @@ interface ChatHistory {
   title: string;
   messages: Message[];
   createdAt: Date;
+  autoTitle?: string;
+  keywords?: string[];
+  summary?: string;
 }
 
 interface ChatSession {
@@ -18,6 +21,8 @@ interface ChatSession {
   created_at: string;
   updated_at: string;
   message_count: number | null;
+  keywords?: string[] | null;
+  summary?: string | null;
 }
 
 interface DatabaseMessage {
@@ -36,6 +41,73 @@ function generateUUID(): string {
     const v = c == 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
   });
+}
+
+// Generate intelligent title from conversation
+function generateIntelligentTitle(messages: Message[]): string {
+  if (messages.length === 0) return 'New Chat';
+  
+  const firstUserMessage = messages.find(m => m.isUser)?.text || '';
+  
+  if (firstUserMessage.length === 0) return 'New Chat';
+  
+  // Extract meaningful parts and create a concise title
+  const cleanText = firstUserMessage
+    .replace(/[^\w\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  
+  // Create title based on content patterns
+  if (cleanText.toLowerCase().includes('recipe') || cleanText.toLowerCase().includes('cook')) {
+    const match = cleanText.match(/recipe|cook.*?(\w+)/i);
+    return match ? `Recipe: ${match[1]}` : 'Recipe Discussion';
+  }
+  
+  if (cleanText.toLowerCase().includes('translate') || cleanText.toLowerCase().includes('patois')) {
+    return 'Translation Help';
+  }
+  
+  if (cleanText.toLowerCase().includes('help') || cleanText.toLowerCase().includes('how')) {
+    const topic = cleanText.split(/help|how/i)[1]?.trim().split(' ').slice(0, 3).join(' ');
+    return topic ? `Help: ${topic}` : 'Help Request';
+  }
+  
+  // Default: use first 40 characters
+  return cleanText.length > 40 
+    ? cleanText.substring(0, 40) + '...'
+    : cleanText || 'New Chat';
+}
+
+// Extract conversation keywords
+function extractKeywords(messages: Message[]): string[] {
+  const text = messages.map(m => m.text).join(' ').toLowerCase();
+  const commonWords = ['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'is', 'are', 'was', 'were', 'i', 'you', 'me', 'my', 'your'];
+  const words = text.match(/\b\w{3,}\b/g) || [];
+  
+  const wordCounts: Record<string, number> = {};
+  words.forEach(word => {
+    if (!commonWords.includes(word)) {
+      wordCounts[word] = (wordCounts[word] || 0) + 1;
+    }
+  });
+  
+  return Object.entries(wordCounts)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 5)
+    .map(([word]) => word);
+}
+
+// Generate conversation summary
+function generateSummary(messages: Message[]): string {
+  if (messages.length < 4) return '';
+  
+  const userMessages = messages.filter(m => m.isUser).slice(0, 3);
+  const topics = userMessages.map(m => {
+    const text = m.text.length > 60 ? m.text.substring(0, 60) + '...' : m.text;
+    return text;
+  });
+  
+  return `Discussed: ${topics.join('; ')}`;
 }
 
 // Enhanced localStorage functions with better error handling
@@ -132,7 +204,7 @@ export const loadChatHistory = (): ChatHistory[] => {
   }
 };
 
-// Enhanced Supabase functions with proper UUID handling
+// Enhanced Supabase functions with intelligent naming
 export const createChatSession = async (title: string): Promise<string | null> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -235,12 +307,21 @@ export const saveMessageToDatabase = async (
       return false;
     }
     
-    // Update chat session's updated_at timestamp
+    // Update chat session's updated_at timestamp and trigger title generation
     await supabase
       .from('chat_sessions')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', sessionId)
       .eq('user_id', user.id);
+
+    // Generate intelligent title if this is a new conversation
+    if (isUser) {
+      try {
+        await supabase.rpc('generate_chat_title', { session_id: sessionId });
+      } catch (titleError) {
+        console.log('Note: Could not generate auto title:', titleError);
+      }
+    }
 
     console.log('✅ Message saved to database');
     return true;
@@ -288,6 +369,33 @@ export const getMessagesForSession = async (sessionId: string): Promise<Message[
   } catch (error) {
     console.error('❌ Error fetching messages for session:', error);
     return [];
+  }
+};
+
+export const updateChatWithIntelligentData = async (sessionId: string, messages: Message[]): Promise<void> => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const autoTitle = generateIntelligentTitle(messages);
+    const keywords = extractKeywords(messages);
+    const summary = generateSummary(messages);
+
+    await supabase
+      .from('chat_sessions')
+      .update({ 
+        auto_title: autoTitle,
+        keywords: keywords,
+        summary: summary,
+        message_count: messages.length,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', sessionId)
+      .eq('user_id', user.id);
+
+    console.log(`📚 Updated chat ${sessionId} with intelligent data:`, { autoTitle, keywords, summary });
+  } catch (error) {
+    console.error('❌ Error updating chat with intelligent data:', error);
   }
 };
 
