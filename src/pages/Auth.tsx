@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -171,7 +170,7 @@ const Auth = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-40 h-40 mb-4">
+          <div className="inline-flex items-center justify-center w-40 h-40 mb-2">
             <img 
               src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
               alt="JamAI Logo" 
@@ -190,7 +189,7 @@ const Auth = () => {
       <div className="min-h-screen flex items-center justify-center bg-white">
         <Card className="w-full max-w-md border-2 border-green-200">
           <CardHeader className="text-center">
-            <div className="inline-flex items-center justify-center w-40 h-40 mb-4 mx-auto">
+            <div className="inline-flex items-center justify-center w-40 h-40 mb-2 mx-auto">
               <img 
                 src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                 alt="JamAI Logo" 
@@ -230,7 +229,7 @@ const Auth = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       <Card className="w-full max-w-md border-2 border-green-200">
         <CardHeader className="text-center">
-          <div className="inline-flex items-center justify-center w-40 h-40 mb-4 mx-auto">
+          <div className="inline-flex items-center justify-center w-40 h-40 mb-2 mx-auto">
             <img 
               src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
               alt="JamAI Logo" 

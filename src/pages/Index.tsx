@@ -565,7 +565,7 @@ const Index = () => {
                     {messages.length === 0 && !typingMessage && (
                       <>
                         <div className="text-center py-12">
-                          <div className="mb-6 flex justify-center">
+                          <div className="mb-3 flex justify-center">
                             <img 
                               src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                               alt="JamAI Logo" 
