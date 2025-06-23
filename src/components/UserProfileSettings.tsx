@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,7 +127,7 @@ const UserProfileSettings = () => {
   const handleSignOut = async () => {
     setLoading(true);
     try {
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
       if (error) throw error;
       
       toast({
@@ -349,28 +350,10 @@ const UserProfileSettings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border rounded-lg">
+          <div className="flex items-center justify-between p-4 border rounded-lg border-gray-200 bg-gray-50">
             <div>
-              <h4 className="text-sm font-medium">Sign out all devices</h4>
-              <p className="text-sm text-muted-foreground">
-                This will sign you out from all devices and sessions
-              </p>
-            </div>
-            <Button 
-              onClick={handleSignOutAllDevices}
-              disabled={loading}
-              variant="outline"
-              size="sm"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out All
-            </Button>
-          </div>
-
-          <div className="flex items-center justify-between p-4 border rounded-lg border-red-200 bg-red-50">
-            <div>
-              <h4 className="text-sm font-medium text-red-800">Sign out of account</h4>
-              <p className="text-sm text-red-600">
+              <h4 className="text-sm font-medium text-gray-800">Sign out of account</h4>
+              <p className="text-sm text-gray-600">
                 This will sign you out and redirect you to the login page
               </p>
             </div>
@@ -378,7 +361,7 @@ const UserProfileSettings = () => {
               <AlertDialogTrigger asChild>
                 <Button 
                   disabled={loading}
-                  variant="destructive"
+                  variant="outline"
                   size="sm"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
@@ -395,12 +378,30 @@ const UserProfileSettings = () => {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleSignOut} className="bg-red-600 hover:bg-red-700">
+                  <AlertDialogAction onClick={handleSignOut} className="bg-gray-600 hover:bg-gray-700">
                     Yes, Sign Out
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
+          </div>
+
+          <div className="flex items-center justify-between p-4 border rounded-lg border-red-200 bg-red-50">
+            <div>
+              <h4 className="text-sm font-medium text-red-800">Sign out all devices</h4>
+              <p className="text-sm text-red-600">
+                This will sign you out from all devices and sessions
+              </p>
+            </div>
+            <Button 
+              onClick={handleSignOutAllDevices}
+              disabled={loading}
+              variant="destructive"
+              size="sm"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out All
+            </Button>
           </div>
         </CardContent>
       </Card>
