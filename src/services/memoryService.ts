@@ -1,28 +1,31 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 /**
- * Interface for memory entries stored in both localStorage and database
+ * Enhanced interface for memory entries with new fields
  */
 interface MemoryEntry {
   id?: string;
   category: 'recipe' | 'preference' | 'recommendation' | 'fact' | 'conversation';
+  title?: string;
   userQuery: string;
   aiResponse: string;
+  content?: Record<string, any>;
   keywords: string[];
   importanceScore?: number;
   isPermanent?: boolean;
+  expiresAt?: string;
   timestamp: string;
 }
 
 /**
- * Enhanced Memory Service
+ * Enhanced Memory Service with improved features
  * 
- * Provides intelligent memory management with:
- * - Cross-device synchronization via Supabase
- * - Local caching for performance
- * - Smart context injection for AI responses
- * - Memory categorization and prioritization
+ * New features:
+ * - Automatic title generation
+ * - Structured content storage
+ * - Memory expiration with cleanup
+ * - Enhanced importance scoring (default 3)
+ * - Better context building with titles
  */
 export class MemoryService {
   private localStorageKey = 'jamAI-enhanced-knowledge';
@@ -51,6 +54,142 @@ export class MemoryService {
   }
 
   /**
+   * Generate a meaningful title from user query and AI response
+   */
+  private generateTitle(userQuery: string, aiResponse: string, category: string): string {
+    // For preferences, create descriptive titles
+    if (category === 'preference') {
+      if (userQuery.toLowerCase().includes('like') || userQuery.toLowerCase().includes('prefer')) {
+        return `Likes: ${userQuery.substring(0, 30)}${userQuery.length > 30 ? '...' : ''}`;
+      }
+      if (userQuery.toLowerCase().includes('allergic') || userQuery.toLowerCase().includes('allergy')) {
+        return `Allergy: ${userQuery.substring(0, 30)}${userQuery.length > 30 ? '...' : ''}`;
+      }
+      return `Preference: ${userQuery.substring(0, 25)}${userQuery.length > 25 ? '...' : ''}`;
+    }
+
+    // For recipes, extract dish names
+    if (category === 'recipe') {
+      const dishMatch = aiResponse.match(/(?:recipe for|how to make|cooking)\s+([^.!?]+)/i);
+      if (dishMatch) {
+        return `Recipe: ${dishMatch[1].trim()}`;
+      }
+      return `Recipe: ${userQuery.substring(0, 30)}${userQuery.length > 30 ? '...' : ''}`;
+    }
+
+    // For recommendations, be specific
+    if (category === 'recommendation') {
+      return `Recommended: ${userQuery.substring(0, 25)}${userQuery.length > 25 ? '...' : ''}`;
+    }
+
+    // For facts, make it clear
+    if (category === 'fact') {
+      return `Fact: ${userQuery.substring(0, 30)}${userQuery.length > 30 ? '...' : ''}`;
+    }
+
+    // Default title for conversations
+    return userQuery.substring(0, 40) + (userQuery.length > 40 ? '...' : '');
+  }
+
+  /**
+   * Extract structured content from responses based on category
+   */
+  private extractStructuredContent(userQuery: string, aiResponse: string, category: string): Record<string, any> {
+    const content: Record<string, any> = {};
+
+    if (category === 'recipe') {
+      // Extract ingredients and steps if available
+      const ingredientsMatch = aiResponse.match(/ingredients?:?\s*\n?((?:[-•*]\s*.+\n?)+)/i);
+      const stepsMatch = aiResponse.match(/(?:instructions?|steps?|method):?\s*\n?((?:(?:\d+\.|\d+\)|-|•|\*)\s*.+\n?)+)/i);
+      
+      if (ingredientsMatch) {
+        content.ingredients = ingredientsMatch[1].split('\n').filter(line => line.trim());
+      }
+      if (stepsMatch) {
+        content.steps = stepsMatch[1].split('\n').filter(line => line.trim());
+      }
+    }
+
+    if (category === 'preference') {
+      // Extract preference details
+      content.preference_type = userQuery.toLowerCase().includes('like') ? 'likes' : 
+                               userQuery.toLowerCase().includes('dislike') ? 'dislikes' : 
+                               userQuery.toLowerCase().includes('allergic') ? 'allergy' : 'general';
+      
+      // Extract foods mentioned
+      const foodKeywords = this.extractKeywords(userQuery + ' ' + aiResponse);
+      content.mentioned_foods = foodKeywords.filter(word => 
+        !['like', 'dislike', 'prefer', 'hate', 'love', 'enjoy'].includes(word)
+      );
+    }
+
+    if (category === 'recommendation') {
+      // Extract what was recommended
+      const recommendations = aiResponse.match(/(?:recommend|suggest|try)(?:ing|ed)?\s+([^.!?]+)/gi);
+      if (recommendations) {
+        content.recommendations = recommendations.map(rec => rec.replace(/(?:recommend|suggest|try)(?:ing|ed)?\s+/i, ''));
+      }
+    }
+
+    return content;
+  }
+
+  /**
+   * Calculate enhanced importance score with better logic
+   */
+  private calculateImportanceScore(userQuery: string, aiResponse: string, category: string): number {
+    let score = 3; // New default is 3
+
+    // Content length bonus
+    if (aiResponse.length > 200) score += 1;
+    if (aiResponse.length > 500) score += 1;
+    
+    // Category-based importance
+    if (category === 'preference') score += 2; // Preferences are very important
+    if (category === 'recipe') score += 1;
+    if (category === 'recommendation') score += 1;
+    
+    // Personal information bonus
+    if (userQuery.toLowerCase().includes('my') || userQuery.toLowerCase().includes('i ')) score += 1;
+    
+    // Health/allergy information is critical
+    if (userQuery.toLowerCase().includes('allergic') || userQuery.toLowerCase().includes('allergy')) score += 2;
+    
+    // Specific dietary requirements
+    if (userQuery.toLowerCase().includes('vegan') || userQuery.toLowerCase().includes('vegetarian') || 
+        userQuery.toLowerCase().includes('gluten') || userQuery.toLowerCase().includes('keto')) score += 1;
+
+    return Math.min(score, 5);
+  }
+
+  /**
+   * Determine if memory should have expiration based on content
+   */
+  private shouldExpire(category: string, userQuery: string, aiResponse: string): string | undefined {
+    // Preferences and allergies never expire
+    if (category === 'preference') return undefined;
+    
+    // Health information never expires
+    if (userQuery.toLowerCase().includes('allergic') || userQuery.toLowerCase().includes('allergy')) return undefined;
+    
+    // Temporary conversations expire in 30 days
+    if (category === 'conversation' && userQuery.length < 20) {
+      const expireDate = new Date();
+      expireDate.setDate(expireDate.getDate() + 30);
+      return expireDate.toISOString();
+    }
+    
+    // Facts and recipes expire in 90 days unless very detailed
+    if ((category === 'fact' || category === 'recipe') && aiResponse.length < 300) {
+      const expireDate = new Date();
+      expireDate.setDate(expireDate.getDate() + 90);
+      return expireDate.toISOString();
+    }
+    
+    return undefined; // No expiration
+  }
+
+  /**
    * Extract meaningful keywords from text
    */
   private extractKeywords(text: string): string[] {
@@ -71,7 +210,7 @@ export class MemoryService {
     if (combinedText.includes('recommend') || combinedText.includes('suggest') || combinedText.includes('pair') || combinedText.includes('goes with') || combinedText.includes('best for')) {
       return 'recommendation';
     }
-    if (combinedText.includes('like') || combinedText.includes('prefer') || combinedText.includes('favorite') || combinedText.includes('love') || combinedText.includes('hate') || combinedText.includes('enjoy')) {
+    if (combinedText.includes('like') || combinedText.includes('prefer') || combinedText.includes('favorite') || combinedText.includes('love') || combinedText.includes('hate') || combinedText.includes('enjoy') || combinedText.includes('allergic')) {
       return 'preference';
     }
     if (combinedText.includes('what') || combinedText.includes('how') || combinedText.includes('why') || combinedText.includes('when') || combinedText.includes('where')) {
@@ -82,27 +221,7 @@ export class MemoryService {
   }
 
   /**
-   * Calculate importance score based on various factors
-   */
-  private calculateImportanceScore(userQuery: string, aiResponse: string, category: string): number {
-    let score = 1;
-    
-    // Longer responses might be more important
-    if (aiResponse.length > 200) score += 1;
-    if (aiResponse.length > 500) score += 1;
-    
-    // Certain categories are more important
-    if (category === 'preference') score += 2;
-    if (category === 'recipe') score += 1;
-    
-    // Questions about personal info are important
-    if (userQuery.toLowerCase().includes('my') || userQuery.toLowerCase().includes('i ')) score += 1;
-    
-    return Math.min(score, 5);
-  }
-
-  /**
-   * Store memory in both localStorage and database
+   * Enhanced memory storage with all new features
    */
   async storeMemory(userQuery: string, aiResponse: string): Promise<void> {
     // Skip short exchanges
@@ -114,18 +233,24 @@ export class MemoryService {
     const category = this.categorizeContent(userQuery, aiResponse);
     const keywords = this.extractKeywords(userQuery + ' ' + aiResponse);
     const importanceScore = this.calculateImportanceScore(userQuery, aiResponse, category);
+    const title = this.generateTitle(userQuery, aiResponse, category);
+    const content = this.extractStructuredContent(userQuery, aiResponse, category);
+    const expiresAt = this.shouldExpire(category, userQuery, aiResponse);
     
     const memoryEntry: MemoryEntry = {
       category,
+      title,
       userQuery,
       aiResponse,
+      content,
       keywords,
       importanceScore,
       isPermanent: importanceScore >= 4,
+      expiresAt,
       timestamp: new Date().toISOString()
     };
 
-    console.log(`🧠 Memory: Storing ${category} memory with importance ${importanceScore}`);
+    console.log(`🧠 Memory: Storing ${category} memory "${title}" with importance ${importanceScore}`);
 
     // Store locally first for immediate access
     this.storeInLocalStorage(memoryEntry);
@@ -137,7 +262,7 @@ export class MemoryService {
   }
 
   /**
-   * Store memory in localStorage
+   * Store memory in localStorage with enhanced format
    */
   private storeInLocalStorage(entry: MemoryEntry) {
     try {
@@ -159,17 +284,13 @@ export class MemoryService {
   }
 
   /**
-   * Store memory in Supabase database
+   * Store memory in Supabase database with enhanced fields
    */
   private async storeInDatabase(entry: MemoryEntry) {
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError) {
+      if (authError || !user) {
         console.error('Auth error:', authError);
-        return;
-      }
-      if (!user) {
-        console.error('No authenticated user found');
         return;
       }
 
@@ -178,11 +299,14 @@ export class MemoryService {
         .insert({
           user_id: user.id,
           category: entry.category,
+          title: entry.title,
           user_query: entry.userQuery,
           ai_response: entry.aiResponse,
+          content: entry.content || {},
           keywords: entry.keywords,
-          importance_score: entry.importanceScore || 1,
-          is_permanent: entry.isPermanent || false
+          importance_score: entry.importanceScore || 3,
+          is_permanent: entry.isPermanent || false,
+          expires_at: entry.expiresAt
         });
 
       if (error) {
@@ -230,12 +354,12 @@ export class MemoryService {
   }
 
   /**
-   * Get relevant memories for context injection
+   * Get relevant memories with enhanced context building
    */
   async getRelevantMemories(currentQuery: string, limit: number = 5): Promise<string> {
-    console.log('🧠 Memory: Building context from stored memories...');
+    console.log('🧠 Memory: Building enhanced context from stored memories...');
     
-    let memories: MemoryEntry[] = [];
+    let memories: any[] = [];
 
     // Try to get from database first if authenticated
     if (this.isAuthenticated) {
@@ -252,30 +376,35 @@ export class MemoryService {
       return '';
     }
 
-    // Group by category for better organization
+    // Group by category and build enhanced context
     const categorized = memories.reduce((acc, memory) => {
       if (!acc[memory.category]) acc[memory.category] = [];
-      acc[memory.category].push(`User: ${memory.userQuery}\nAssistant: ${memory.aiResponse}`);
+      
+      // Use title if available, fallback to truncated query
+      const displayTitle = memory.title || memory.userQuery?.substring(0, 40) + '...';
+      const contextEntry = `- ${displayTitle}\n  Context: ${memory.aiResponse.substring(0, 150)}...`;
+      
+      acc[memory.category].push(contextEntry);
       return acc;
     }, {} as Record<string, string[]>);
 
-    // Build context string
+    // Build enhanced context string
     let contextString = '\n=== RELEVANT USER HISTORY ===\n';
     Object.entries(categorized).forEach(([category, entries]) => {
       if (entries.length > 0) {
-        contextString += `\n${category.toUpperCase()} MEMORIES:\n${entries.slice(0, 3).join('\n---\n')}\n`;
+        contextString += `\n${category.toUpperCase()} MEMORIES:\n${entries.slice(0, 3).join('\n')}\n`;
       }
     });
     contextString += '=== END USER HISTORY ===\n';
 
-    console.log(`🧠 Memory: Generated context with ${memories.length} memories (${contextString.length} chars)`);
+    console.log(`🧠 Memory: Generated enhanced context with ${memories.length} memories (${contextString.length} chars)`);
     return contextString;
   }
 
   /**
-   * Get memories from database with keyword matching
+   * Enhanced database memory retrieval
    */
-  private async getMemoriesFromDatabase(query: string, limit: number): Promise<MemoryEntry[]> {
+  private async getMemoriesFromDatabase(query: string, limit: number): Promise<any[]> {
     try {
       const keywords = this.extractKeywords(query);
       
@@ -289,16 +418,7 @@ export class MemoryService {
         return [];
       }
 
-      return (data || []).map((item: any) => ({
-        id: item.id,
-        category: item.category as MemoryEntry['category'],
-        userQuery: item.user_query,
-        aiResponse: item.ai_response,
-        keywords: item.keywords,
-        importanceScore: item.importance_score,
-        isPermanent: item.is_permanent,
-        timestamp: item.created_at
-      }));
+      return data || [];
     } catch (error) {
       console.error('Error getting memories from database:', error);
       return [];
@@ -360,14 +480,14 @@ export class MemoryService {
   }
 
   /**
-   * Get memory statistics
+   * Get enhanced memory statistics
    */
-  async getMemoryStats(): Promise<{ total: number; byCategory: Record<string, number> }> {
+  async getMemoryStats(): Promise<{ total: number; byCategory: Record<string, number>; byImportance: Record<string, number> }> {
     if (this.isAuthenticated) {
       try {
         const { data, error } = await supabase
           .from('user_memories')
-          .select('category');
+          .select('category, importance_score');
 
         if (error) {
           console.error('Stats query error:', error);
@@ -377,9 +497,16 @@ export class MemoryService {
             return acc;
           }, {} as Record<string, number>);
 
+          const byImportance = data.reduce((acc, item) => {
+            const key = `importance_${item.importance_score}`;
+            acc[key] = (acc[key] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+
           return {
             total: data.length,
-            byCategory
+            byCategory,
+            byImportance
           };
         }
       } catch (error) {
@@ -387,10 +514,10 @@ export class MemoryService {
       }
     }
 
-    // Fallback to localStorage
+    // Fallback to localStorage with basic stats
     try {
       const stored = localStorage.getItem(this.localStorageKey);
-      if (!stored) return { total: 0, byCategory: {} };
+      if (!stored) return { total: 0, byCategory: {}, byImportance: {} };
 
       const memories: MemoryEntry[] = JSON.parse(stored);
       const byCategory = memories.reduce((acc, memory) => {
@@ -400,11 +527,12 @@ export class MemoryService {
 
       return {
         total: memories.length,
-        byCategory
+        byCategory,
+        byImportance: {}
       };
     } catch (error) {
       console.error('Error getting memory stats from localStorage:', error);
-      return { total: 0, byCategory: {} };
+      return { total: 0, byCategory: {}, byImportance: {} };
     }
   }
 }

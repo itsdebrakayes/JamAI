@@ -189,11 +189,14 @@ export type Database = {
         Row: {
           ai_response: string
           category: string
+          content: Json | null
           created_at: string
+          expires_at: string | null
           id: string
           importance_score: number
           is_permanent: boolean
           keywords: string[]
+          title: string | null
           updated_at: string
           user_id: string
           user_query: string
@@ -201,11 +204,14 @@ export type Database = {
         Insert: {
           ai_response: string
           category: string
+          content?: Json | null
           created_at?: string
+          expires_at?: string | null
           id?: string
           importance_score?: number
           is_permanent?: boolean
           keywords?: string[]
+          title?: string | null
           updated_at?: string
           user_id: string
           user_query: string
@@ -213,11 +219,14 @@ export type Database = {
         Update: {
           ai_response?: string
           category?: string
+          content?: Json | null
           created_at?: string
+          expires_at?: string | null
           id?: string
           importance_score?: number
           is_permanent?: boolean
           keywords?: string[]
+          title?: string | null
           updated_at?: string
           user_id?: string
           user_query?: string
@@ -278,6 +287,10 @@ export type Database = {
         Args: { limit_type: string }
         Returns: boolean
       }
+      cleanup_expired_memories: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       generate_chat_title: {
         Args: { session_id: string }
         Returns: string
@@ -286,8 +299,11 @@ export type Database = {
         Args: { days_back?: number; limit_per_category?: number }
         Returns: {
           category: string
+          title: string
           user_query: string
           ai_response: string
+          content: Json
+          importance_score: number
           created_at: string
         }[]
       }
@@ -312,11 +328,14 @@ export type Database = {
         Returns: {
           id: string
           category: string
+          title: string
           user_query: string
           ai_response: string
+          content: Json
           keywords: string[]
           importance_score: number
           is_permanent: boolean
+          expires_at: string
           created_at: string
         }[]
       }
