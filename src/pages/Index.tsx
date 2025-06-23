@@ -111,7 +111,7 @@ const Index = () => {
       const chatHistoryData = sessions.map(session => ({
         id: session.id,
         title: session.auto_title || session.title,
-        messages: [] as Message[], // Messages loaded on demand
+        messages: [] as Message[],
         createdAt: new Date(session.created_at)
       }));
       setChatHistory(chatHistoryData);
@@ -137,7 +137,6 @@ const Index = () => {
   const handleSendMessage = async (text: string) => {
     if (!text.trim()) return;
 
-    // Handle guest mode message limit
     if (isGuest) {
       if (guestMessagesRemaining <= 0) {
         toast({
@@ -158,7 +157,6 @@ const Index = () => {
         return;
       }
       
-      // Show remaining messages for guest
       if (guestMessagesRemaining <= 3) {
         toast({
           title: `${guestMessagesRemaining - 1} messages remaining`,
@@ -166,7 +164,6 @@ const Index = () => {
         });
       }
     } else {
-      // Check message limit for authenticated users
       const canSendMessage = await checkLimit('messages');
       if (!canSendMessage) {
         toast({
@@ -190,7 +187,6 @@ const Index = () => {
     scrollToBottom();
     setIsTyping(true);
 
-    // Only create chat session for authenticated users
     let sessionId = currentChatId;
     if (!isGuest && !sessionId) {
       sessionId = await createChatSession('New Chat');
@@ -206,12 +202,10 @@ const Index = () => {
       }
     }
 
-    // Save user message to database (only for authenticated users)
     if (!isGuest && sessionId) {
       await saveMessageToDatabase(sessionId, text, true, 'text', {});
     }
 
-    // Set timeout for request
     requestTimeoutRef.current = setTimeout(() => {
       console.warn('Request timed out, stopping typing indicator');
       setIsTyping(false);
@@ -229,7 +223,7 @@ const Index = () => {
         text, 
         language === 'patois', 
         newMessages, 
-        'gemini' // Using default service
+        'gemini'
       );
 
       if (requestTimeoutRef.current) {
@@ -246,17 +240,14 @@ const Index = () => {
 
       setTypingMessage(aiMessage);
       
-      // Save AI message to database (only for authenticated users)
       if (!isGuest && sessionId) {
         await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
         
-        // Increment usage count for authenticated users
         await incrementUsage('messages');
 
-        // Generate intelligent title if this is a new chat
         if (messages.length === 0) {
           await supabase.rpc('generate_chat_title', { session_id: sessionId });
-          await loadChatHistory(); // Refresh chat list
+          await loadChatHistory();
         }
       }
 
@@ -378,9 +369,7 @@ const Index = () => {
   }, [messages]);
 
   useEffect(() => {
-    // Load chat history on component mount and set up new chat
     const initializeApp = async () => {
-      // Check if migration is needed
       const needsMigration = await shouldRunMigration();
       if (needsMigration) {
         console.log('Running localStorage to Supabase migration...');
@@ -401,7 +390,6 @@ const Index = () => {
     initializeApp();
   }, []);
 
-  // Cleanup timeout on component unmount
   useEffect(() => {
     return () => {
       if (requestTimeoutRef.current) {
@@ -464,7 +452,6 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                  {/* Guest status indicator with Sign Up button */}
                   {isGuest && (
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-full">
@@ -483,7 +470,6 @@ const Index = () => {
                     </div>
                   )}
 
-                  {/* Desktop controls */}
                   <div className="hidden md:flex items-center gap-3">
                     <Button
                       onClick={handleOpenChatSummary}
@@ -509,7 +495,6 @@ const Index = () => {
                         </div>
                       </Button>
                     )}
-                    {/* Settings Sheet - now visible for all users */}
                     <Sheet open={showSettings} onOpenChange={setShowSettings}>
                       <SheetTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -565,7 +550,7 @@ const Index = () => {
                     {messages.length === 0 && !typingMessage && (
                       <>
                         <div className="text-center py-12">
-                          <div className="mb-3 flex justify-center">
+                          <div className="mb-1 flex justify-center">
                             <img 
                               src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                               alt="JamAI Logo" 
@@ -651,7 +636,6 @@ const Index = () => {
                         </Button>
                       </div>
                     )}
-                    {/* Show sign up prompt when getting close to limit */}
                     {isGuest && guestMessagesRemaining <= 3 && guestMessagesRemaining > 0 && (
                       <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
                         <p className="text-yellow-800 font-medium">Only {guestMessagesRemaining} messages left!</p>
