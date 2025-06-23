@@ -1,10 +1,20 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Eye, EyeOff, LogOut, Shield, CreditCard, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -102,6 +112,30 @@ const UserProfileSettings = () => {
         title: "Password Reset Email Sent",
         description: "Check your email for instructions to reset your password.",
       });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      if (error) throw error;
+      
+      toast({
+        title: "Signed Out",
+        description: "You have been signed out successfully.",
+      });
+      
+      // Force page reload to ensure complete logout
+      window.location.href = '/auth';
     } catch (error: any) {
       toast({
         title: "Error",
@@ -331,6 +365,42 @@ const UserProfileSettings = () => {
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out All
             </Button>
+          </div>
+
+          <div className="flex items-center justify-between p-4 border rounded-lg border-red-200 bg-red-50">
+            <div>
+              <h4 className="text-sm font-medium text-red-800">Sign out of account</h4>
+              <p className="text-sm text-red-600">
+                This will sign you out and redirect you to the login page
+              </p>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  disabled={loading}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign Out
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will sign you out of your account and redirect you to the login page. 
+                    You'll need to sign in again to access your account.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleSignOut} className="bg-red-600 hover:bg-red-700">
+                    Yes, Sign Out
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CardContent>
       </Card>
