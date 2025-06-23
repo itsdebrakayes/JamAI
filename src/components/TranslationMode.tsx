@@ -39,6 +39,8 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
         // Only translate AI messages
         try {
           const detectedLanguage = detectLanguage(message.text);
+          console.log(`🔄 Translation: Detected language: ${detectedLanguage} for message: ${message.text.substring(0, 50)}...`);
+          
           let translatedText: string;
           
           if (detectedLanguage === 'patois') {
@@ -56,7 +58,7 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
           console.error('Translation error:', error);
           translated.push({
             ...message,
-            text: 'Translation not available'
+            text: `Translation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
           });
         }
       } else {
@@ -71,39 +73,61 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
 
   const translateToEnglish = async (patoisText: string): Promise<string> => {
     try {
+      console.log('🔄 Translating Patois to English:', patoisText.substring(0, 50) + '...');
+      
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          userMessage: `Translate the following Jamaican Patois text to natural English. Keep the meaning and tone intact: "${patoisText}"`,
+          userMessage: `Please translate this Jamaican Patois text to clear, natural English while preserving the meaning and tone: "${patoisText}"`,
           isUserMessagePatois: false,
           conversationHistory: [],
           storedKnowledge: ''
         }
       });
 
-      if (error) throw error;
-      return data?.message || 'Translation not available.';
+      if (error) {
+        console.error('Translation error:', error);
+        throw new Error(`Translation service error: ${error.message}`);
+      }
+      
+      if (!data?.message) {
+        throw new Error('No translation response received');
+      }
+      
+      console.log('✅ Translation successful');
+      return data.message;
     } catch (error) {
       console.error('English Translation Error:', error);
-      return 'Sorry, translation is not available right now.';
+      throw error;
     }
   };
 
   const translateToPatois = async (englishText: string): Promise<string> => {
     try {
+      console.log('🔄 Translating English to Patois:', englishText.substring(0, 50) + '...');
+      
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          userMessage: `Translate the following English text to authentic Jamaican Patois. Use natural Patois expressions, grammar, and vocabulary. Keep the meaning and tone intact: "${englishText}"`,
+          userMessage: `Please translate this English text to authentic Jamaican Patois while keeping the meaning and tone: "${englishText}"`,
           isUserMessagePatois: true,
           conversationHistory: [],
           storedKnowledge: ''
         }
       });
 
-      if (error) throw error;
-      return data?.message || 'Translation not available.';
+      if (error) {
+        console.error('Translation error:', error);
+        throw new Error(`Translation service error: ${error.message}`);
+      }
+      
+      if (!data?.message) {
+        throw new Error('No translation response received');
+      }
+      
+      console.log('✅ Translation successful');
+      return data.message;
     } catch (error) {
       console.error('Patois Translation Error:', error);
-      return 'Sorry, translation is not available right now.';
+      throw error;
     }
   };
 
