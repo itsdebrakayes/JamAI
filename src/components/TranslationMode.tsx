@@ -4,7 +4,7 @@ import { X, Languages, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import ChatMessage from './ChatMessage';
-import { geminiService } from '@/services/geminiService';
+import { supabase } from '@/integrations/supabase/client';
 import { detectLanguage } from '@/utils/languageDetection';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -71,17 +71,17 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
 
   const translateToEnglish = async (patoisText: string): Promise<string> => {
     try {
-      const model = geminiService['genAI'].getGenerativeModel({ model: "gemini-1.5-flash" });
-      
-      const prompt = `Translate the following Jamaican Patois text to natural English. Keep the meaning and tone intact:
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: {
+          userMessage: `Translate the following Jamaican Patois text to natural English. Keep the meaning and tone intact: "${patoisText}"`,
+          isUserMessagePatois: false,
+          conversationHistory: [],
+          storedKnowledge: ''
+        }
+      });
 
-"${patoisText}"
-
-Provide only the English translation, nothing else.`;
-      
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text() || 'Translation not available.';
+      if (error) throw error;
+      return data?.message || 'Translation not available.';
     } catch (error) {
       console.error('English Translation Error:', error);
       return 'Sorry, translation is not available right now.';
@@ -90,17 +90,17 @@ Provide only the English translation, nothing else.`;
 
   const translateToPatois = async (englishText: string): Promise<string> => {
     try {
-      const model = geminiService['genAI'].getGenerativeModel({ model: "gemini-1.5-flash" });
-      
-      const prompt = `Translate the following English text to authentic Jamaican Patois. Use natural Patois expressions, grammar, and vocabulary. Keep the meaning and tone intact:
+      const { data, error } = await supabase.functions.invoke('gemini-chat', {
+        body: {
+          userMessage: `Translate the following English text to authentic Jamaican Patois. Use natural Patois expressions, grammar, and vocabulary. Keep the meaning and tone intact: "${englishText}"`,
+          isUserMessagePatois: true,
+          conversationHistory: [],
+          storedKnowledge: ''
+        }
+      });
 
-"${englishText}"
-
-Provide only the Patois translation, nothing else.`;
-      
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      return response.text() || 'Translation not available.';
+      if (error) throw error;
+      return data?.message || 'Translation not available.';
     } catch (error) {
       console.error('Patois Translation Error:', error);
       return 'Sorry, translation is not available right now.';

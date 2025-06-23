@@ -1,3 +1,4 @@
+
 import { Message } from '@/types/Message';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -101,7 +102,7 @@ export const createChatSession = async (title: string): Promise<string | null> =
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.error('No authenticated user found');
+      console.log('No authenticated user found, using local storage');
       return null;
     }
 
@@ -111,7 +112,10 @@ export const createChatSession = async (title: string): Promise<string | null> =
       .select('id')
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating chat session:', error);
+      return null;
+    }
     return data.id;
   } catch (error) {
     console.error('Error creating chat session:', error);
@@ -123,7 +127,7 @@ export const getChatSessions = async (): Promise<ChatSession[]> => {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.error('No authenticated user found');
+      console.log('No authenticated user found');
       return [];
     }
 
@@ -133,7 +137,10 @@ export const getChatSessions = async (): Promise<ChatSession[]> => {
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching chat sessions:', error);
+      return [];
+    }
     return data || [];
   } catch (error) {
     console.error('Error fetching chat sessions:', error);
@@ -151,7 +158,7 @@ export const saveMessageToDatabase = async (
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.error('No authenticated user found');
+      console.log('No authenticated user found, using local storage');
       return false;
     }
 
@@ -166,7 +173,10 @@ export const saveMessageToDatabase = async (
         user_id: user.id
       }]);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error saving message to database:', error);
+      return false;
+    }
     
     // Update chat session's updated_at timestamp
     await supabase
@@ -186,7 +196,7 @@ export const getMessagesForSession = async (sessionId: string): Promise<Message[
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.error('No authenticated user found');
+      console.log('No authenticated user found');
       return [];
     }
 
@@ -197,7 +207,10 @@ export const getMessagesForSession = async (sessionId: string): Promise<Message[
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching messages for session:', error);
+      return [];
+    }
 
     return (data || []).map((msg: DatabaseMessage) => ({
       id: msg.id,
@@ -215,7 +228,7 @@ export const deleteChatSession = async (sessionId: string): Promise<boolean> => 
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.error('No authenticated user found');
+      console.log('No authenticated user found');
       return false;
     }
 
@@ -225,7 +238,10 @@ export const deleteChatSession = async (sessionId: string): Promise<boolean> => 
       .eq('id', sessionId)
       .eq('user_id', user.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error deleting chat session:', error);
+      return false;
+    }
     return true;
   } catch (error) {
     console.error('Error deleting chat session:', error);
@@ -237,7 +253,7 @@ export const updateChatSessionTitle = async (sessionId: string, title: string): 
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.error('No authenticated user found');
+      console.log('No authenticated user found');
       return false;
     }
 
@@ -247,7 +263,10 @@ export const updateChatSessionTitle = async (sessionId: string, title: string): 
       .eq('id', sessionId)
       .eq('user_id', user.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating chat session title:', error);
+      return false;
+    }
     return true;
   } catch (error) {
     console.error('Error updating chat session title:', error);
@@ -269,7 +288,10 @@ export const getUserApiKey = async (serviceName: string): Promise<string | null>
       .eq('is_active', true)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== 'PGRST116') {
+      console.error(`Error fetching API key for ${serviceName}:`, error);
+      return null;
+    }
     return data?.encrypted_key || null;
   } catch (error) {
     console.error(`Error fetching API key for ${serviceName}:`, error);

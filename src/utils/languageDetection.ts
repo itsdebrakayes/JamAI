@@ -38,60 +38,83 @@ const patoisGrammarPatterns = [
 ];
 
 export const detectLanguage = (text: string): 'patois' | 'english' => {
+  if (!text || text.trim().length === 0) {
+    return 'english';
+  }
+
   const lowerText = text.toLowerCase();
   
-  // Check for Patois grammar patterns first (more reliable)
-  const hasPatoisGrammar = patoisGrammarPatterns.some(pattern => 
-    pattern.test(text)
-  );
-  
-  if (hasPatoisGrammar) {
-    return 'patois';
-  }
-  
-  // Count Patois keywords
-  const patoisWordCount = patoisKeywords.filter(keyword => 
-    lowerText.includes(keyword.toLowerCase())
-  ).length;
-  
-  // If multiple Patois words are found, classify as Patois
-  if (patoisWordCount >= 2) {
-    return 'patois';
-  }
-  
-  // Single Patois word might indicate Patois, especially common ones
-  if (patoisWordCount === 1) {
-    const strongPatoisIndicators = ['wah gwaan', 'big up', 'mi', 'yuh', 'fi', 'seh', 'deh'];
-    const hasStrongIndicator = strongPatoisIndicators.some(indicator => 
-      lowerText.includes(indicator)
+  try {
+    // Check for Patois grammar patterns first (more reliable)
+    const hasPatoisGrammar = patoisGrammarPatterns.some(pattern => 
+      pattern.test(text)
     );
     
-    if (hasStrongIndicator) {
+    if (hasPatoisGrammar) {
       return 'patois';
     }
+    
+    // Count Patois keywords
+    const patoisWordCount = patoisKeywords.filter(keyword => 
+      lowerText.includes(keyword.toLowerCase())
+    ).length;
+    
+    // If multiple Patois words are found, classify as Patois
+    if (patoisWordCount >= 2) {
+      return 'patois';
+    }
+    
+    // Single Patois word might indicate Patois, especially common ones
+    if (patoisWordCount === 1) {
+      const strongPatoisIndicators = ['wah gwaan', 'big up', 'mi', 'yuh', 'fi', 'seh', 'deh'];
+      const hasStrongIndicator = strongPatoisIndicators.some(indicator => 
+        lowerText.includes(indicator)
+      );
+      
+      if (hasStrongIndicator) {
+        return 'patois';
+      }
+    }
+    
+    return 'english';
+  } catch (error) {
+    console.error('Error in language detection:', error);
+    return 'english';
   }
-  
-  return 'english';
 };
 
 export const isPatoisMessage = (text: string): boolean => {
-  return detectLanguage(text) === 'patois';
+  try {
+    return detectLanguage(text) === 'patois';
+  } catch (error) {
+    console.error('Error checking if message is Patois:', error);
+    return false;
+  }
 };
 
 export const isTranslationRequest = (text: string): boolean => {
-  const lowerText = text.toLowerCase().trim();
-  
-  const translationKeywords = [
-    'yes', 'yeah', 'translate', 'translation', 'english', 
-    'please translate', 'can you translate', 'what does that mean',
-    'what did you say', 'in english', 'english please',
-    'yes please', 'sure', 'ok', 'okay'
-  ];
-  
-  // Check if the message is short and contains translation request keywords
-  if (lowerText.length < 50) {
-    return translationKeywords.some(keyword => lowerText.includes(keyword));
+  if (!text || text.trim().length === 0) {
+    return false;
   }
-  
-  return false;
+
+  try {
+    const lowerText = text.toLowerCase().trim();
+    
+    const translationKeywords = [
+      'yes', 'yeah', 'translate', 'translation', 'english', 
+      'please translate', 'can you translate', 'what does that mean',
+      'what did you say', 'in english', 'english please',
+      'yes please', 'sure', 'ok', 'okay'
+    ];
+    
+    // Check if the message is short and contains translation request keywords
+    if (lowerText.length < 50) {
+      return translationKeywords.some(keyword => lowerText.includes(keyword));
+    }
+    
+    return false;
+  } catch (error) {
+    console.error('Error checking if message is translation request:', error);
+    return false;
+  }
 };
