@@ -38,17 +38,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { groupChatsByTime, type ChatHistory } from '@/utils/chatGrouping';
 
 /**
- * Interface defining the structure of chat history entries
- * Used for displaying and managing saved conversations
- */
-interface ChatHistory {
-  id: string;          // Unique identifier for the chat
-  title: string;       // Display title (usually truncated first message)
-  messages: any[];     // Array of messages in this chat
-  createdAt: Date;     // When this chat was created
-}
-
-/**
  * Props interface for the ChatHistorySidebar component
  * Defines all callbacks and data needed for sidebar functionality
  */
