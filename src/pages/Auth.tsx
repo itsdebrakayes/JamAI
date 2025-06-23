@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -191,9 +192,9 @@ const Auth = () => {
 
   // If user is already logged in, show logout option
   if (user) {
-    // Get user's name from metadata, falling back to email
+    // Get user's first name from metadata, with proper fallback
     const firstName = user.user_metadata?.first_name;
-    const displayName = firstName ? firstName.charAt(0).toUpperCase() + firstName.slice(1) : user.email?.split('@')[0] || 'there';
+    const displayName = firstName || user.email?.split('@')[0] || 'there';
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
