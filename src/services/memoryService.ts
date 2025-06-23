@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -494,19 +493,21 @@ export class MemoryService {
         if (error) {
           console.error('Stats query error:', error);
         } else if (data && Array.isArray(data) && data.length > 0) {
-          const byCategory = data.reduce((acc, item) => {
+          const typedData = data as Array<{ category: string; importance_score: number }>;
+          
+          const byCategory = typedData.reduce((acc, item) => {
             acc[item.category] = (acc[item.category] || 0) + 1;
             return acc;
           }, {} as Record<string, number>);
 
-          const byImportance = data.reduce((acc, item) => {
+          const byImportance = typedData.reduce((acc, item) => {
             const key = `importance_${item.importance_score}`;
             acc[key] = (acc[key] || 0) + 1;
             return acc;
           }, {} as Record<string, number>);
 
           return {
-            total: data.length,
+            total: typedData.length,
             byCategory,
             byImportance
           };
