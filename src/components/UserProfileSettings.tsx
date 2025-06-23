@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -350,58 +349,62 @@ const UserProfileSettings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 border rounded-lg border-gray-200 bg-gray-50">
-            <div>
+          <div className="border rounded-lg border-gray-200 bg-gray-50">
+            <div className="w-full p-4 border-b border-gray-200">
               <h4 className="text-sm font-medium text-gray-800">Sign out of account</h4>
+            </div>
+            <div className="flex items-center justify-between p-4">
               <p className="text-sm text-gray-600">
                 This will sign you out and redirect you to the login page
               </p>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    disabled={loading}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will sign you out of your account and redirect you to the login page. 
+                      You'll need to sign in again to access your account.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSignOut} className="bg-gray-600 hover:bg-gray-700">
+                      Yes, Sign Out
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  disabled={loading}
-                  variant="outline"
-                  size="sm"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will sign you out of your account and redirect you to the login page. 
-                    You'll need to sign in again to access your account.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleSignOut} className="bg-gray-600 hover:bg-gray-700">
-                    Yes, Sign Out
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
           </div>
 
-          <div className="flex items-center justify-between p-4 border rounded-lg border-red-200 bg-red-50">
-            <div>
+          <div className="border rounded-lg border-red-200 bg-red-50">
+            <div className="w-full p-4 border-b border-red-200">
               <h4 className="text-sm font-medium text-red-800">Sign out all devices</h4>
+            </div>
+            <div className="flex items-center justify-between p-4">
               <p className="text-sm text-red-600">
                 This will sign you out from all devices and sessions
               </p>
+              <Button 
+                onClick={handleSignOutAllDevices}
+                disabled={loading}
+                variant="destructive"
+                size="sm"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out All
+              </Button>
             </div>
-            <Button 
-              onClick={handleSignOutAllDevices}
-              disabled={loading}
-              variant="destructive"
-              size="sm"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out All
-            </Button>
           </div>
         </CardContent>
       </Card>
