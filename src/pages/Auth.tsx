@@ -170,11 +170,11 @@ const Auth = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 mb-4">
+          <div className="inline-flex items-center justify-center w-32 h-32 mb-4">
             <img 
               src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
               alt="JamAI Logo" 
-              className="w-16 h-16 object-contain"
+              className="w-28 h-28 object-contain"
             />
           </div>
           <p className="text-lg font-medium text-green-800">Loading...</p>
@@ -189,11 +189,11 @@ const Auth = () => {
       <div className="min-h-screen flex items-center justify-center bg-white">
         <Card className="w-full max-w-md border-2 border-green-200">
           <CardHeader className="text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 mb-4 mx-auto">
+            <div className="inline-flex items-center justify-center w-32 h-32 mb-4 mx-auto">
               <img 
                 src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                 alt="JamAI Logo" 
-                className="w-16 h-16 object-contain"
+                className="w-28 h-28 object-contain"
               />
             </div>
             <CardTitle className="text-2xl font-bold jamaican-text-gradient">
@@ -229,11 +229,11 @@ const Auth = () => {
     <div className="min-h-screen flex flex-col items-center justify-center bg-white">
       <Card className="w-full max-w-md border-2 border-green-200">
         <CardHeader className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 mb-4 mx-auto">
+          <div className="inline-flex items-center justify-center w-32 h-32 mb-4 mx-auto">
             <img 
               src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
               alt="JamAI Logo" 
-              className="w-16 h-16 object-contain"
+              className="w-28 h-28 object-contain"
             />
           </div>
           <CardTitle className="text-2xl font-bold jamaican-text-gradient">
