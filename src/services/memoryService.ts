@@ -336,7 +336,7 @@ export class MemoryService {
         return;
       }
 
-      if (data && data.length > 0) {
+      if (data && Array.isArray(data) && data.length > 0) {
         const localMemories: MemoryEntry[] = data.map((item: any) => ({
           category: item.category as MemoryEntry['category'],
           userQuery: item.user_query,
