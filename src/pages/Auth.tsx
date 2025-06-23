@@ -176,8 +176,8 @@ const Auth = () => {
         <div className="text-center">
           <div className="inline-flex items-center justify-center w-40 h-40 mb-1">
             <img 
-              src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-              alt="JamAI Logo" 
+              src="/lovable-uploads/50052a84-111e-4b20-a49b-a5a5b638414b.png" 
+              alt="JamAI Brain Logo" 
               className="w-36 h-36 object-contain"
             />
           </div>
@@ -199,8 +199,8 @@ const Auth = () => {
           <CardHeader className="text-center">
             <div className="inline-flex items-center justify-center w-40 h-40 mb-1 mx-auto">
               <img 
-                src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-                alt="JamAI Logo" 
+                src="/lovable-uploads/50052a84-111e-4b20-a49b-a5a5b638414b.png" 
+                alt="JamAI Brain Logo" 
                 className="w-36 h-36 object-contain"
               />
             </div>
@@ -239,8 +239,8 @@ const Auth = () => {
         <CardHeader className="text-center">
           <div className="inline-flex items-center justify-center w-40 h-40 mb-1 mx-auto">
             <img 
-              src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-              alt="JamAI Logo" 
+              src="/lovable-uploads/50052a84-111e-4b20-a49b-a5a5b638414b.png" 
+              alt="JamAI Brain Logo" 
               className="w-36 h-36 object-contain"
             />
           </div>
