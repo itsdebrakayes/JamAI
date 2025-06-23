@@ -1,4 +1,5 @@
 
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -439,7 +440,15 @@ export class MemoryService {
       const stored = localStorage.getItem(this.localStorageKey);
       if (!stored) return [];
 
-      const memories: MemoryEntry[] = JSON.parse(stored);
+      const parsedData = JSON.parse(stored);
+      
+      // Type guard to ensure we have an array
+      if (!Array.isArray(parsedData)) {
+        console.warn('Invalid data format in localStorage, expected array');
+        return [];
+      }
+
+      const memories: MemoryEntry[] = parsedData;
       const queryKeywords = this.extractKeywords(query);
       
       // Score memories based on keyword overlap
@@ -546,3 +555,4 @@ export class MemoryService {
 }
 
 export const memoryService = new MemoryService();
+
