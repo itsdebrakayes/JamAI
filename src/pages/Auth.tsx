@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -186,9 +187,10 @@ const Auth = () => {
 
   // If user is already logged in, show logout option
   if (user) {
-    // Extract first name from email or use full email
-    const userName = user.email?.split('@')[0] || 'there';
-    const displayName = userName.charAt(0).toUpperCase() + userName.slice(1);
+    // Get user's actual name from user metadata or profile
+    const fullName = user.user_metadata?.full_name || user.user_metadata?.name;
+    const firstName = fullName ? fullName.split(' ')[0] : user.email?.split('@')[0] || 'there';
+    const displayName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
 
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
