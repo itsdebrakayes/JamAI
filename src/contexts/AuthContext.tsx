@@ -11,6 +11,7 @@ interface AuthContextType {
   guestMessagesRemaining: number;
   signOut: () => Promise<void>;
   useGuestMessage: () => boolean;
+  setGuestMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -110,6 +111,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return true;
   };
 
+  const setGuestMode = () => {
+    localStorage.setItem('guest_mode', 'true');
+    localStorage.setItem('guest_session_start', Date.now().toString());
+    localStorage.setItem('guest_messages_used', '0');
+    setIsGuest(true);
+    setGuestMessagesRemaining(10);
+  };
+
   const value = {
     user,
     session,
@@ -118,6 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     guestMessagesRemaining,
     signOut,
     useGuestMessage,
+    setGuestMode,
   };
 
   return (

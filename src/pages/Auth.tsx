@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, loading } = useAuth();
+  const { user, loading, setGuestMode } = useAuth();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -159,10 +159,8 @@ const Auth = () => {
   };
 
   const handleContinueAsGuest = () => {
-    // Set guest mode
-    localStorage.setItem('guest_mode', 'true');
-    localStorage.setItem('guest_session_start', Date.now().toString());
-    localStorage.setItem('guest_messages_used', '0');
+    // Use the new setGuestMode function from context
+    setGuestMode();
     
     toast({
       title: 'Guest Mode',
