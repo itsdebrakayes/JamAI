@@ -420,12 +420,16 @@ export class MemoryService {
         return [];
       }
 
-      // Properly type check and return the data
-      if (data && Array.isArray(data)) {
-        return data;
+      // Type assertion: we know this should be an array from the RPC function
+      const searchResults = data as any[];
+      
+      // Additional safety check
+      if (!Array.isArray(searchResults)) {
+        console.warn('RPC returned non-array data:', searchResults);
+        return [];
       }
       
-      return [];
+      return searchResults;
     } catch (error) {
       console.error('Error getting memories from database:', error);
       return [];
