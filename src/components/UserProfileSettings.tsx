@@ -422,8 +422,8 @@ const UserProfileSettings = () => {
           <div className="mb-6">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4">
               <img 
-                src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-                alt="JamAI Logo" 
+                src="/lovable-uploads/50052a84-111e-4b20-a49b-a5a5b638414b.png" 
+                alt="JamAI Brain Logo" 
                 className="w-10 h-10 object-contain"
               />
             </div>
