@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -492,7 +493,7 @@ export class MemoryService {
 
         if (error) {
           console.error('Stats query error:', error);
-        } else if (data && Array.isArray(data)) {
+        } else if (data && Array.isArray(data) && data.length > 0) {
           const byCategory = data.reduce((acc, item) => {
             acc[item.category] = (acc[item.category] || 0) + 1;
             return acc;
