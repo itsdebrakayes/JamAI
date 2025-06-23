@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -72,7 +71,7 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password || !confirmPassword || !firstName) {
+    if (!email || !password || !confirmPassword || !firstName || !lastName) {
       toast({
         title: 'Error',
         description: 'Please fill in all required fields',
@@ -325,13 +324,14 @@ const Auth = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-lastname">Last Name</Label>
+                    <Label htmlFor="signup-lastname">Last Name *</Label>
                     <Input
                       id="signup-lastname"
                       type="text"
                       placeholder="Last name"
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
+                      required
                     />
                   </div>
                 </div>
