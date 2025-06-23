@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -418,16 +419,19 @@ export class MemoryService {
         return [];
       }
 
-      // Type assertion: we know this should be an array from the RPC function
-      const searchResults = data as any[];
-      
-      // Additional safety check
-      if (!Array.isArray(searchResults)) {
-        console.warn('RPC returned non-array data:', searchResults);
+      // Proper type checking for unknown data
+      if (!data || !Array.isArray(data)) {
+        console.warn('RPC returned non-array data:', data);
         return [];
       }
       
-      return searchResults;
+      // Now we can safely access array properties
+      if (data.length === 0) {
+        console.log('No memories found in database');
+        return [];
+      }
+      
+      return data;
     } catch (error) {
       console.error('Error getting memories from database:', error);
       return [];
