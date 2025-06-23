@@ -207,7 +207,7 @@ const Auth = () => {
               />
             </div>
             <CardTitle className="text-2xl font-bold jamaican-text-gradient">
-              Welcome back {displayName}!
+              Welcome back, {displayName}!
             </CardTitle>
             <CardDescription>
               You're already signed in as {user.email}
