@@ -125,7 +125,10 @@ const Index = () => {
         
         const chatHistoryData = sessions.map(session => ({
           id: session.id,
-          title: session.auto_title || session.title,
+          title: session.title,
+          autoTitle: session.auto_title,
+          keywords: session.keywords,
+          summary: session.summary,
           messages: [] as Message[],
           createdAt: new Date(session.created_at)
         }));
@@ -253,12 +256,12 @@ const Index = () => {
       setCurrentChatId(sessionId);
     }
 
-    // Only try to save to database if user is authenticated and we have a valid session ID
+    // Save user message to database for authenticated users
     if (!isGuest && sessionId && sessionId.includes('-')) {
       try {
         await saveMessageToDatabase(sessionId, text, true, 'text', {});
       } catch (error) {
-        console.error('Failed to save message to database:', error);
+        console.error('Failed to save user message to database:', error);
       }
     }
 
@@ -296,16 +299,16 @@ const Index = () => {
 
       setTypingMessage(aiMessage);
       
-      // Only try to save to database if user is authenticated and we have a valid session ID
+      // Save AI message to database for authenticated users
       if (!isGuest && sessionId && sessionId.includes('-')) {
         try {
           await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
           await incrementUsage('messages');
 
-          if (messages.length === 0) {
-            await supabase.rpc('generate_chat_title', { session_id: sessionId });
+          // Reload chat history to get updated titles after AI response
+          setTimeout(async () => {
             await loadChatHistoryData();
-          }
+          }, 1000);
         } catch (error) {
           console.error('Failed to save AI message to database:', error);
         }
@@ -671,7 +674,7 @@ const Index = () => {
                               <Button
                                 onClick={() => window.location.href = '/auth'}
                                 size="sm"
-                                className="mt-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
+                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
                               >
                                 Sign Up Now
                               </Button>

@@ -37,8 +37,8 @@ import {
 import { useIsMobile } from '@/hooks/use-mobile';
 import { groupChatsByTime } from '@/utils/chatGrouping';
 
-// Import the correct ChatHistory interface from chatHistory.ts
-interface ChatHistory {
+// Import the ChatHistory type from chatHistory.ts
+type ChatHistory = {
   id: string;
   title: string;
   messages: any[];
@@ -46,7 +46,7 @@ interface ChatHistory {
   autoTitle?: string;
   keywords?: string[];
   summary?: string;
-}
+};
 
 /**
  * Props interface for the ChatHistorySidebar component
