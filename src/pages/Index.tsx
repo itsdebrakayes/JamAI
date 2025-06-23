@@ -102,11 +102,16 @@ const Index = () => {
   };
 
   const generateMessageId = (): string => {
-    return `message-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
   const generateChatId = (): string => {
-    return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate proper UUID v4 format
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0;
+      const v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   };
 
   const loadChatHistoryData = async () => {
@@ -239,17 +244,22 @@ const Index = () => {
       if (sessionId) {
         setCurrentChatId(sessionId);
       } else {
-        toast({
-          title: 'Error',
-          description: 'Failed to create new chat session',
-          variant: 'destructive'
-        });
-        return;
+        console.error('Failed to create chat session, using temporary ID');
+        sessionId = generateChatId();
+        setCurrentChatId(sessionId);
       }
+    } else if (isGuest && !sessionId) {
+      sessionId = generateChatId();
+      setCurrentChatId(sessionId);
     }
 
-    if (!isGuest && sessionId) {
-      await saveMessageToDatabase(sessionId, text, true, 'text', {});
+    // Only try to save to database if user is authenticated and we have a valid session ID
+    if (!isGuest && sessionId && sessionId.includes('-')) {
+      try {
+        await saveMessageToDatabase(sessionId, text, true, 'text', {});
+      } catch (error) {
+        console.error('Failed to save message to database:', error);
+      }
     }
 
     requestTimeoutRef.current = setTimeout(() => {
@@ -286,14 +296,18 @@ const Index = () => {
 
       setTypingMessage(aiMessage);
       
-      if (!isGuest && sessionId) {
-        await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
-        
-        await incrementUsage('messages');
+      // Only try to save to database if user is authenticated and we have a valid session ID
+      if (!isGuest && sessionId && sessionId.includes('-')) {
+        try {
+          await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
+          await incrementUsage('messages');
 
-        if (messages.length === 0) {
-          await supabase.rpc('generate_chat_title', { session_id: sessionId });
-          await loadChatHistoryData();
+          if (messages.length === 0) {
+            await supabase.rpc('generate_chat_title', { session_id: sessionId });
+            await loadChatHistoryData();
+          }
+        } catch (error) {
+          console.error('Failed to save AI message to database:', error);
         }
       }
 

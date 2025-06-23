@@ -29,6 +29,15 @@ interface DatabaseMessage {
   created_at: string;
 }
 
+// Generate proper UUID v4
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 // Enhanced localStorage functions with better error handling
 export const getChatHistory = (): Message[] => {
   try {
@@ -48,7 +57,6 @@ export const getChatHistory = (): Message[] => {
     return messages;
   } catch (error) {
     console.error('❌ Error loading chat history from localStorage:', error);
-    // Clear corrupted data
     localStorage.removeItem(STORAGE_KEY);
     return [];
   }
@@ -119,25 +127,24 @@ export const loadChatHistory = (): ChatHistory[] => {
     return chats;
   } catch (error) {
     console.error('❌ Error loading chat history list:', error);
-    // Clear corrupted data
     localStorage.removeItem(CHAT_HISTORY_KEY);
     return [];
   }
 };
 
-// Enhanced Supabase functions with better error handling and fallbacks
+// Enhanced Supabase functions with proper UUID handling
 export const createChatSession = async (title: string): Promise<string | null> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     
     if (authError) {
       console.log('🔐 Auth error, using local storage for chat session');
-      return null;
+      return generateUUID();
     }
     
     if (!user) {
       console.log('🔐 No authenticated user found, using local storage');
-      return null;
+      return generateUUID();
     }
 
     const { data, error } = await supabase
@@ -148,14 +155,14 @@ export const createChatSession = async (title: string): Promise<string | null> =
 
     if (error) {
       console.error('❌ Error creating chat session:', error);
-      return null;
+      return generateUUID();
     }
     
     console.log(`✅ Created chat session: ${data.id}`);
     return data.id;
   } catch (error) {
     console.error('❌ Error creating chat session:', error);
-    return null;
+    return generateUUID();
   }
 };
 
