@@ -77,6 +77,11 @@ const ChatHistorySidebar = ({
   
   // Group chats by time periods
   const groupedChats = groupChatsByTime(chatHistory);
+  
+  console.log('📊 ChatHistorySidebar render:', {
+    totalChats: chatHistory.length,
+    groupedChats: groupedChats.map(g => ({ label: g.label, count: g.chats.length }))
+  });
 
   // ============================
   // STATE MANAGEMENT
@@ -313,54 +318,61 @@ const ChatHistorySidebar = ({
 
               {/* Grouped chat list */}
               <div className="flex-1 overflow-y-auto">
-                <div className="space-y-4">
-                  {groupedChats.map((group) => (
-                    <div key={group.label} className="space-y-2">
-                      <h3 className="text-xs font-medium text-muted-foreground px-2 py-1 bg-muted/50 rounded">
-                        {group.label}
-                      </h3>
-                      <div className="space-y-1">
-                        {group.chats.map((chat) => (
-                          <div key={chat.id} className="flex items-center gap-2 group">
-                            {isSelectionMode && (
-                              <input
-                                type="checkbox"
-                                checked={selectedChats.has(chat.id)}
-                                onChange={() => handleChatSelect(chat.id)}
-                                className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
-                              />
-                            )}
-                            
-                            <DrawerClose asChild>
-                              <button
-                                onClick={() => handleChatSelect(chat.id)}
-                                className={`flex-1 justify-start gap-3 py-2 px-3 text-left hover:bg-muted rounded-lg transition-colors ${
-                                  chat.id === currentChatId && !isSelectionMode ? 'bg-accent text-accent-foreground font-medium' : ''
-                                }`}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                                  <span className="truncate text-sm">{chat.title}</span>
-                                </div>
-                              </button>
-                            </DrawerClose>
-                            
-                            {!isSelectionMode && (
-                              <Button
-                                onClick={(e) => handleDeleteSingle(chat.id, e)}
-                                variant="ghost"
-                                size="sm"
-                                className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
-                        ))}
+                {groupedChats.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                    <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No chat history yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {groupedChats.map((group) => (
+                      <div key={group.label} className="space-y-2">
+                        <h3 className="text-xs font-medium text-muted-foreground px-2 py-1 bg-muted/50 rounded sticky top-0 z-10">
+                          {group.label} ({group.chats.length})
+                        </h3>
+                        <div className="space-y-1">
+                          {group.chats.map((chat) => (
+                            <div key={chat.id} className="flex items-center gap-2 group">
+                              {isSelectionMode && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedChats.has(chat.id)}
+                                  onChange={() => handleChatSelect(chat.id)}
+                                  className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                                />
+                              )}
+                              
+                              <DrawerClose asChild>
+                                <button
+                                  onClick={() => handleChatSelect(chat.id)}
+                                  className={`flex-1 justify-start gap-3 py-2 px-3 text-left hover:bg-muted rounded-lg transition-colors ${
+                                    chat.id === currentChatId && !isSelectionMode ? 'bg-accent text-accent-foreground font-medium' : ''
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                                    <span className="truncate text-sm">{chat.title}</span>
+                                  </div>
+                                </button>
+                              </DrawerClose>
+                              
+                              {!isSelectionMode && (
+                                <Button
+                                  onClick={(e) => handleDeleteSingle(chat.id, e)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </DrawerContent>
@@ -414,7 +426,7 @@ const ChatHistorySidebar = ({
     );
   }
 
-  // Desktop sidebar (keep existing implementation)
+  // Desktop sidebar
   return (
     <>
       <Sidebar side="left" className="border-r border-border bg-background/95 backdrop-blur-md">
@@ -496,54 +508,61 @@ const ChatHistorySidebar = ({
         
         {/* Sidebar content with chat list - dark mode support */}
         <SidebarContent className="px-2 bg-background/90">
-          <div className="space-y-4">
-            {groupedChats.map((group) => (
-              <div key={group.label} className="space-y-2">
-                <h3 className="text-xs font-medium text-muted-foreground px-3 py-1 bg-muted/50 rounded">
-                  {group.label}
-                </h3>
-                <SidebarMenu>
-                  {group.chats.map((chat) => (
-                    <SidebarMenuItem key={chat.id}>
-                      <div className="flex items-center gap-2 group">
-                        {/* Checkbox for selection mode with dark mode styling */}
-                        {isSelectionMode && (
-                          <input
-                            type="checkbox"
-                            checked={selectedChats.has(chat.id)}
-                            onChange={() => handleChatSelect(chat.id)}
-                            className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
-                          />
-                        )}
-                        
-                        {/* Main chat button with dark mode hover states */}
-                        <SidebarMenuButton
-                          onClick={() => handleChatSelect(chat.id)}
-                          isActive={chat.id === currentChatId && !isSelectionMode}
-                          className="flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium"
-                        >
-                          <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate text-sm">{chat.title}</span>
-                        </SidebarMenuButton>
-                        
-                        {/* Individual delete button - only shown on hover and not in selection mode */}
-                        {!isSelectionMode && (
-                          <Button
-                            onClick={(e) => handleDeleteSingle(chat.id, e)}
-                            variant="ghost"
-                            size="sm"
-                            className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+          {groupedChats.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No chat history yet</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {groupedChats.map((group) => (
+                <div key={group.label} className="space-y-2">
+                  <h3 className="text-xs font-medium text-muted-foreground px-3 py-1 bg-muted/50 rounded sticky top-0 z-10">
+                    {group.label} ({group.chats.length})
+                  </h3>
+                  <SidebarMenu>
+                    {group.chats.map((chat) => (
+                      <SidebarMenuItem key={chat.id}>
+                        <div className="flex items-center gap-2 group">
+                          {/* Checkbox for selection mode with dark mode styling */}
+                          {isSelectionMode && (
+                            <input
+                              type="checkbox"
+                              checked={selectedChats.has(chat.id)}
+                              onChange={() => handleChatSelect(chat.id)}
+                              className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                            />
+                          )}
+                          
+                          {/* Main chat button with dark mode hover states */}
+                          <SidebarMenuButton
+                            onClick={() => handleChatSelect(chat.id)}
+                            isActive={chat.id === currentChatId && !isSelectionMode}
+                            className="flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium"
                           >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
-                      </div>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </div>
-            ))}
-          </div>
+                            <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate text-sm">{chat.title}</span>
+                          </SidebarMenuButton>
+                          
+                          {/* Individual delete button - only shown on hover and not in selection mode */}
+                          {!isSelectionMode && (
+                            <Button
+                              onClick={(e) => handleDeleteSingle(chat.id, e)}
+                              variant="ghost"
+                              size="sm"
+                              className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </div>
+              ))}
+            </div>
+          )}
         </SidebarContent>
         
         {/* Sidebar footer with app branding - dark mode support */}
