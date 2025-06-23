@@ -28,7 +28,11 @@ import {
   saveMessageToDatabase, 
   getMessagesForSession,
   deleteChatSession,
-  updateChatSessionTitle
+  updateChatSessionTitle,
+  getChatHistory,
+  addToHistory,
+  loadChatHistory,
+  saveChatHistory
 } from '@/utils/chatHistory';
 import { migrateLocalStorageToSupabase, shouldRunMigration } from '@/utils/migrationUtils';
 import { detectLanguage } from '@/utils/languageDetection';
@@ -105,18 +109,33 @@ const Index = () => {
     return `chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  const loadChatHistory = async () => {
+  const loadChatHistoryData = async () => {
     try {
-      const sessions = await getChatSessions();
-      const chatHistoryData = sessions.map(session => ({
-        id: session.id,
-        title: session.auto_title || session.title,
-        messages: [] as Message[],
-        createdAt: new Date(session.created_at)
-      }));
-      setChatHistory(chatHistoryData);
+      console.log('🔄 Loading chat history...');
+      
+      if (!isGuest) {
+        // Load from Supabase for authenticated users
+        const sessions = await getChatSessions();
+        console.log('📚 Loaded sessions from Supabase:', sessions.length);
+        
+        const chatHistoryData = sessions.map(session => ({
+          id: session.id,
+          title: session.auto_title || session.title,
+          messages: [] as Message[],
+          createdAt: new Date(session.created_at)
+        }));
+        setChatHistory(chatHistoryData);
+      } else {
+        // Load from localStorage for guests
+        const localHistory = loadChatHistory();
+        console.log('📚 Loaded history from localStorage:', localHistory.length);
+        setChatHistory(localHistory);
+      }
     } catch (error) {
-      console.error('Error loading chat history:', error);
+      console.error('❌ Error loading chat history:', error);
+      // Fallback to localStorage
+      const localHistory = loadChatHistory();
+      setChatHistory(localHistory);
     }
   };
 
@@ -128,6 +147,33 @@ const Index = () => {
     if (typingMessage) {
       const finalMessages = [...messages, typingMessage];
       setMessages(finalMessages);
+      
+      // Save to chat history for guests
+      if (isGuest && messages.length > 0) {
+        const userMessage = messages[messages.length - 1];
+        addToHistory(userMessage, typingMessage);
+        
+        // Update local chat history list
+        const updatedHistory = [...chatHistory];
+        const currentChatIndex = updatedHistory.findIndex(chat => chat.id === currentChatId);
+        
+        if (currentChatIndex >= 0) {
+          updatedHistory[currentChatIndex].messages = finalMessages;
+        } else if (finalMessages.length >= 2) {
+          // Create new chat entry
+          const newChat = {
+            id: currentChatId,
+            title: userMessage.text.substring(0, 30) + (userMessage.text.length > 30 ? '...' : ''),
+            messages: finalMessages,
+            createdAt: new Date()
+          };
+          updatedHistory.unshift(newChat);
+        }
+        
+        setChatHistory(updatedHistory);
+        saveChatHistory(updatedHistory);
+      }
+      
       setTypingMessage(null);
     }
     setIsTyping(false);
@@ -247,7 +293,7 @@ const Index = () => {
 
         if (messages.length === 0) {
           await supabase.rpc('generate_chat_title', { session_id: sessionId });
-          await loadChatHistory();
+          await loadChatHistoryData();
         }
       }
 
@@ -277,16 +323,30 @@ const Index = () => {
     setCurrentChatId(newChatId);
     setMessages([]);
     setTypingMessage(null);
+    console.log('🆕 Started new chat:', newChatId);
   };
 
   const handleLoadChat = async (chatId: string) => {
     try {
-      const messages = await getMessagesForSession(chatId);
-      setCurrentChatId(chatId);
-      setMessages(messages);
-      setTypingMessage(null);
+      console.log('🔄 Loading chat:', chatId);
+      
+      if (!isGuest) {
+        // Load from Supabase for authenticated users
+        const messages = await getMessagesForSession(chatId);
+        setCurrentChatId(chatId);
+        setMessages(messages);
+        setTypingMessage(null);
+      } else {
+        // Load from localStorage for guests
+        const chatData = chatHistory.find(chat => chat.id === chatId);
+        if (chatData) {
+          setCurrentChatId(chatId);
+          setMessages(chatData.messages);
+          setTypingMessage(null);
+        }
+      }
     } catch (error) {
-      console.error('Error loading chat:', error);
+      console.error('❌ Error loading chat:', error);
       toast({
         title: 'Error',
         description: 'Failed to load chat',
@@ -297,19 +357,29 @@ const Index = () => {
 
   const handleDeleteChats = async (chatIds: string[]) => {
     try {
-      for (const chatId of chatIds) {
-        await deleteChatSession(chatId);
+      if (!isGuest) {
+        // Delete from Supabase for authenticated users
+        for (const chatId of chatIds) {
+          await deleteChatSession(chatId);
+        }
+        await loadChatHistoryData();
+      } else {
+        // Delete from localStorage for guests
+        const updatedHistory = chatHistory.filter(chat => !chatIds.includes(chat.id));
+        setChatHistory(updatedHistory);
+        saveChatHistory(updatedHistory);
       }
-      await loadChatHistory();
+      
       if (chatIds.includes(currentChatId)) {
         handleNewChat();
       }
+      
       toast({
         title: 'Success',
         description: `Deleted ${chatIds.length} chat${chatIds.length > 1 ? 's' : ''}`,
       });
     } catch (error) {
-      console.error('Error deleting chats:', error);
+      console.error('❌ Error deleting chats:', error);
       toast({
         title: 'Error',
         description: 'Failed to delete chats',
@@ -320,18 +390,26 @@ const Index = () => {
 
   const handleClearAllHistory = async () => {
     try {
-      const sessions = await getChatSessions();
-      for (const session of sessions) {
-        await deleteChatSession(session.id);
+      if (!isGuest) {
+        // Clear from Supabase for authenticated users
+        const sessions = await getChatSessions();
+        for (const session of sessions) {
+          await deleteChatSession(session.id);
+        }
+        await loadChatHistoryData();
+      } else {
+        // Clear localStorage for guests
+        setChatHistory([]);
+        saveChatHistory([]);
       }
-      await loadChatHistory();
+      
       handleNewChat();
       toast({
         title: 'Success',
         description: 'All chat history cleared',
       });
     } catch (error) {
-      console.error('Error clearing history:', error);
+      console.error('❌ Error clearing history:', error);
       toast({
         title: 'Error',
         description: 'Failed to clear history',
@@ -370,25 +448,41 @@ const Index = () => {
 
   useEffect(() => {
     const initializeApp = async () => {
-      const needsMigration = await shouldRunMigration();
-      if (needsMigration) {
-        console.log('Running localStorage to Supabase migration...');
-        const migrationSuccess = await migrateLocalStorageToSupabase();
-        if (migrationSuccess) {
-          toast({
-            title: 'Data Migrated',
-            description: 'Your chat history has been migrated to your account!',
-          });
-        }
-      }
+      console.log('🚀 Initializing app...');
       
-      setMigrationCompleted(true);
-      await loadChatHistory();
-      handleNewChat();
+      try {
+        // Run migration for authenticated users only
+        if (!isGuest) {
+          const needsMigration = await shouldRunMigration();
+          if (needsMigration) {
+            console.log('🔄 Running localStorage to Supabase migration...');
+            const migrationSuccess = await migrateLocalStorageToSupabase();
+            if (migrationSuccess) {
+              toast({
+                title: 'Data Migrated',
+                description: 'Your chat history has been migrated to your account!',
+              });
+            }
+          }
+        }
+        
+        // Load chat history
+        await loadChatHistoryData();
+        
+        // Start new chat
+        handleNewChat();
+        
+        setMigrationCompleted(true);
+        console.log('✅ App initialization complete');
+      } catch (error) {
+        console.error('❌ Error during app initialization:', error);
+        setMigrationCompleted(true);
+        handleNewChat();
+      }
     };
 
     initializeApp();
-  }, []);
+  }, [isGuest]); // Add isGuest as dependency to re-run when auth state changes
 
   useEffect(() => {
     return () => {
@@ -406,27 +500,15 @@ const Index = () => {
     <ProtectedRoute>
       <SidebarProvider>
         <div className="flex h-screen w-full relative">
-          {/* Chat History Sidebar - only show for authenticated users */}
-          {!isGuest && (
-            <Sidebar>
-              <SidebarHeader className="p-4 border-b">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-jamaican-green" />
-                  <span className="font-semibold text-jamaican-green">Chat History</span>
-                </div>
-              </SidebarHeader>
-              <SidebarContent>
-                <ChatHistorySidebar
-                  chatHistory={chatHistory}
-                  currentChatId={currentChatId}
-                  onNewChat={handleNewChat}
-                  onLoadChat={handleLoadChat}
-                  onDeleteChats={handleDeleteChats}
-                  onClearAllHistory={handleClearAllHistory}
-                />
-              </SidebarContent>
-            </Sidebar>
-          )}
+          {/* Chat History Sidebar - show for all users but with different functionality */}
+          <ChatHistorySidebar
+            chatHistory={chatHistory}
+            currentChatId={currentChatId}
+            onNewChat={handleNewChat}
+            onLoadChat={handleLoadChat}
+            onDeleteChats={handleDeleteChats}
+            onClearAllHistory={handleClearAllHistory}
+          />
 
           {/* Main Content Area */}
           <SidebarInset className="flex-1">
@@ -435,7 +517,6 @@ const Index = () => {
               <header className="glass-effect border-b px-4 py-3 modern-shadow">
                 <div className="flex items-center justify-between max-w-6xl mx-auto">
                   <div className="flex items-center gap-3">
-                    {!isGuest && <SidebarTrigger />}
                     <div 
                       className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={handleHeaderClick}
@@ -452,6 +533,7 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
+                  
                   {isGuest && (
                     <div className="flex items-center gap-3">
                       <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-full">
