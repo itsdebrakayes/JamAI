@@ -115,7 +115,7 @@ const Index = () => {
       if (!isGuest) {
         // Load from Supabase for authenticated users
         const sessions = await getChatSessions();
-        console.log('📚 Loaded sessions from Supabase:', sessions.length);
+        console.log('📚 Loaded sessions from Supabase:', sessions.length, sessions);
         
         const chatHistoryData = sessions.map(session => ({
           id: session.id,
@@ -127,6 +127,7 @@ const Index = () => {
           createdAt: new Date(session.created_at)
         }));
         setChatHistory(chatHistoryData);
+        console.log('📚 Chat history state updated with:', chatHistoryData.length, 'chats');
       } else {
         // Load from localStorage for guests
         const localHistory = loadChatHistory();
@@ -237,6 +238,7 @@ const Index = () => {
 
     // Handle session creation and management
     let sessionId = currentChatId;
+    let isNewSession = false;
     
     if (!isGuest) {
       // For authenticated users, create new session if needed
@@ -249,17 +251,19 @@ const Index = () => {
           if (newSessionId) {
             sessionId = newSessionId;
             setCurrentChatId(sessionId);
+            isNewSession = true;
             console.log('✅ Created chat session:', sessionId);
             
-            // Immediately update chat history to include the new session
-            const updatedHistory = [{
+            // Immediately add to chat history state
+            const newChatEntry = {
               id: sessionId,
               title: tempTitle,
               autoTitle: tempTitle,
               messages: newMessages,
               createdAt: new Date()
-            }, ...chatHistory];
-            setChatHistory(updatedHistory);
+            };
+            setChatHistory(prev => [newChatEntry, ...prev]);
+            console.log('📚 Added new chat to history state');
           } else {
             console.error('❌ Failed to create chat session');
             sessionId = generateChatId();
@@ -276,6 +280,7 @@ const Index = () => {
       if (!sessionId) {
         sessionId = generateChatId();
         setCurrentChatId(sessionId);
+        isNewSession = true;
       }
     }
 
@@ -338,16 +343,18 @@ const Index = () => {
             console.log('✅ AI message saved successfully');
             await incrementUsage('messages');
             
-            // Reload chat history after successful save with a delay for intelligent title generation
-            setTimeout(async () => {
-              try {
-                console.log('🔄 Reloading chat history after AI response...');
-                await loadChatHistoryData();
-                console.log('✅ Chat history reloaded successfully');
-              } catch (error) {
-                console.error('❌ Error reloading chat history:', error);
-              }
-            }, 2000); // Increased delay for title generation
+            // Reload chat history after successful save - only if it's a new session
+            if (isNewSession) {
+              setTimeout(async () => {
+                try {
+                  console.log('🔄 Reloading chat history after new session creation...');
+                  await loadChatHistoryData();
+                  console.log('✅ Chat history reloaded successfully');
+                } catch (error) {
+                  console.error('❌ Error reloading chat history:', error);
+                }
+              }, 3000); // Increased delay for title generation
+            }
           } else {
             console.warn('⚠️ Failed to save AI message to database');
           }
