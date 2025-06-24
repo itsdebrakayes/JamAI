@@ -234,33 +234,51 @@ const Index = () => {
     scrollToBottom();
     setIsTyping(true);
 
+    // Create or use existing session for authenticated users
     let sessionId = currentChatId;
-    if (!isGuest && !sessionId) {
-      sessionId = await createChatSession('New Chat');
-      if (sessionId) {
-        setCurrentChatId(sessionId);
-      } else {
-        console.error('Failed to create chat session, using temporary ID');
-        sessionId = generateChatId();
-        setCurrentChatId(sessionId);
+    if (!isGuest) {
+      if (!sessionId || !sessionId.includes('-')) {
+        // Create new session with a temporary title
+        const tempTitle = text.length > 30 ? text.substring(0, 30) + '...' : text;
+        console.log('🆕 Creating new chat session with title:', tempTitle);
+        
+        try {
+          sessionId = await createChatSession(tempTitle);
+          if (sessionId) {
+            setCurrentChatId(sessionId);
+            console.log('✅ Created chat session:', sessionId);
+          } else {
+            console.error('❌ Failed to create chat session');
+            sessionId = generateChatId();
+            setCurrentChatId(sessionId);
+          }
+        } catch (error) {
+          console.error('❌ Error creating chat session:', error);
+          sessionId = generateChatId();
+          setCurrentChatId(sessionId);
+        }
       }
     } else if (isGuest && !sessionId) {
       sessionId = generateChatId();
       setCurrentChatId(sessionId);
     }
 
-    // Save user message to database IMMEDIATELY for authenticated users
+    // Save user message to database for authenticated users
     if (!isGuest && sessionId && sessionId.includes('-')) {
       try {
+        console.log('💾 Saving user message to database...');
         const saveSuccess = await saveMessageToDatabase(sessionId, text, true, 'text', {});
-        if (!saveSuccess) {
-          console.warn('Failed to save user message to database');
+        if (saveSuccess) {
+          console.log('✅ User message saved successfully');
+        } else {
+          console.warn('⚠️ Failed to save user message to database');
         }
       } catch (error) {
-        console.error('Failed to save user message to database:', error);
+        console.error('❌ Error saving user message:', error);
       }
     }
 
+    // Set timeout for request
     requestTimeoutRef.current = setTimeout(() => {
       console.warn('Request timed out, stopping typing indicator');
       setIsTyping(false);
@@ -295,21 +313,30 @@ const Index = () => {
 
       setTypingMessage(aiMessage);
       
-      // Save AI message to database IMMEDIATELY for authenticated users
+      // Save AI message to database for authenticated users
       if (!isGuest && sessionId && sessionId.includes('-')) {
         try {
+          console.log('💾 Saving AI message to database...');
           const saveSuccess = await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
           if (saveSuccess) {
+            console.log('✅ AI message saved successfully');
             await incrementUsage('messages');
+            
             // Reload chat history after successful save to ensure UI is updated
+            console.log('🔄 Reloading chat history after message save...');
             setTimeout(async () => {
-              await loadChatHistoryData();
-            }, 500);
+              try {
+                await loadChatHistoryData();
+                console.log('✅ Chat history reloaded successfully');
+              } catch (error) {
+                console.error('❌ Error reloading chat history:', error);
+              }
+            }, 1000); // Give database time to process the intelligent title generation
           } else {
-            console.warn('Failed to save AI message to database');
+            console.warn('⚠️ Failed to save AI message to database');
           }
         } catch (error) {
-          console.error('Failed to save AI message to database:', error);
+          console.error('❌ Error saving AI message:', error);
         }
       }
 
@@ -335,6 +362,8 @@ const Index = () => {
   };
 
   const handleNewChat = async () => {
+    console.log('🆕 Starting new chat...');
+    
     // Save current chat only for guests (to localStorage)
     if (isGuest && messages.length > 0 && currentChatId) {
       try {
@@ -366,23 +395,22 @@ const Index = () => {
       }
     }
 
-    // For authenticated users, messages are already saved to database in real-time
-    // Just reload chat history to get the latest data
+    // For authenticated users, reload chat history to get the latest data
     if (!isGuest) {
       try {
+        console.log('🔄 Reloading chat history for authenticated user...');
         await loadChatHistoryData();
-        console.log('🔄 Reloaded chat history for authenticated user');
+        console.log('✅ Chat history reloaded successfully');
       } catch (error) {
         console.error('❌ Error reloading chat history:', error);
       }
     }
 
     // Start new chat
-    const newChatId = generateChatId();
-    setCurrentChatId(newChatId);
+    setCurrentChatId(''); // Clear current chat ID to force creation of new session
     setMessages([]);
     setTypingMessage(null);
-    console.log('🆕 Started new chat:', newChatId);
+    console.log('✅ New chat started');
   };
 
   const handleLoadChat = async (chatId: string) => {
@@ -395,6 +423,7 @@ const Index = () => {
         setCurrentChatId(chatId);
         setMessages(messages);
         setTypingMessage(null);
+        console.log('✅ Chat loaded from database with', messages.length, 'messages');
       } else {
         // Load from localStorage for guests
         const chatData = chatHistory.find(chat => chat.id === chatId);
@@ -402,6 +431,7 @@ const Index = () => {
           setCurrentChatId(chatId);
           setMessages(chatData.messages);
           setTypingMessage(null);
+          console.log('✅ Chat loaded from localStorage with', chatData.messages.length, 'messages');
         }
       }
     } catch (error) {
@@ -416,17 +446,21 @@ const Index = () => {
 
   const handleDeleteChats = async (chatIds: string[]) => {
     try {
+      console.log('🗑️ Deleting chats:', chatIds);
+      
       if (!isGuest) {
         // Delete from Supabase for authenticated users
         for (const chatId of chatIds) {
           await deleteChatSession(chatId);
         }
         await loadChatHistoryData();
+        console.log('✅ Chats deleted from database');
       } else {
         // Delete from localStorage for guests
         const updatedHistory = chatHistory.filter(chat => !chatIds.includes(chat.id));
         setChatHistory(updatedHistory);
         saveChatHistory(updatedHistory);
+        console.log('✅ Chats deleted from localStorage');
       }
       
       if (chatIds.includes(currentChatId)) {
@@ -449,6 +483,8 @@ const Index = () => {
 
   const handleClearAllHistory = async () => {
     try {
+      console.log('🗑️ Clearing all chat history...');
+      
       if (!isGuest) {
         // Clear from Supabase for authenticated users
         const sessions = await getChatSessions();
@@ -456,10 +492,12 @@ const Index = () => {
           await deleteChatSession(session.id);
         }
         await loadChatHistoryData();
+        console.log('✅ All chat history cleared from database');
       } else {
         // Clear localStorage for guests
         setChatHistory([]);
         saveChatHistory([]);
+        console.log('✅ All chat history cleared from localStorage');
       }
       
       handleNewChat();
@@ -544,15 +582,11 @@ const Index = () => {
         // Load chat history
         await loadChatHistoryData();
         
-        // Start new chat
-        handleNewChat();
-        
         setMigrationCompleted(true);
         console.log('✅ App initialization complete');
       } catch (error) {
         console.error('❌ Error during app initialization:', error);
         setMigrationCompleted(true);
-        handleNewChat();
       }
     };
 
