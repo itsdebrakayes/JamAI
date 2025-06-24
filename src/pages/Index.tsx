@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -234,19 +235,31 @@ const Index = () => {
     scrollToBottom();
     setIsTyping(true);
 
-    // Create or use existing session for authenticated users
+    // Handle session creation and management
     let sessionId = currentChatId;
+    
     if (!isGuest) {
-      if (!sessionId || !sessionId.includes('-')) {
-        // Create new session with a temporary title
+      // For authenticated users, create new session if needed
+      if (!sessionId || sessionId.length < 10) {
         const tempTitle = text.length > 30 ? text.substring(0, 30) + '...' : text;
         console.log('🆕 Creating new chat session with title:', tempTitle);
         
         try {
-          sessionId = await createChatSession(tempTitle);
-          if (sessionId) {
+          const newSessionId = await createChatSession(tempTitle);
+          if (newSessionId) {
+            sessionId = newSessionId;
             setCurrentChatId(sessionId);
             console.log('✅ Created chat session:', sessionId);
+            
+            // Immediately update chat history to include the new session
+            const updatedHistory = [{
+              id: sessionId,
+              title: tempTitle,
+              autoTitle: tempTitle,
+              messages: newMessages,
+              createdAt: new Date()
+            }, ...chatHistory];
+            setChatHistory(updatedHistory);
           } else {
             console.error('❌ Failed to create chat session');
             sessionId = generateChatId();
@@ -258,9 +271,12 @@ const Index = () => {
           setCurrentChatId(sessionId);
         }
       }
-    } else if (isGuest && !sessionId) {
-      sessionId = generateChatId();
-      setCurrentChatId(sessionId);
+    } else {
+      // For guests, generate session ID if needed
+      if (!sessionId) {
+        sessionId = generateChatId();
+        setCurrentChatId(sessionId);
+      }
     }
 
     // Save user message to database for authenticated users
@@ -322,16 +338,16 @@ const Index = () => {
             console.log('✅ AI message saved successfully');
             await incrementUsage('messages');
             
-            // Reload chat history after successful save to ensure UI is updated
-            console.log('🔄 Reloading chat history after message save...');
+            // Reload chat history after successful save with a delay for intelligent title generation
             setTimeout(async () => {
               try {
+                console.log('🔄 Reloading chat history after AI response...');
                 await loadChatHistoryData();
                 console.log('✅ Chat history reloaded successfully');
               } catch (error) {
                 console.error('❌ Error reloading chat history:', error);
               }
-            }, 1000); // Give database time to process the intelligent title generation
+            }, 2000); // Increased delay for title generation
           } else {
             console.warn('⚠️ Failed to save AI message to database');
           }
@@ -395,19 +411,8 @@ const Index = () => {
       }
     }
 
-    // For authenticated users, reload chat history to get the latest data
-    if (!isGuest) {
-      try {
-        console.log('🔄 Reloading chat history for authenticated user...');
-        await loadChatHistoryData();
-        console.log('✅ Chat history reloaded successfully');
-      } catch (error) {
-        console.error('❌ Error reloading chat history:', error);
-      }
-    }
-
-    // Start new chat
-    setCurrentChatId(''); // Clear current chat ID to force creation of new session
+    // Clear current chat state
+    setCurrentChatId('');
     setMessages([]);
     setTypingMessage(null);
     console.log('✅ New chat started');
