@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -33,6 +34,8 @@ import {
   addToHistory,
   loadChatHistory,
   saveChatHistory,
+  backfillMissingTitles,
+  generateIntelligentTitle,
   ChatHistory
 } from '@/utils/chatHistory';
 import { migrateLocalStorageToSupabase, shouldRunMigration, forceMigration } from '@/utils/migrationUtils';
