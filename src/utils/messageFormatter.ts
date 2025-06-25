@@ -1,4 +1,6 @@
 
+import React from 'react';
+
 /**
  * Formats AI messages to display text between asterisks as bold
  * @param text - The original message text
@@ -11,7 +13,7 @@ export const formatMessageWithBold = (text: string): React.ReactNode => {
   return parts.map((part, index) => {
     // Every odd index (1, 3, 5...) should be bold
     if (index % 2 === 1) {
-      return <strong key={index}>{part}</strong>;
+      return React.createElement('strong', { key: index }, part);
     }
     return part;
   });
