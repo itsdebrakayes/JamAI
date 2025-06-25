@@ -321,7 +321,7 @@ const Index = () => {
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-24 h-24 object-contain"
+                        className="w-32 h-32 object-contain"
                       />
                     </div>
                     <h1 className="text-4xl font-bold jamaican-text-gradient mb-4">
@@ -339,7 +339,7 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-6 text-left bg-green-50 hover:bg-green-100 border-2 border-green-200 hover:border-green-300 rounded-xl transition-all duration-200 group hover:shadow-md dark:bg-green-950 dark:border-green-800 dark:hover:bg-green-900 dark:hover:border-green-700"
+                          className="p-3 text-left bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 rounded-lg transition-all duration-200 group hover:shadow-sm dark:bg-green-950/30 dark:border-green-800/50 dark:hover:bg-green-900/40 dark:hover:border-green-700/60"
                         >
                           <div className="text-sm font-medium text-green-800 dark:text-green-200 group-hover:text-green-900 dark:group-hover:text-green-100 transition-colors">
                             {suggestion.text}
