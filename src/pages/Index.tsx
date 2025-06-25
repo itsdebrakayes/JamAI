@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -431,25 +430,22 @@ const Index = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                {/* Summary and Translation buttons in header when messages exist */}
-                {showSummaryButton && (
-                  <>
-                    <Button
-                      onClick={() => setShowSummary(true)}
-                      className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
-                    >
-                      <FileText className="w-4 h-4 mr-2" />
-                      Summary
-                    </Button>
-                    
-                    <Button
-                      className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
-                    >
-                      <Languages className="w-4 h-4 mr-2" />
-                      Translation
-                    </Button>
-                  </>
-                )}
+                {/* Summary button - always visible */}
+                <Button
+                  onClick={() => setShowSummary(true)}
+                  className="h-9 px-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Summary
+                </Button>
+                
+                {/* Translation button - always visible */}
+                <Button
+                  className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-black dark:text-black rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <Languages className="w-4 h-4 mr-2" />
+                  Translation
+                </Button>
 
                 <Sheet>
                   <SheetTrigger asChild>
