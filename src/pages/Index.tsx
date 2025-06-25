@@ -420,7 +420,7 @@ const Index = () => {
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-12 h-12 object-contain"
+                    className="w-16 h-16 object-contain"
                   />
                   <div className="text-left">
                     <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
@@ -515,19 +515,9 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group"
-                          style={{
-                            borderColor: '#D1E7D7',
-                            backgroundColor: 'transparent'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#E6F2EB';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
+                          className="p-3 text-center bg-gradient-to-r from-green-100 to-yellow-100 hover:from-green-200 hover:to-yellow-200 border border-green-300 text-green-800 font-medium rounded-lg transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
                         >
-                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
+                          <div className="text-sm">
                             {suggestion.text}
                           </div>
                         </button>
@@ -545,18 +535,14 @@ const Index = () => {
                     <div className="max-w-4xl mx-auto flex justify-center gap-3">
                       <Button
                         onClick={() => setShowSummary(true)}
-                        variant="default"
-                        size="sm"
-                        className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm"
+                        className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <FileText className="w-4 h-4 mr-2" />
                         Summary
                       </Button>
                       
                       <Button
-                        variant="default"
-                        size="sm"
-                        className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium text-sm"
+                        className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
                       >
                         <Languages className="w-4 h-4 mr-2" />
                         Translation
