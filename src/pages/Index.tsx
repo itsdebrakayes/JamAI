@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -276,27 +275,14 @@ const Index = () => {
               <div className="flex items-center gap-3">
                 <SubscriptionBadge />
                 
-                {messages.length > 0 && (
-                  <Button
-                    onClick={() => setShowSummary(true)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 px-3"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Summary
-                  </Button>
-                )}
-                
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-9 px-3"
+                      className="h-9 w-9 p-0"
                     >
-                      <Settings className="w-4 h-4 mr-2" />
-                      Settings
+                      <Settings className="w-4 h-4" />
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[400px] sm:w-[400px]">
@@ -313,6 +299,18 @@ const Index = () => {
                     </ScrollArea>
                   </SheetContent>
                 </Sheet>
+
+                {messages.length > 0 && (
+                  <Button
+                    onClick={() => setShowSummary(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-3"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Summary
+                  </Button>
+                )}
                 
                 <ThemeToggle />
               </div>
@@ -360,9 +358,9 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-left bg-green-50 hover:bg-green-100 border border-green-200 hover:border-green-300 rounded-lg transition-all duration-200 group hover:shadow-sm dark:bg-green-950/30 dark:border-green-800/50 dark:hover:bg-green-900/40 dark:hover:border-green-700/60"
+                          className="p-3 text-left bg-white dark:bg-gray-800 border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-lg transition-all duration-200 group hover:shadow-sm"
                         >
-                          <div className="text-sm font-medium text-green-800 dark:text-green-200 group-hover:text-green-900 dark:group-hover:text-green-100 transition-colors">
+                          <div className="text-sm font-medium text-green-800 dark:text-green-200 group-hover:text-white transition-colors">
                             {suggestion.text}
                           </div>
                         </button>
