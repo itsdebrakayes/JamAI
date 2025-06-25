@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -61,8 +62,16 @@ const Index = () => {
     const storedHistory = localStorage.getItem('chatHistory');
     if (storedHistory) {
       try {
-        const parsedHistory = JSON.parse(storedHistory);
+        const parsedHistory = JSON.parse(storedHistory).map((chat: any) => ({
+          ...chat,
+          createdAt: new Date(chat.createdAt),
+          messages: chat.messages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+        }));
         setChatHistory(parsedHistory);
+        console.log('🗂️ Loaded chat history:', parsedHistory.length, 'chats');
       } catch (error) {
         console.error('Failed to parse chat history:', error);
       }
@@ -71,7 +80,10 @@ const Index = () => {
 
   // Save chat history to local storage whenever it changes
   useEffect(() => {
-    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+    if (chatHistory.length > 0) {
+      localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+      console.log('💾 Saved chat history:', chatHistory.length, 'chats');
+    }
   }, [chatHistory]);
 
   // Function to start a new chat
@@ -79,6 +91,7 @@ const Index = () => {
     const newChatId = uuidv4();
     setCurrentChatId(newChatId);
     setMessages([]);
+    console.log('🆕 Started new chat:', newChatId);
   };
 
   // Function to load a specific chat from history
@@ -87,6 +100,7 @@ const Index = () => {
     if (chatToLoad) {
       setMessages(chatToLoad.messages);
       setCurrentChatId(chatId);
+      console.log('📂 Loaded chat:', chatId, 'with', chatToLoad.messages.length, 'messages');
     }
   };
 
@@ -97,12 +111,15 @@ const Index = () => {
     if (chatIds.includes(currentChatId || '')) {
       startNewChat(); // Start a new chat if the current chat is deleted
     }
+    console.log('🗑️ Deleted chats:', chatIds);
   };
 
   // Function to clear all chat history
   const clearAllHistory = () => {
     setChatHistory([]);
+    localStorage.removeItem('chatHistory');
     startNewChat();
+    console.log('🧹 Cleared all chat history');
   };
 
   // Function to rename a chat
@@ -114,6 +131,7 @@ const Index = () => {
       return chat;
     });
     setChatHistory(updatedHistory);
+    console.log('✏️ Renamed chat:', chatId, 'to:', newTitle);
   };
 
   // Core function to handle sending messages
@@ -262,15 +280,21 @@ const Index = () => {
             <div className="max-w-4xl mx-auto flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <SidebarTrigger className="h-8 w-8" />
-                <img 
-                  src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-                  alt="JamAI Logo" 
-                  className="w-16 h-16 object-contain"
-                />
-                <div>
-                  <h1 className="text-2xl font-bold jamaican-text-gradient">JamAI</h1>
-                  <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
-                </div>
+                <button 
+                  onClick={startNewChat}
+                  className="flex items-center gap-4 hover:opacity-80 transition-opacity cursor-pointer"
+                  aria-label="Start new chat"
+                >
+                  <img 
+                    src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+                    alt="JamAI Logo" 
+                    className="w-16 h-16 object-contain"
+                  />
+                  <div>
+                    <h1 className="text-2xl font-bold jamaican-text-gradient">JamAI</h1>
+                    <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
+                  </div>
+                </button>
               </div>
               
               <div className="flex items-center gap-3">
@@ -431,3 +455,4 @@ const Index = () => {
 };
 
 export default Index;
+
