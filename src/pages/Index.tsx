@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -8,8 +9,9 @@ import ChatSummary from '@/components/ChatSummary';
 import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
 import UserProfileSettings from '@/components/UserProfileSettings';
-import { SidebarProvider } from '@/components/ui/sidebar';
+import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast"
 import { MessageSquare, Plus, Settings, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -58,7 +60,12 @@ const Index = () => {
   useEffect(() => {
     const storedHistory = localStorage.getItem('chatHistory');
     if (storedHistory) {
-      setChatHistory(JSON.parse(storedHistory));
+      try {
+        const parsedHistory = JSON.parse(storedHistory);
+        setChatHistory(parsedHistory);
+      } catch (error) {
+        console.error('Failed to parse chat history:', error);
+      }
     }
   }, []);
 
@@ -241,7 +248,7 @@ const Index = () => {
       <div className="min-h-screen flex w-full bg-background">
         <ChatHistorySidebar 
           chatHistory={chatHistory} 
-          currentChatId={currentChatId}
+          currentChatId={currentChatId || ''}
           onNewChat={startNewChat}
           onLoadChat={loadChat}
           onDeleteChats={deleteChats}
@@ -254,6 +261,7 @@ const Index = () => {
           <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4">
             <div className="max-w-4xl mx-auto flex items-center justify-between">
               <div className="flex items-center gap-3">
+                <SidebarTrigger className="h-8 w-8" />
                 <img 
                   src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                   alt="JamAI Logo" 
@@ -295,12 +303,14 @@ const Index = () => {
                     <SheetHeader>
                       <SheetTitle className="flex items-center gap-3">
                         <Settings className="w-6 h-6" />
-                        Settings
+                        Settings & Profile
                       </SheetTitle>
                     </SheetHeader>
-                    <div className="mt-6">
-                      <UserProfileSettings />
-                    </div>
+                    <ScrollArea className="h-[calc(100vh-100px)] mt-6">
+                      <div className="pr-6">
+                        <UserProfileSettings />
+                      </div>
+                    </ScrollArea>
                   </SheetContent>
                 </Sheet>
                 
@@ -321,7 +331,7 @@ const Index = () => {
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-32 h-32 object-contain"
+                        className="w-16 h-16 object-contain"
                       />
                     </div>
                     <h1 className="text-4xl font-bold jamaican-text-gradient mb-4">
@@ -329,6 +339,17 @@ const Index = () => {
                     </h1>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
                       Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
+                    </p>
+                  </div>
+
+                  {/* Ready for another chat section */}
+                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 rounded-xl p-4 mb-6">
+                    <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
+                      <span className="text-lg">🌟</span>
+                      <span className="font-medium">Ready for another chat?</span>
+                    </div>
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                      Welcome back! Ask me more about Jamaica or start a fresh conversation.
                     </p>
                   </div>
 
