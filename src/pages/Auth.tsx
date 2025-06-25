@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -159,7 +160,9 @@ const Auth = () => {
   };
 
   const handleContinueAsGuest = () => {
-    // Use the new setGuestMode function from context
+    console.log('Continue as guest clicked');
+    
+    // Use the setGuestMode function from context
     setGuestMode();
     
     toast({
@@ -167,7 +170,8 @@ const Auth = () => {
       description: 'You can try JamAI with 10 free messages!',
     });
     
-    navigate('/');
+    console.log('Navigating to home page');
+    navigate('/', { replace: true });
   };
 
   if (loading) {
