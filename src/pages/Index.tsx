@@ -7,6 +7,7 @@ import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useToast } from "@/components/ui/use-toast"
 import { MessageSquare, Plus } from 'lucide-react';
+import chatSuggestionsData from '@/data/chatSuggestions.json';
 
 // Define the structure for chat messages
 type ChatMessageData = {
@@ -178,6 +179,15 @@ const Index = () => {
     try {
       // Simulate network delay
       await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Handle proverb requests
+      if (lowerMessage.includes('proverb') || lowerMessage.includes('saying')) {
+        const proverbSuggestion = chatSuggestionsData.suggestions.find(s => s.id === 'proverbs');
+        if (proverbSuggestion && proverbSuggestion.responses) {
+          const randomResponse = proverbSuggestion.responses[Math.floor(Math.random() * proverbSuggestion.responses.length)];
+          return randomResponse;
+        }
+      }
       
       // Handle weather queries
       if (lowerMessage.includes('weather')) {

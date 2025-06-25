@@ -13,6 +13,17 @@
       ]
     },
     {
+      "id": "proverbs",
+      "text": "Tell me a Jamaican proverb and its meaning",
+      "responses": [
+        "📜 JAMAICAN PROVERB:\n\n🇯🇲 **\"Cockroach nuh business inna fowl fight\"**\n\n🇬🇧 **English:** Don't get involved in other people's business\n\n💡 **Meaning:** Stay out of arguments or conflicts that don't concern you. Just like a cockroach wouldn't get involved in a chicken fight, you shouldn't meddle in disputes between others. Mind your own business and avoid unnecessary drama!",
+        "📜 JAMAICAN PROVERB:\n\n🇯🇲 **\"Every hoe have dem stick a bush\"**\n\n🇬🇧 **English:** Every garden tool has its place in the bush\n\n💡 **Meaning:** Everyone has their own problems and struggles to deal with. No matter how good someone's life looks from the outside, they have their own challenges. Don't judge others because you don't know what they're going through.",
+        "📜 JAMAICAN PROVERB:\n\n🇯🇲 **\"One one cocoa full basket\"**\n\n🇬🇧 **English:** One by one, cocoa beans fill the basket\n\n💡 **Meaning:** Small, consistent efforts add up to big results over time. Don't get discouraged by slow progress - every little bit counts. Success comes from patience and persistence, not rushing.",
+        "📜 JAMAICAN PROVERB:\n\n🇯🇲 **\"If yuh cyaan hear, yuh mus feel\"**\n\n🇬🇧 **English:** If you can't hear, you must feel\n\n💡 **Meaning:** If you don't listen to good advice or warnings, you'll have to learn the hard way through experience. Sometimes people need to face consequences to understand what they were told.",
+        "📜 JAMAICAN PROVERB:\n\n🇯🇲 **\"Wha sweet nanny goat a go run him belly\"**\n\n🇬🇧 **English:** What tastes good to the goat will upset its stomach\n\n💡 **Meaning:** Things that seem appealing or tempting at first might cause problems later. Be careful of immediate pleasures that could have negative consequences. Think before you act on impulse."
+      ]
+    },
+    {
       "id": "weather",
       "text": "Weather in Jamaica",
       "responses": [
