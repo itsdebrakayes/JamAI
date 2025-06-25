@@ -41,9 +41,9 @@ const ChatMessage = ({ message, isUser, timestamp }: ChatMessageProps) => {
       </div>
       
       {isUser && (
-        <div className="flex-shrink-0">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
-            U
+        <div className="flex-shrink-0 order-2">
+          <div className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-white font-bold text-xs">
+            YOU
           </div>
         </div>
       )}
