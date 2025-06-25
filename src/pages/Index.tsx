@@ -8,10 +8,12 @@ import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import ChatSummary from '@/components/ChatSummary';
 import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
+import UserProfileSettings from '@/components/UserProfileSettings';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { MessageSquare, Plus, Settings, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import chatSuggestionsData from '@/data/chatSuggestions.json';
 
 // Define the structure for chat messages
@@ -33,36 +35,8 @@ type ChatHistory = {
   summary?: string;
 };
 
-// Suggestion type
-type ChatSuggestion = {
-  title: string;
-  text: string;
-  icon: string;
-};
-
-// Updated chat suggestions with the ones you liked
-const CHAT_SUGGESTIONS: ChatSuggestion[] = [
-  {
-    title: "Explain Patois",
-    text: "Explain Jamaican Patois and its origins.",
-    icon: "🇯🇲",
-  },
-  {
-    title: "Local Proverbs",
-    text: "Tell me a Jamaican proverb and its meaning.",
-    icon: "📜",
-  },
-  {
-    title: "Reggae History",
-    text: "Give me a brief history of Reggae music.",
-    icon: "🎶",
-  },
-  {
-    title: "Jamaican Cuisine",
-    text: "What are some popular Jamaican dishes?",
-    icon: "🍽️",
-  },
-];
+// Chat suggestions from the JSON data
+const CHAT_SUGGESTIONS = chatSuggestionsData.suggestions.slice(0, 6);
 
 const Index = () => {
   // Initialize state variables
@@ -71,6 +45,7 @@ const Index = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -284,7 +259,10 @@ const Index = () => {
                   alt="JamAI Logo" 
                   className="w-8 h-8 object-contain"
                 />
-                <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
+                <div>
+                  <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
+                  <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
+                </div>
               </div>
               
               <div className="flex items-center gap-3">
@@ -303,6 +281,7 @@ const Index = () => {
                 )}
                 
                 <Button
+                  onClick={() => setShowSettings(true)}
                   variant="ghost"
                   size="sm"
                   className="h-9 px-3"
@@ -319,9 +298,9 @@ const Index = () => {
           {/* Main content area */}
           <div className="flex-1 flex flex-col">
             {messages.length === 0 ? (
-              // Empty state with enhanced welcome message
+              // Empty state with welcome message
               <div className="flex-1 flex items-center justify-center p-4">
-                <div className="max-w-2xl w-full space-y-8 text-center">
+                <div className="max-w-4xl w-full space-y-8 text-center">
                   {/* Welcome header */}
                   <div className="space-y-4">
                     <div className="flex justify-center items-center gap-3 mb-6">
@@ -330,49 +309,29 @@ const Index = () => {
                         alt="JamAI Logo" 
                         className="w-16 h-16 object-contain"
                       />
-                      <h1 className="text-4xl font-bold jamaican-text-gradient">
-                        Welcome to JamAI
-                      </h1>
                     </div>
-                    <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
-                      Your AI assistant with a Jamaican twist. Ask me anything in English or Patois!
+                    <h1 className="text-4xl font-bold jamaican-text-gradient mb-4">
+                      Welcome to JamAI
+                    </h1>
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                      Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
                     </p>
                   </div>
 
-                  {/* Enhanced Start New Chat button */}
+                  {/* Chat suggestions */}
                   <div className="space-y-6">
-                    <button
-                      onClick={startNewChat}
-                      className="w-full max-w-md mx-auto bg-gradient-to-r from-green-500 via-yellow-500 to-green-600 hover:from-green-600 hover:via-yellow-600 hover:to-green-700 text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-3 text-lg"
-                    >
-                      <MessageSquare className="w-6 h-6" />
-                      Start a New Chat
-                    </button>
-                    
-                    {/* Chat suggestions */}
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground font-medium">Try asking me about:</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
-                        {CHAT_SUGGESTIONS.map((suggestion, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleSuggestionClick(suggestion.text)}
-                            className="p-4 text-left bg-card hover:bg-accent rounded-xl border border-border hover:border-accent-foreground/20 transition-all duration-200 group"
-                          >
-                            <div className="flex items-start gap-3">
-                              <span className="text-xl flex-shrink-0 mt-1">{suggestion.icon}</span>
-                              <div>
-                                <h3 className="font-medium text-sm mb-1 group-hover:text-accent-foreground">
-                                  {suggestion.title}
-                                </h3>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                  {suggestion.text}
-                                </p>
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                      {CHAT_SUGGESTIONS.map((suggestion) => (
+                        <button
+                          key={suggestion.id}
+                          onClick={() => handleSuggestionClick(suggestion.text)}
+                          className="p-4 text-left bg-card/60 backdrop-blur-sm hover:bg-card border border-border/50 hover:border-border rounded-2xl transition-all duration-200 group"
+                        >
+                          <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                            {suggestion.text}
+                          </div>
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -412,15 +371,15 @@ const Index = () => {
                 )}
               </div>
             )}
+          </div>
 
-            {/* Input area - Always show at bottom */}
-            <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4">
-              <div className="max-w-4xl mx-auto">
-                <ChatInput 
-                  onSendMessage={handleSendMessage}
-                  disabled={isTyping}
-                />
-              </div>
+          {/* Input area - Always show at bottom */}
+          <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4">
+            <div className="max-w-4xl mx-auto">
+              <ChatInput 
+                onSendMessage={handleSendMessage}
+                disabled={isTyping}
+              />
             </div>
           </div>
 
@@ -430,6 +389,21 @@ const Index = () => {
               messages={convertToMessages(messages)}
               onClose={() => setShowSummary(false)}
             />
+          )}
+
+          {/* Settings Modal */}
+          {showSettings && (
+            <Dialog open={showSettings} onOpenChange={setShowSettings}>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-3">
+                    <Settings className="w-6 h-6" />
+                    Settings
+                  </DialogTitle>
+                </DialogHeader>
+                <UserProfileSettings />
+              </DialogContent>
+            </Dialog>
           )}
         </div>
       </div>
