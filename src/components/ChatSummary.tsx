@@ -25,8 +25,9 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
     if (!inputText.trim()) return;
     
     setIsProcessing(true);
+    setActiveTab('summary');
     try {
-      const prompt = `Please provide a concise summary of the following text. Respond in both English and Jamaican Patois for comparison:\n\n${inputText}`;
+      const prompt = `Please provide a concise summary of the following large text. Give me the summary in both English and Jamaican Patois for comparison. Structure your response clearly with both versions:\n\n${inputText}`;
       const response = await geminiService.generateResponse(prompt, false, []);
       setSummary(response.message);
     } catch (error) {
@@ -40,14 +41,15 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
     if (!inputText.trim()) return;
     
     setIsProcessing(true);
+    setActiveTab('translation');
     try {
       const detectedLanguage = detectLanguage(inputText);
       let prompt: string;
       
       if (detectedLanguage === 'patois') {
-        prompt = `Please translate the following Jamaican Patois text to English, maintaining the original meaning and tone:\n\n${inputText}`;
+        prompt = `Please translate the following Jamaican Patois text to clear, natural English. Maintain the original meaning and tone. Only provide the English translation:\n\n${inputText}`;
       } else {
-        prompt = `Please translate the following English text to Jamaican Patois, maintaining the original meaning and tone:\n\n${inputText}`;
+        prompt = `Please translate the following English text to authentic Jamaican Patois. Maintain the original meaning and tone. Only provide the Patois translation:\n\n${inputText}`;
       }
       
       const response = await geminiService.generateResponse(prompt, detectedLanguage === 'english', []);
@@ -88,7 +90,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
             </DialogTitle>
           </div>
           <p id="chat-summary-description" className="text-muted-foreground mt-2">
-            Paste any large text below to get quick summaries in English and Patois, or translate between languages
+            Paste large text below to get AI-powered summaries in both English and Patois, or translate between languages
           </p>
         </DialogHeader>
 
@@ -103,12 +105,12 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
               id="text-input"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Paste your large text here for summarization or translation..."
+              placeholder="Paste your large text here for AI summarization or translation..."
               className="min-h-[120px] resize-none"
               aria-describedby="text-input-help"
             />
             <div id="text-input-help" className="sr-only">
-              Enter or paste large text to summarize or translate
+              Enter or paste large text to summarize or translate using AI
             </div>
           </div>
 
@@ -123,15 +125,15 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
               {isProcessing && activeTab === 'summary' ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />
-                  <span className="sr-only">Generating summary...</span>
+                  <span className="sr-only">AI is summarizing...</span>
                 </>
               ) : (
                 <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
               )}
-              Summarize Text
+              AI Summarize
             </Button>
             <div id="summarize-help" className="sr-only">
-              Generate a concise summary of large text in both English and Patois
+              Use AI to generate a concise summary of large text in both English and Patois
             </div>
             
             <Button
@@ -144,7 +146,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
               {isProcessing && activeTab === 'translation' ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" aria-hidden="true" />
-                  <span className="sr-only">Translating...</span>
+                  <span className="sr-only">AI is translating...</span>
                 </>
               ) : (
                 <Languages className="w-4 h-4 mr-2" aria-hidden="true" />
@@ -152,7 +154,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
               Auto-Translate
             </Button>
             <div id="translate-help" className="sr-only">
-              Automatically translate text between English and Jamaican Patois
+              Automatically translate text between English and Jamaican Patois using AI
             </div>
           </div>
 
@@ -173,7 +175,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
                   aria-controls="summary-panel"
                   id="summary-tab"
                 >
-                  Summary
+                  AI Summary
                 </button>
                 <button
                   onClick={() => setActiveTab('translation')}
