@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -421,39 +420,16 @@ const Index = () => {
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-10 h-10 object-contain"
+                    className="w-12 h-12 object-contain"
                   />
                   <div className="text-left">
-                    <h1 className="text-lg font-bold jamaican-text-gradient">JamAI</h1>
-                    <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
+                    <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
+                    <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
                   </div>
                 </button>
               </div>
               
               <div className="flex items-center gap-2">
-                {showSummaryButton && (
-                  <>
-                    <Button
-                      onClick={() => setShowSummary(true)}
-                      variant="default"
-                      size="sm"
-                      className="h-8 px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-xs"
-                    >
-                      <FileText className="w-3 h-3 mr-1" />
-                      Summary
-                    </Button>
-                    
-                    <Button
-                      variant="default"
-                      size="sm"
-                      className="h-8 px-3 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium text-xs"
-                    >
-                      <Languages className="w-3 h-3 mr-1" />
-                      Translation
-                    </Button>
-                  </>
-                )}
-                
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button
@@ -498,7 +474,7 @@ const Index = () => {
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-16 h-16 object-contain"
+                        className="w-20 h-20 object-contain"
                       />
                     </div>
                     <h1 className="text-3xl font-bold jamaican-text-gradient mb-4 text-center">
@@ -511,7 +487,7 @@ const Index = () => {
 
                   {/* Conditional section based on existing chats */}
                   {hasExistingChats ? (
-                    <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-950/30 dark:to-green-900/30 border border-green-300 dark:border-green-700 rounded-lg p-4 mb-6">
+                    <div className="bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-4 mb-6">
                       <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-2">
                         <span className="text-lg">🌟</span>
                         <span className="font-semibold">Ready for another chat?</span>
@@ -521,12 +497,12 @@ const Index = () => {
                       </p>
                     </div>
                   ) : (
-                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4 mb-6">
-                      <div className="flex items-center justify-center gap-2 text-blue-700 dark:text-blue-300 mb-2">
+                    <div className="bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-4 mb-6">
+                      <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-2">
                         <span className="text-lg">👋</span>
                         <span className="font-semibold">Start a new chat</span>
                       </div>
-                      <p className="text-blue-600 dark:text-blue-400 text-sm">
+                      <p className="text-green-700 dark:text-green-300 text-sm">
                         Get started by asking me anything about Jamaica, language, or general questions!
                       </p>
                     </div>
@@ -563,6 +539,32 @@ const Index = () => {
             ) : (
               // Chat interface
               <div className="flex-1 flex flex-col">
+                {/* Summary and Translation buttons when messages exist */}
+                {showSummaryButton && (
+                  <div className="border-b border-border/50 bg-background/80 backdrop-blur-sm p-3">
+                    <div className="max-w-4xl mx-auto flex justify-center gap-3">
+                      <Button
+                        onClick={() => setShowSummary(true)}
+                        variant="default"
+                        size="sm"
+                        className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-sm"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Summary
+                      </Button>
+                      
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium text-sm"
+                      >
+                        <Languages className="w-4 h-4 mr-2" />
+                        Translation
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Messages area */}
                 <div className="flex-1 overflow-y-auto">
                   <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
@@ -585,7 +587,7 @@ const Index = () => {
                     <div className="max-w-4xl mx-auto flex justify-center">
                       <button
                         onClick={startNewChat}
-                        className="bg-gradient-to-r from-green-600 via-green-500 to-green-600 hover:from-green-700 hover:via-green-600 hover:to-green-700 text-white font-medium py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2 text-sm"
+                        className="bg-gradient-to-r from-green-100 to-yellow-100 hover:from-green-200 hover:to-yellow-200 text-green-800 border border-green-300 font-medium py-3 px-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 flex items-center gap-2 text-sm"
                       >
                         <Plus className="w-4 h-4" />
                         Ready for another chat?
