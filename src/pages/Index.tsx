@@ -4,9 +4,13 @@ import ChatMessage from '@/components/ChatMessage';
 import ChatInput from '@/components/ChatInput';
 import TypingIndicator from '@/components/TypingIndicator';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
+import ChatSummary from '@/components/ChatSummary';
+import ThemeToggle from '@/components/ThemeToggle';
+import SubscriptionBadge from '@/components/SubscriptionBadge';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useToast } from "@/components/ui/use-toast"
-import { MessageSquare, Plus } from 'lucide-react';
+import { MessageSquare, Plus, Settings, FileText } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import chatSuggestionsData from '@/data/chatSuggestions.json';
 
 // Define the structure for chat messages
@@ -65,6 +69,7 @@ const Index = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -259,16 +264,61 @@ const Index = () => {
         />
         
         <div className="flex-1 flex flex-col relative">
+          {/* Header */}
+          <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4">
+            <div className="max-w-4xl mx-auto flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <img 
+                  src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+                  alt="JamAI Logo" 
+                  className="w-8 h-8 object-contain"
+                />
+                <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <SubscriptionBadge />
+                
+                {messages.length > 0 && (
+                  <Button
+                    onClick={() => setShowSummary(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-3"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Summary
+                  </Button>
+                )}
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 px-3"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Settings
+                </Button>
+                
+                <ThemeToggle />
+              </div>
+            </div>
+          </header>
+
           {/* Main content area */}
           <div className="flex-1 flex flex-col">
             {messages.length === 0 ? (
-              // Empty state with enhanced welcome message - same for all users (authenticated, guest, or anonymous)
+              // Empty state with enhanced welcome message
               <div className="flex-1 flex items-center justify-center p-4">
                 <div className="max-w-2xl w-full space-y-8 text-center">
                   {/* Welcome header */}
                   <div className="space-y-4">
                     <div className="flex justify-center items-center gap-3 mb-6">
-                      <span className="text-4xl font-bold">🇯🇲</span>
+                      <img 
+                        src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+                        alt="JamAI Logo" 
+                        className="w-16 h-16 object-contain"
+                      />
                       <h1 className="text-4xl font-bold jamaican-text-gradient">
                         Welcome to JamAI
                       </h1>
@@ -278,7 +328,7 @@ const Index = () => {
                     </p>
                   </div>
 
-                  {/* Enhanced Start New Chat button - larger than "Ready for another chat" */}
+                  {/* Enhanced Start New Chat button */}
                   <div className="space-y-6">
                     <button
                       onClick={startNewChat}
@@ -335,7 +385,7 @@ const Index = () => {
                   </div>
                 </div>
 
-                {/* Ready for another chat section - smaller than "Start a new chat" */}
+                {/* Ready for another chat section */}
                 {messages.length > 0 && (
                   <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm p-4">
                     <div className="max-w-4xl mx-auto flex justify-center">
@@ -362,6 +412,14 @@ const Index = () => {
               </div>
             )}
           </div>
+
+          {/* Summary Modal */}
+          {showSummary && (
+            <ChatSummary
+              messages={messages}
+              onClose={() => setShowSummary(false)}
+            />
+          )}
         </div>
       </div>
     </SidebarProvider>
