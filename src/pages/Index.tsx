@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -298,15 +296,23 @@ const Index = () => {
               </div>
               
               <div className="flex items-center gap-3">
-                <SubscriptionBadge />
-                
-                <ThemeToggle />
+                {messages.length > 0 && (
+                  <Button
+                    onClick={() => setShowSummary(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 px-3"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Summary
+                  </Button>
+                )}
                 
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button
                       variant="ghost"
-                      size="sm"
+                      size="sm" 
                       className="h-9 w-9 p-0"
                     >
                       <Settings className="w-4 h-4" />
@@ -327,17 +333,9 @@ const Index = () => {
                   </SheetContent>
                 </Sheet>
 
-                {messages.length > 0 && (
-                  <Button
-                    onClick={() => setShowSummary(true)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 px-3"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Summary
-                  </Button>
-                )}
+                <ThemeToggle />
+                
+                <SubscriptionBadge />
               </div>
             </div>
           </header>
@@ -357,10 +355,10 @@ const Index = () => {
                         className="w-20 h-20 object-contain"
                       />
                     </div>
-                    <h1 className="text-4xl font-bold jamaican-text-gradient mb-4">
+                    <h1 className="text-4xl font-bold jamaican-text-gradient mb-4 text-center">
                       Welcome to JamAI
                     </h1>
-                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed text-center">
                       Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
                     </p>
                   </div>
@@ -383,9 +381,9 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-left bg-white dark:bg-gray-800 border-2 border-green-500 hover:bg-green-500 hover:text-white rounded-lg transition-all duration-200 group hover:shadow-sm"
+                          className="p-3 text-left bg-white dark:bg-black border-2 border-green-600 dark:border-green-600 hover:bg-green-100 dark:hover:bg-green-200/20 rounded-lg transition-all duration-200 group hover:shadow-sm text-center"
                         >
-                          <div className="text-sm font-medium text-green-800 dark:text-green-200 group-hover:text-white transition-colors">
+                          <div className="text-sm font-medium text-green-800 dark:text-green-200 group-hover:text-green-900 dark:group-hover:text-green-100 transition-colors">
                             {suggestion.text}
                           </div>
                         </button>
@@ -399,7 +397,7 @@ const Index = () => {
               <div className="flex-1 flex flex-col">
                 {/* Messages area */}
                 <div className="flex-1 overflow-y-auto">
-                  <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+                  <div className="max-w-4xl mx-auto px-4 py-6 space-y-6 text-center">
                     {messages.map((message) => (
                       <ChatMessage
                         key={message.id}
@@ -455,4 +453,3 @@ const Index = () => {
 };
 
 export default Index;
-
