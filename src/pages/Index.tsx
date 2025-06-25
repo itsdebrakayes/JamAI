@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -599,6 +598,43 @@ const Index = () => {
     setShowTranslationMode(false);
   };
 
+  const handleRenameChat = async (chatId: string, newTitle: string) => {
+    try {
+      console.log('✏️ Renaming chat:', chatId, 'to:', newTitle);
+      
+      if (!isGuest) {
+        // Update in Supabase for authenticated users
+        const success = await updateChatSessionTitle(chatId, newTitle);
+        if (success) {
+          await loadChatHistoryData();
+          console.log('✅ Chat renamed in database');
+        } else {
+          throw new Error('Failed to update chat title in database');
+        }
+      } else {
+        // Update in localStorage for guests
+        const updatedHistory = chatHistory.map(chat => 
+          chat.id === chatId ? { ...chat, title: newTitle } : chat
+        );
+        setChatHistory(updatedHistory);
+        saveChatHistory(updatedHistory);
+        console.log('✅ Chat renamed in localStorage');
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Chat renamed successfully',
+      });
+    } catch (error) {
+      console.error('❌ Error renaming chat:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to rename chat',
+        variant: 'destructive'
+      });
+    }
+  };
+
   // ============================
   // EFFECTS
   // ============================
@@ -684,6 +720,7 @@ const Index = () => {
             onLoadChat={handleLoadChat}
             onDeleteChats={handleDeleteChats}
             onClearAllHistory={handleClearAllHistory}
+            onRenameChat={handleRenameChat}
           />
 
           {/* Main Content Area */}
@@ -823,12 +860,12 @@ const Index = () => {
                             find nearby places, and I'll respond in authentic Jamaican style!
                           </p>
                           {chatHistory.length > 0 && (
-                            <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-yellow-50 border border-green-200 rounded-lg max-w-md mx-auto">
-                              <div className="flex items-center justify-center gap-2 mb-1">
-                                <Sparkles className="w-4 h-4 text-green-600" />
-                                <span className="text-green-800 font-medium text-sm">Ready for another chat?</span>
+                            <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-yellow-50 border border-green-200 rounded-xl max-w-lg mx-auto">
+                              <div className="flex items-center justify-center gap-2 mb-2">
+                                <Sparkles className="w-5 h-5 text-green-600" />
+                                <span className="text-green-800 font-semibold">Ready for another chat?</span>
                               </div>
-                              <p className="text-green-700 text-xs">
+                              <p className="text-green-700 text-sm">
                                 Welcome back! Ask me more about Jamaica or start a fresh conversation.
                               </p>
                             </div>
@@ -860,7 +897,7 @@ const Index = () => {
                             description="Ready to chat with your Jamaican AI assistant? Ask me about Jamaica, local places, culture, or anything else. I'll respond in authentic Patois style!"
                             actionLabel="Try a Sample Question"
                             onAction={() => handleSuggestionClick('Tell me about Jamaica in a nutshell')}
-                            className="mb-6"
+                            className="mb-6 max-w-2xl mx-auto"
                           />
                         )}
 

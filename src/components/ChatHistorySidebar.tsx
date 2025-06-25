@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
-import { MessageSquare, Plus, Trash2, MoreVertical } from 'lucide-react';
+import { MessageSquare, Plus, Trash2, MoreVertical, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +24,12 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -34,6 +42,14 @@ import {
   DrawerTrigger,
   DrawerClose,
 } from '@/components/ui/drawer';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { groupChatsByTime } from '@/utils/chatGrouping';
 
@@ -59,6 +75,7 @@ interface ChatHistorySidebarProps {
   onLoadChat: (chatId: string) => void;          // Callback to load specific chat
   onDeleteChats: (chatIds: string[]) => void;    // Callback to delete multiple chats
   onClearAllHistory: () => void;                 // Callback to clear all history
+  onRenameChat?: (chatId: string, newTitle: string) => void; // Callback to rename chat
 }
 
 /**
@@ -71,6 +88,7 @@ interface ChatHistorySidebarProps {
  * - Delete individual or multiple chats
  * - Clear entire chat history
  * - Bulk select chats for operations
+ * - Rename chats via right-click context menu
  * 
  * The sidebar is responsive and collapses on mobile devices.
  * Now fully supports dark mode with proper color schemes.
@@ -81,7 +99,8 @@ const ChatHistorySidebar = ({
   onNewChat, 
   onLoadChat,
   onDeleteChats,
-  onClearAllHistory
+  onClearAllHistory,
+  onRenameChat
 }: ChatHistorySidebarProps) => {
   const { setOpenMobile } = useSidebar();
   const isMobile = useIsMobile();
@@ -128,6 +147,13 @@ const ChatHistorySidebar = ({
    * ID of single chat being deleted (when not in bulk mode)
    */
   const [chatToDelete, setChatToDelete] = useState<string | null>(null);
+
+  /**
+   * Rename dialog state
+   */
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [chatToRename, setChatToRename] = useState<string | null>(null);
+  const [newChatTitle, setNewChatTitle] = useState('');
 
   // ============================
   // EVENT HANDLERS
@@ -235,6 +261,39 @@ const ChatHistorySidebar = ({
     } else {
       setSelectedChats(new Set(chatHistory.map(chat => chat.id)));
     }
+  };
+
+  /**
+   * Initiates renaming of a chat
+   */
+  const handleRenameChat = (chatId: string) => {
+    const chat = chatHistory.find(c => c.id === chatId);
+    if (chat) {
+      setChatToRename(chatId);
+      setNewChatTitle(getDisplayTitle(chat));
+      setRenameDialogOpen(true);
+    }
+  };
+
+  /**
+   * Confirms and executes chat rename
+   */
+  const confirmRename = () => {
+    if (chatToRename && newChatTitle.trim() && onRenameChat) {
+      onRenameChat(chatToRename, newChatTitle.trim());
+      setRenameDialogOpen(false);
+      setChatToRename(null);
+      setNewChatTitle('');
+    }
+  };
+
+  /**
+   * Cancels chat rename
+   */
+  const cancelRename = () => {
+    setRenameDialogOpen(false);
+    setChatToRename(null);
+    setNewChatTitle('');
   };
 
   // Helper function to get display title for a chat
@@ -355,41 +414,58 @@ const ChatHistorySidebar = ({
                         </h3>
                         <div className="space-y-1">
                           {group.chats.map((chat) => (
-                            <div key={chat.id} className="flex items-center gap-2 group">
-                              {isSelectionMode && (
-                                <input
-                                  type="checkbox"
-                                  checked={selectedChats.has(chat.id)}
-                                  onChange={() => handleChatSelect(chat.id)}
-                                  className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
-                                />
-                              )}
-                              
-                              <DrawerClose asChild>
-                                <button
-                                  onClick={() => handleChatSelect(chat.id)}
-                                  className={`flex-1 justify-start gap-3 py-2 px-3 text-left hover:bg-muted rounded-lg transition-colors ${
-                                    chat.id === currentChatId && !isSelectionMode ? 'bg-accent text-accent-foreground font-medium' : ''
-                                  }`}
+                            <ContextMenu key={chat.id}>
+                              <ContextMenuTrigger asChild>
+                                <div className="flex items-center gap-2 group">
+                                  {isSelectionMode && (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedChats.has(chat.id)}
+                                      onChange={() => handleChatSelect(chat.id)}
+                                      className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                                    />
+                                  )}
+                                  
+                                  <DrawerClose asChild>
+                                    <button
+                                      onClick={() => handleChatSelect(chat.id)}
+                                      className={`flex-1 justify-start gap-3 py-2 px-3 text-left hover:bg-muted rounded-lg transition-colors ${
+                                        chat.id === currentChatId && !isSelectionMode ? 'bg-accent text-accent-foreground font-medium' : ''
+                                      }`}
+                                    >
+                                      <div className="flex items-center gap-3">
+                                        <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                                        <span className="truncate text-sm">{getDisplayTitle(chat)}</span>
+                                      </div>
+                                    </button>
+                                  </DrawerClose>
+                                  
+                                  {!isSelectionMode && (
+                                    <Button
+                                      onClick={(e) => handleDeleteSingle(chat.id, e)}
+                                      variant="ghost"
+                                      size="sm"
+                                      className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </ContextMenuTrigger>
+                              <ContextMenuContent>
+                                <ContextMenuItem onClick={() => handleRenameChat(chat.id)}>
+                                  <Edit2 className="w-4 h-4 mr-2" />
+                                  Rename
+                                </ContextMenuItem>
+                                <ContextMenuItem 
+                                  onClick={() => handleDeleteSingle(chat.id, {} as React.MouseEvent)}
+                                  className="text-red-600 dark:text-red-400"
                                 >
-                                  <div className="flex items-center gap-3">
-                                    <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                                    <span className="truncate text-sm">{getDisplayTitle(chat)}</span>
-                                  </div>
-                                </button>
-                              </DrawerClose>
-                              
-                              {!isSelectionMode && (
-                                <Button
-                                  onClick={(e) => handleDeleteSingle(chat.id, e)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </ContextMenuItem>
+                              </ContextMenuContent>
+                            </ContextMenu>
                           ))}
                         </div>
                       </div>
@@ -445,6 +521,40 @@ const ChatHistorySidebar = ({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Rename dialog */}
+        <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Rename Chat</DialogTitle>
+              <DialogDescription>
+                Enter a new name for this chat.
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              value={newChatTitle}
+              onChange={(e) => setNewChatTitle(e.target.value)}
+              placeholder="Chat title..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  confirmRename();
+                }
+                if (e.key === 'Escape') {
+                  cancelRename();
+                }
+              }}
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={cancelRename}>
+                Cancel
+              </Button>
+              <Button onClick={confirmRename} disabled={!newChatTitle.trim()}>
+                Rename
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
@@ -455,7 +565,6 @@ const ChatHistorySidebar = ({
       <Sidebar side="left" className="border-r border-border bg-background/95 backdrop-blur-md">
         {/* Sidebar header with new chat button and controls */}
         <SidebarHeader className="p-4 bg-background/90 border-b border-border/30">
-          {/* Primary new chat button with Jamaican gradient hover */}
           <Button 
             onClick={handleNewChat}
             className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-2 transition-all duration-200"
@@ -465,10 +574,8 @@ const ChatHistorySidebar = ({
             <span className="font-medium">New Chat</span>
           </Button>
           
-          {/* Chat management controls - only shown if there are chats */}
           {chatHistory.length > 0 && (
             <div className="flex gap-2">
-              {/* Options menu - only shown when not in selection mode */}
               {!isSelectionMode && (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -489,7 +596,6 @@ const ChatHistorySidebar = ({
                 </Popover>
               )}
               
-              {/* Toggle selection mode button */}
               <Button 
                 onClick={() => setIsSelectionMode(!isSelectionMode)}
                 className="justify-start gap-2 h-8 text-sm px-3"
@@ -499,10 +605,8 @@ const ChatHistorySidebar = ({
                 {isSelectionMode ? 'Cancel' : 'Select'}
               </Button>
               
-              {/* Selection mode controls */}
               {isSelectionMode && (
                 <>
-                  {/* Select/Deselect all button */}
                   <Button 
                     onClick={toggleSelectAll}
                     className="justify-start gap-2 h-8 text-sm px-3"
@@ -512,7 +616,6 @@ const ChatHistorySidebar = ({
                     {selectedChats.size === chatHistory.length ? 'Deselect All' : 'Select All'}
                   </Button>
                   
-                  {/* Delete selected button - only shown when chats are selected */}
                   {selectedChats.size > 0 && (
                     <Button 
                       onClick={handleDeleteSelected}
@@ -529,7 +632,7 @@ const ChatHistorySidebar = ({
           )}
         </SidebarHeader>
         
-        {/* Sidebar content with chat list - dark mode support */}
+        {/* Sidebar content with chat list */}
         <SidebarContent className="px-2 bg-background/90">
           {groupedChats.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
@@ -546,39 +649,53 @@ const ChatHistorySidebar = ({
                   <SidebarMenu>
                     {group.chats.map((chat) => (
                       <SidebarMenuItem key={chat.id}>
-                        <div className="flex items-center gap-2 group">
-                          {/* Checkbox for selection mode with dark mode styling */}
-                          {isSelectionMode && (
-                            <input
-                              type="checkbox"
-                              checked={selectedChats.has(chat.id)}
-                              onChange={() => handleChatSelect(chat.id)}
-                              className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
-                            />
-                          )}
-                          
-                          {/* Main chat button with dark mode hover states */}
-                          <SidebarMenuButton
-                            onClick={() => handleChatSelect(chat.id)}
-                            isActive={chat.id === currentChatId && !isSelectionMode}
-                            className="flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium"
-                          >
-                            <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate text-sm">{getDisplayTitle(chat)}</span>
-                          </SidebarMenuButton>
-                          
-                          {/* Individual delete button - only shown on hover and not in selection mode */}
-                          {!isSelectionMode && (
-                            <Button
-                              onClick={(e) => handleDeleteSingle(chat.id, e)}
-                              variant="ghost"
-                              size="sm"
-                              className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                        <ContextMenu>
+                          <ContextMenuTrigger asChild>
+                            <div className="flex items-center gap-2 group">
+                              {isSelectionMode && (
+                                <input
+                                  type="checkbox"
+                                  checked={selectedChats.has(chat.id)}
+                                  onChange={() => handleChatSelect(chat.id)}
+                                  className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                                />
+                              )}
+                              
+                              <SidebarMenuButton
+                                onClick={() => handleChatSelect(chat.id)}
+                                isActive={chat.id === currentChatId && !isSelectionMode}
+                                className="flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium"
+                              >
+                                <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate text-sm">{getDisplayTitle(chat)}</span>
+                              </SidebarMenuButton>
+                              
+                              {!isSelectionMode && (
+                                <Button
+                                  onClick={(e) => handleDeleteSingle(chat.id, e)}
+                                  variant="ghost"
+                                  size="sm"
+                                  className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )}
+                            </div>
+                          </ContextMenuTrigger>
+                          <ContextMenuContent>
+                            <ContextMenuItem onClick={() => handleRenameChat(chat.id)}>
+                              <Edit2 className="w-4 h-4 mr-2" />
+                              Rename
+                            </ContextMenuItem>
+                            <ContextMenuItem 
+                              onClick={() => handleDeleteSingle(chat.id, {} as React.MouseEvent)}
+                              className="text-red-600 dark:text-red-400"
                             >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </ContextMenuItem>
+                          </ContextMenuContent>
+                        </ContextMenu>
                       </SidebarMenuItem>
                     ))}
                   </SidebarMenu>
@@ -641,6 +758,40 @@ const ChatHistorySidebar = ({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Rename dialog */}
+      <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Chat</DialogTitle>
+            <DialogDescription>
+              Enter a new name for this chat.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            value={newChatTitle}
+            onChange={(e) => setNewChatTitle(e.target.value)}
+            placeholder="Chat title..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmRename();
+              }
+              if (e.key === 'Escape') {
+                cancelRename();
+              }
+            }}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelRename}>
+              Cancel
+            </Button>
+            <Button onClick={confirmRename} disabled={!newChatTitle.trim()}>
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
