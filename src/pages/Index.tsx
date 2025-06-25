@@ -796,6 +796,17 @@ const Index = () => {
                             Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, 
                             find nearby places, and I'll respond in authentic Jamaican style!
                           </p>
+                          {chatHistory.length > 0 && (
+                            <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-yellow-50 border border-green-200 rounded-lg max-w-md mx-auto">
+                              <div className="flex items-center justify-center gap-2 mb-1">
+                                <Sparkles className="w-4 h-4 text-green-600" />
+                                <span className="text-green-800 font-medium text-sm">Ready for another chat?</span>
+                              </div>
+                              <p className="text-green-700 text-xs">
+                                Welcome back! Ask me more about Jamaica or start a fresh conversation.
+                              </p>
+                            </div>
+                          )}
                           {isGuest && (
                             <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
                               <p className="text-yellow-800 font-medium">
@@ -815,21 +826,14 @@ const Index = () => {
                           )}
                         </div>
 
-                        {/* Enhanced empty state with better design */}
-                        {chatHistory.length === 0 ? (
+                        {/* Only show the main empty state for first time users */}
+                        {chatHistory.length === 0 && (
                           <EmptyStateCard
                             icon={MessageCircle}
                             title="Start Your First Conversation"
                             description="Ready to chat with your Jamaican AI assistant? Ask me about Jamaica, local places, culture, or anything else. I'll respond in authentic Patois style!"
                             actionLabel="Try a Sample Question"
                             onAction={() => handleSuggestionClick('Tell me about Jamaica in a nutshell')}
-                            className="mb-6"
-                          />
-                        ) : (
-                          <EmptyStateCard
-                            icon={Sparkles}
-                            title="Ready for Another Chat?"
-                            description="Welcome back! I'm here to help with more questions about Jamaica, provide local insights, or just have a friendly conversation in Patois."
                             className="mb-6"
                           />
                         )}
