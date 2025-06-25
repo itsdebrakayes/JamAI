@@ -1,4 +1,3 @@
-
 import { Message } from '@/types/Message';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -44,8 +43,8 @@ function generateUUID(): string {
   });
 }
 
-// Improved intelligent title generation
-function generateIntelligentTitle(messages: Message[]): string {
+// Improved intelligent title generation - NOW EXPORTED
+export function generateIntelligentTitle(messages: Message[]): string {
   console.log('🤖 Generating intelligent title for', messages.length, 'messages');
   
   if (messages.length === 0) {
@@ -456,7 +455,7 @@ export const getMessagesForSession = async (sessionId: string): Promise<Message[
   }
 };
 
-// New function to backfill missing intelligent titles for existing chats
+// New function to backfill missing intelligent titles for existing chats - NOW EXPORTED
 export const backfillMissingTitles = async (): Promise<void> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
