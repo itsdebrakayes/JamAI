@@ -63,7 +63,10 @@ const Index = () => {
 
   // Load chat history from local storage on component mount
   useEffect(() => {
+    console.log('🔍 Loading chat history from localStorage...');
     const storedHistory = localStorage.getItem('chatHistory');
+    console.log('📦 Raw stored history:', storedHistory);
+    
     if (storedHistory) {
       try {
         const parsedHistory = JSON.parse(storedHistory).map((chat: any) => ({
@@ -75,9 +78,33 @@ const Index = () => {
           }))
         }));
         setChatHistory(parsedHistory);
-        console.log('🗂️ Loaded chat history:', parsedHistory.length, 'chats');
+        console.log('✅ Successfully loaded chat history:', parsedHistory.length, 'chats');
+        console.log('📊 Chat history sample:', parsedHistory.slice(0, 2));
       } catch (error) {
-        console.error('Failed to parse chat history:', error);
+        console.error('❌ Failed to parse chat history:', error);
+      }
+    } else {
+      console.log('📝 No chat history found in localStorage');
+    }
+
+    // Also check for the alternative storage key
+    const altStoredHistory = localStorage.getItem('jamai_chat_list');
+    console.log('📦 Alternative stored history:', altStoredHistory);
+    
+    if (altStoredHistory && !storedHistory) {
+      try {
+        const parsedAltHistory = JSON.parse(altStoredHistory).map((chat: any) => ({
+          ...chat,
+          createdAt: new Date(chat.createdAt),
+          messages: chat.messages.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }))
+        }));
+        setChatHistory(parsedAltHistory);
+        console.log('✅ Successfully loaded alternative chat history:', parsedAltHistory.length, 'chats');
+      } catch (error) {
+        console.error('❌ Failed to parse alternative chat history:', error);
       }
     }
   }, []);
@@ -299,7 +326,15 @@ const Index = () => {
   };
 
   const hasExistingChats = chatHistory.length > 0 || messages.length > 0;
-  const showSummaryButton = messages.length > 0; // Always show if there are messages
+  const showSummaryButton = messages.length > 0;
+
+  console.log('🎯 Current state debug:', {
+    messagesLength: messages.length,
+    chatHistoryLength: chatHistory.length,
+    showSummaryButton,
+    hasExistingChats,
+    currentChatId
+  });
 
   return (
     <SidebarProvider>
@@ -446,15 +481,16 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-center bg-white dark:bg-black border-2 hover:shadow-md rounded-lg transition-all duration-200 group"
+                          className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group"
                           style={{
-                            borderColor: '#D1E7D7'
+                            borderColor: '#D1E7D7',
+                            backgroundColor: 'transparent'
                           }}
                           onMouseEnter={(e) => {
                             e.currentTarget.style.backgroundColor = '#E6F2EB';
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = '';
+                            e.currentTarget.style.backgroundColor = 'transparent';
                           }}
                         >
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
