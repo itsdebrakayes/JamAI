@@ -238,7 +238,7 @@ const Index = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/20">
+      <div className="min-h-screen flex w-full bg-background">
         <ChatHistorySidebar 
           chatHistory={chatHistory} 
           currentChatId={currentChatId}
@@ -339,9 +339,9 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-6 text-left bg-card hover:bg-card/80 border border-border rounded-xl transition-all duration-200 group hover:shadow-md"
+                          className="p-6 text-left bg-green-50 hover:bg-green-100 border-2 border-green-200 hover:border-green-300 rounded-xl transition-all duration-200 group hover:shadow-md dark:bg-green-950 dark:border-green-800 dark:hover:bg-green-900 dark:hover:border-green-700"
                         >
-                          <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                          <div className="text-sm font-medium text-green-800 dark:text-green-200 group-hover:text-green-900 dark:group-hover:text-green-100 transition-colors">
                             {suggestion.text}
                           </div>
                         </button>
