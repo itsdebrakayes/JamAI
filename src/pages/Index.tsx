@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -298,6 +299,7 @@ const Index = () => {
   };
 
   const hasExistingChats = chatHistory.length > 0 || messages.length > 0;
+  const showSummaryButton = messages.length > 0; // Always show if there are messages
 
   return (
     <SidebarProvider>
@@ -336,7 +338,7 @@ const Index = () => {
               </div>
               
               <div className="flex items-center gap-2">
-                {messages.length > 0 && (
+                {showSummaryButton && (
                   <>
                     <Button
                       onClick={() => setShowSummary(true)}
