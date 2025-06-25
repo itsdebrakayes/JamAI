@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
 import ChatMessage from '@/components/ChatMessage';
@@ -42,6 +41,9 @@ import { locationAwareService } from '@/services/locationAwareService';
 import { useAuth } from '@/contexts/AuthContext';
 import { Users } from 'lucide-react';
 import UserProfileSettings from '@/components/UserProfileSettings';
+import OnboardingTutorial from '@/components/OnboardingTutorial';
+import EmptyStateCard from '@/components/EmptyStateCard';
+import { MessageCircle, History, Sparkles } from 'lucide-react';
 
 // Define the structure of a suggestion item
 interface SuggestionItem {
@@ -76,6 +78,7 @@ const Index = () => {
   const [currentChatId, setCurrentChatId] = useState<string>('');
   const [showSettings, setShowSettings] = useState(false);
   const [migrationCompleted, setMigrationCompleted] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // ============================
   // HOOKS
@@ -142,9 +145,32 @@ const Index = () => {
     }
   };
 
-  // ============================
-  // MESSAGE HANDLING
-  // ============================
+  const checkOnboardingStatus = async () => {
+    if (!isGuest && user) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('onboarding_completed')
+          .eq('id', user.id)
+          .single();
+        
+        if (!error && !data?.onboarding_completed) {
+          setShowOnboarding(true);
+        }
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+      }
+    } else if (isGuest) {
+      const completed = localStorage.getItem('jamai_onboarding_completed');
+      if (!completed) {
+        setShowOnboarding(true);
+      }
+    }
+  };
+
+  const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
+  };
 
   const handleTypingComplete = () => {
     if (typingMessage) {
@@ -594,6 +620,9 @@ const Index = () => {
         // Load chat history
         await loadChatHistoryData();
         
+        // Check onboarding status
+        await checkOnboardingStatus();
+        
         setMigrationCompleted(true);
         console.log('✅ App initialization complete');
       } catch (error) {
@@ -785,6 +814,26 @@ const Index = () => {
                             </div>
                           )}
                         </div>
+
+                        {/* Enhanced empty state with better design */}
+                        {chatHistory.length === 0 ? (
+                          <EmptyStateCard
+                            icon={MessageCircle}
+                            title="Start Your First Conversation"
+                            description="Ready to chat with your Jamaican AI assistant? Ask me about Jamaica, local places, culture, or anything else. I'll respond in authentic Patois style!"
+                            actionLabel="Try a Sample Question"
+                            onAction={() => handleSuggestionClick('Tell me about Jamaica in a nutshell')}
+                            className="mb-6"
+                          />
+                        ) : (
+                          <EmptyStateCard
+                            icon={Sparkles}
+                            title="Ready for Another Chat?"
+                            description="Welcome back! I'm here to help with more questions about Jamaica, provide local insights, or just have a friendly conversation in Patois."
+                            className="mb-6"
+                          />
+                        )}
+
                         <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
                       </>
                     )}
@@ -876,6 +925,12 @@ const Index = () => {
               onClose={handleCloseTranslationMode}
             />
           )}
+
+          {/* Onboarding Tutorial */}
+          <OnboardingTutorial
+            isOpen={showOnboarding}
+            onComplete={handleOnboardingComplete}
+          />
         </div>
         <Toaster />
       </SidebarProvider>
