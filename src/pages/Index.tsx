@@ -1,1007 +1,336 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Languages, FileText, Settings, Key } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
-import TypingMessage from '@/components/TypingMessage';
 import ChatInput from '@/components/ChatInput';
 import TypingIndicator from '@/components/TypingIndicator';
-import ChatSuggestions from '@/components/ChatSuggestions';
-import ChatSummary from '@/components/ChatSummary';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
-import ThemeToggle from '@/components/ThemeToggle';
-import TranslationMode from '@/components/TranslationMode';
-import ProtectedRoute from '@/components/ProtectedRoute';
-import SubscriptionBadge from '@/components/SubscriptionBadge';
-import UsageMeter from '@/components/UsageMeter';
-import ApiKeyManager from '@/components/ApiKeyManager';
-import { Button } from '@/components/ui/button';
-import { Sidebar, SidebarContent, SidebarHeader, SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Toaster } from '@/components/ui/sonner';
-import { useToast } from '@/hooks/use-toast';
-import { useSubscription } from '@/hooks/useSubscription';
-import { supabase } from '@/integrations/supabase/client';
-import { Message } from '@/types/Message';
-import { 
-  getChatSessions, 
-  createChatSession, 
-  saveMessageToDatabase, 
-  getMessagesForSession,
-  deleteChatSession,
-  updateChatSessionTitle,
-  getChatHistory,
-  addToHistory,
-  loadChatHistory,
-  saveChatHistory,
-  backfillMissingTitles,
-  generateIntelligentTitle,
-  ChatHistory
-} from '@/utils/chatHistory';
-import { migrateLocalStorageToSupabase, shouldRunMigration, forceMigration } from '@/utils/migrationUtils';
-import { detectLanguage } from '@/utils/languageDetection';
-import { locationAwareService } from '@/services/locationAwareService';
-import { useAuth } from '@/contexts/AuthContext';
-import { Users } from 'lucide-react';
-import UserProfileSettings from '@/components/UserProfileSettings';
-import OnboardingTutorial from '@/components/OnboardingTutorial';
-import EmptyStateCard from '@/components/EmptyStateCard';
-import { MessageCircle, History, Sparkles } from 'lucide-react';
+import { SidebarProvider } from '@/components/ui/sidebar';
+import { useToast } from "@/components/ui/use-toast"
+import { MessageSquare, Plus } from 'lucide-react';
 
-// Define the structure of a suggestion item
-interface SuggestionItem {
-  id: number;
-  label: string;
-  query: string;
-}
+// Define the structure for chat messages
+type ChatMessageData = {
+  id: string;
+  content: string;
+  role: 'user' | 'assistant';
+  timestamp: Date;
+};
 
-// Type definition for the AI service
-type AIService = 'gemini' | 'openai';
+// Define the structure for chat history items
+type ChatHistory = {
+  id: string;
+  title: string;
+  messages: ChatMessageData[];
+  createdAt: Date;
+  autoTitle?: string;
+  keywords?: string[];
+  summary?: string;
+};
 
-// Initial suggestions for the chat
-const initialSuggestions: SuggestionItem[] = [
-  { id: 1, label: 'Explain Jamaica', query: 'Explain Jamaica in a nutshell' },
-  { id: 2, label: 'Patois phrases', query: 'Give me some common Patois phrases and their meanings' },
-  { id: 3, label: 'Best Jamaican food', query: 'What are the best Jamaican foods to try?' },
-  { id: 4, label: 'Talk like a Jamaican', query: 'Respond to this message in a Jamaican Patois style' },
+// Suggestion type
+type ChatSuggestion = {
+  title: string;
+  text: string;
+  icon: string;
+};
+
+// Mock chat suggestions
+const CHAT_SUGGESTIONS: ChatSuggestion[] = [
+  {
+    title: "Explain Patois",
+    text: "Explain Jamaican Patois and its origins.",
+    icon: "🇯🇲",
+  },
+  {
+    title: "Local Proverbs",
+    text: "Tell me a Jamaican proverb and its meaning.",
+    icon: "📜",
+  },
+  {
+    title: "Reggae History",
+    text: "Give me a brief history of Reggae music.",
+    icon: "🎶",
+  },
+  {
+    title: "Jamaican Cuisine",
+    text: "What are some popular Jamaican dishes?",
+    icon: "🍽️",
+  },
 ];
 
 const Index = () => {
-  // ============================
-  // STATE VARIABLES
-  // ============================
-
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Initialize state variables
+  const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [typingMessage, setTypingMessage] = useState<Message | null>(null);
-  const [showTranslationMode, setShowTranslationMode] = useState(false);
-  const [showChatSummary, setShowChatSummary] = useState(false);
-  const [currentService, setCurrentService] = useState<AIService>('gemini');
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<string>('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [migrationCompleted, setMigrationCompleted] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-
-  // ============================
-  // HOOKS
-  // ============================
-
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const requestTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
-  const { limits, usage, loading, checkLimit, incrementUsage, refetch } = useSubscription();
-  const { user, isGuest, guestMessagesRemaining, useGuestMessage } = useAuth();
 
-  // ============================
-  // UTILITY FUNCTIONS
-  // ============================
+  // Scroll to bottom on new message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Load chat history from local storage on component mount
+  useEffect(() => {
+    const storedHistory = localStorage.getItem('chatHistory');
+    if (storedHistory) {
+      setChatHistory(JSON.parse(storedHistory));
+    }
+  }, []);
+
+  // Save chat history to local storage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
+  }, [chatHistory]);
+
+  // Function to start a new chat
+  const startNewChat = () => {
+    const newChatId = uuidv4();
+    setCurrentChatId(newChatId);
+    setMessages([]);
   };
 
-  const generateMessageId = (): string => {
-    return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Function to load a specific chat from history
+  const loadChat = (chatId: string) => {
+    const chatToLoad = chatHistory.find((chat) => chat.id === chatId);
+    if (chatToLoad) {
+      setMessages(chatToLoad.messages);
+      setCurrentChatId(chatId);
+    }
   };
 
-  const generateChatId = (): string => {
-    // Generate proper UUID v4 format
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      const r = Math.random() * 16 | 0;
-      const v = c == 'x' ? r : (r & 0x3 | 0x8);
-      return v.toString(16);
+  // Function to delete specific chats from history
+  const deleteChats = (chatIds: string[]) => {
+    const updatedHistory = chatHistory.filter((chat) => !chatIds.includes(chat.id));
+    setChatHistory(updatedHistory);
+    if (chatIds.includes(currentChatId || '')) {
+      startNewChat(); // Start a new chat if the current chat is deleted
+    }
+  };
+
+  // Function to clear all chat history
+  const clearAllHistory = () => {
+    setChatHistory([]);
+    startNewChat();
+  };
+
+  // Function to rename a chat
+  const renameChat = (chatId: string, newTitle: string) => {
+    const updatedHistory = chatHistory.map(chat => {
+      if (chat.id === chatId) {
+        return { ...chat, title: newTitle };
+      }
+      return chat;
+    });
+    setChatHistory(updatedHistory);
+  };
+
+  // Core function to handle sending messages
+  const handleSendMessage = async (messageContent: string) => {
+    if (!messageContent.trim()) return;
+
+    // Add user message to the chat
+    const userMessage: ChatMessageData = {
+      id: uuidv4(),
+      content: messageContent,
+      role: 'user',
+      timestamp: new Date(),
+    };
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
+
+    // Set typing indicator to true
+    setIsTyping(true);
+
+    try {
+      // Simulate AI response (replace with actual API call)
+      const aiResponse = await simulateAIResponse(messageContent);
+
+      // Add AI message to the chat
+      const aiMessage: ChatMessageData = {
+        id: uuidv4(),
+        content: aiResponse,
+        role: 'assistant',
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, aiMessage]);
+
+      // Update chat history
+      updateChatHistory(userMessage, aiMessage);
+    } catch (error: any) {
+      console.error('Error processing message:', error);
+      toast({
+        title: "Uh oh! Something went wrong.",
+        description: error.message || "There was a problem processing your request.",
+        variant: "destructive",
+      })
+    } finally {
+      // Set typing indicator to false
+      setIsTyping(false);
+    }
+  };
+
+  // Simulate AI response (replace with actual API call)
+  const simulateAIResponse = async (userMessage: string): Promise<string> => {
+    // Basic Patois translation simulation
+    const patoisResponse = `Mi understand seh yu say "${userMessage}" ennit. Mek mi tink 'bout dat...`;
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
+    return patoisResponse;
+  };
+
+  const updateChatHistory = (userMessage: ChatMessageData, aiMessage: ChatMessageData) => {
+    setChatHistory((prevHistory) => {
+      // Check if there's an existing chat
+      const existingChatIndex = prevHistory.findIndex((chat) => chat.id === currentChatId);
+
+      if (existingChatIndex !== -1) {
+        // Update existing chat
+        const updatedChat = {
+          ...prevHistory[existingChatIndex],
+          messages: [...prevHistory[existingChatIndex].messages, userMessage, aiMessage],
+        };
+        const newHistory = [...prevHistory];
+        newHistory[existingChatIndex] = updatedChat;
+        return newHistory;
+      } else {
+        // Create new chat
+        const newChat: ChatHistory = {
+          id: currentChatId || uuidv4(),
+          title: `Chat started on ${new Date().toLocaleDateString()}`,
+          messages: [userMessage, aiMessage],
+          createdAt: new Date(),
+        };
+        return [...prevHistory, newChat];
+      }
     });
   };
 
-  const loadChatHistoryData = async () => {
-    try {
-      console.log('🔄 Loading chat history...');
-      
-      if (!isGuest) {
-        // Load from Supabase for authenticated users
-        const sessions = await getChatSessions();
-        console.log('📚 Loaded sessions from Supabase:', sessions.length, sessions);
-        
-        const chatHistoryData = sessions.map(session => ({
-          id: session.id,
-          title: session.title,
-          autoTitle: session.auto_title,
-          keywords: session.keywords,
-          summary: session.summary,
-          messages: [] as Message[],
-          createdAt: new Date(session.created_at)
-        }));
-        setChatHistory(chatHistoryData);
-        console.log('📚 Chat history state updated with:', chatHistoryData.length, 'chats');
-        
-        // Run backfill for missing titles (only once per session)
-        if (!sessionStorage.getItem('titles_backfilled')) {
-          console.log('🔄 Running title backfill process...');
-          await backfillMissingTitles();
-          sessionStorage.setItem('titles_backfilled', 'true');
-          
-          // Reload chat history after backfill
-          setTimeout(async () => {
-            const updatedSessions = await getChatSessions();
-            const updatedChatHistoryData = updatedSessions.map(session => ({
-              id: session.id,
-              title: session.title,
-              autoTitle: session.auto_title,
-              keywords: session.keywords,
-              summary: session.summary,
-              messages: [] as Message[],
-              createdAt: new Date(session.created_at)
-            }));
-            setChatHistory(updatedChatHistoryData);
-            console.log('🎉 Chat history updated after backfill');
-          }, 2000);
-        }
-      } else {
-        // Load from localStorage for guests
-        const localHistory = loadChatHistory();
-        console.log('📚 Loaded history from localStorage:', localHistory.length);
-        setChatHistory(localHistory);
-      }
-    } catch (error) {
-      console.error('❌ Error loading chat history:', error);
-      // Fallback to localStorage
-      const localHistory = loadChatHistory();
-      setChatHistory(localHistory);
-    }
+  // Handle suggestion click
+  const handleSuggestionClick = (suggestionText: string) => {
+    handleSendMessage(suggestionText);
   };
-
-  const checkOnboardingStatus = async () => {
-    if (!isGuest && user) {
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('onboarding_completed')
-          .eq('id', user.id)
-          .single();
-        
-        if (!error && data && !data.onboarding_completed) {
-          setShowOnboarding(true);
-        }
-      } catch (error) {
-        console.error('Error checking onboarding status:', error);
-      }
-    } else if (isGuest) {
-      const completed = localStorage.getItem('jamai_onboarding_completed');
-      if (!completed) {
-        setShowOnboarding(true);
-      }
-    }
-  };
-
-  const handleOnboardingComplete = () => {
-    setShowOnboarding(false);
-  };
-
-  const handleTypingComplete = () => {
-    if (typingMessage) {
-      const finalMessages = [...messages, typingMessage];
-      setMessages(finalMessages);
-      
-      // Save to chat history for guests
-      if (isGuest && messages.length > 0) {
-        const userMessage = messages[messages.length - 1];
-        addToHistory(userMessage, typingMessage);
-        
-        // Update local chat history list
-        const updatedHistory = [...chatHistory];
-        const currentChatIndex = updatedHistory.findIndex(chat => chat.id === currentChatId);
-        
-        if (currentChatIndex >= 0) {
-          updatedHistory[currentChatIndex].messages = finalMessages;
-        } else if (finalMessages.length >= 2) {
-          // Create new chat entry with intelligent title
-          const intelligentTitle = generateIntelligentTitle(finalMessages);
-          const newChat = {
-            id: currentChatId,
-            title: intelligentTitle,
-            autoTitle: intelligentTitle,
-            messages: finalMessages,
-            createdAt: new Date()
-          };
-          updatedHistory.unshift(newChat);
-        }
-        
-        setChatHistory(updatedHistory);
-        saveChatHistory(updatedHistory);
-      }
-      
-      setTypingMessage(null);
-    }
-    setIsTyping(false);
-    scrollToBottom();
-  };
-
-  const handleSendMessage = async (text: string) => {
-    if (!text.trim()) return;
-
-    if (isGuest) {
-      if (guestMessagesRemaining <= 0) {
-        toast({
-          title: 'Guest Limit Reached',
-          description: 'You have used all 10 free messages. Please sign up to continue using JamAI!',
-          variant: 'destructive'
-        });
-        return;
-      }
-      
-      const canUseMessage = useGuestMessage();
-      if (!canUseMessage) {
-        toast({
-          title: 'Guest Limit Reached',
-          description: 'You have used all 10 free messages. Please sign up to continue using JamAI!',
-          variant: 'destructive'
-        });
-        return;
-      }
-      
-      if (guestMessagesRemaining <= 3) {
-        toast({
-          title: `${guestMessagesRemaining - 1} messages remaining`,
-          description: 'Sign up for unlimited messages!',
-        });
-      }
-    } else {
-      const canSendMessage = await checkLimit('messages');
-      if (!canSendMessage) {
-        toast({
-          title: 'Message Limit Reached',
-          description: 'You have reached your daily message limit. Please upgrade your plan or wait until tomorrow.',
-          variant: 'destructive'
-        });
-        return;
-      }
-    }
-
-    const userMessage: Message = {
-      id: generateMessageId(),
-      text: text,
-      isUser: true,
-      timestamp: new Date(),
-    };
-
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    scrollToBottom();
-    setIsTyping(true);
-
-    // Handle session creation and management
-    let sessionId = currentChatId;
-    let isNewSession = false;
-    
-    if (!isGuest) {
-      // For authenticated users, create new session if needed
-      if (!sessionId || sessionId.length < 10) {
-        const tempTitle = text.length > 30 ? text.substring(0, 30) + '...' : text;
-        console.log('🆕 Creating new chat session with title:', tempTitle);
-        
-        try {
-          const newSessionId = await createChatSession(tempTitle);
-          if (newSessionId) {
-            sessionId = newSessionId;
-            setCurrentChatId(sessionId);
-            isNewSession = true;
-            console.log('✅ Created chat session:', sessionId);
-            
-            // Immediately add to chat history state
-            const newChatEntry = {
-              id: sessionId,
-              title: tempTitle,
-              autoTitle: tempTitle,
-              messages: newMessages,
-              createdAt: new Date()
-            };
-            setChatHistory(prev => [newChatEntry, ...prev]);
-            console.log('📚 Added new chat to history state');
-          } else {
-            console.error('❌ Failed to create chat session');
-            sessionId = generateChatId();
-            setCurrentChatId(sessionId);
-          }
-        } catch (error) {
-          console.error('❌ Error creating chat session:', error);
-          sessionId = generateChatId();
-          setCurrentChatId(sessionId);
-        }
-      }
-    } else {
-      // For guests, generate session ID if needed
-      if (!sessionId) {
-        sessionId = generateChatId();
-        setCurrentChatId(sessionId);
-        isNewSession = true;
-      }
-    }
-
-    // Save user message to database for authenticated users
-    if (!isGuest && sessionId && sessionId.includes('-')) {
-      try {
-        console.log('💾 Saving user message to database...');
-        const saveSuccess = await saveMessageToDatabase(sessionId, text, true, 'text', {});
-        if (saveSuccess) {
-          console.log('✅ User message saved successfully');
-        } else {
-          console.warn('⚠️ Failed to save user message to database');
-        }
-      } catch (error) {
-        console.error('❌ Error saving user message:', error);
-      }
-    }
-
-    // Set timeout for request
-    requestTimeoutRef.current = setTimeout(() => {
-      console.warn('Request timed out, stopping typing indicator');
-      setIsTyping(false);
-      toast({
-        title: 'Request Timeout',
-        description: 'The request took too long to complete. Please try again.',
-        duration: 5000,
-      });
-    }, 30000);
-
-    try {
-      const language = await detectLanguage(text);
-      
-      const response = await locationAwareService.processQuery(
-        text, 
-        language === 'patois', 
-        newMessages, 
-        'gemini'
-      );
-
-      if (requestTimeoutRef.current) {
-        clearTimeout(requestTimeoutRef.current);
-        requestTimeoutRef.current = null;
-      }
-
-      const aiMessage: Message = {
-        id: generateMessageId(),
-        text: response.message,
-        isUser: false,
-        timestamp: new Date(),
-      };
-
-      setTypingMessage(aiMessage);
-      
-      // Save AI message to database for authenticated users
-      if (!isGuest && sessionId && sessionId.includes('-')) {
-        try {
-          console.log('💾 Saving AI message to database...');
-          const saveSuccess = await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
-          if (saveSuccess) {
-            console.log('✅ AI message saved successfully - intelligent title will be generated');
-            await incrementUsage('messages');
-            
-            // Reload chat history after successful save to show updated intelligent title
-            setTimeout(async () => {
-              try {
-                console.log('🔄 Reloading chat history to show intelligent title...');
-                await loadChatHistoryData();
-                console.log('✅ Chat history reloaded with intelligent titles');
-              } catch (error) {
-                console.error('❌ Error reloading chat history:', error);
-              }
-            }, 1500);
-          } else {
-            console.warn('⚠️ Failed to save AI message to database');
-          }
-        } catch (error) {
-          console.error('❌ Error saving AI message:', error);
-        }
-      }
-
-    } catch (error: any) {
-      console.error('Error sending message:', error);
-      
-      if (requestTimeoutRef.current) {
-        clearTimeout(requestTimeoutRef.current);
-        requestTimeoutRef.current = null;
-      }
-      
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to send message. Please try again.',
-        duration: 5000,
-      });
-      setIsTyping(false);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    handleSendMessage(suggestion);
-  };
-
-  const handleNewChat = async () => {
-    console.log('🆕 Starting new chat...');
-    
-    // Save current chat only for guests (to localStorage)
-    if (isGuest && messages.length > 0 && currentChatId) {
-      try {
-        const updatedHistory = [...chatHistory];
-        const currentChatIndex = updatedHistory.findIndex(chat => chat.id === currentChatId);
-        
-        if (currentChatIndex >= 0) {
-          // Update existing chat
-          updatedHistory[currentChatIndex].messages = messages;
-        } else {
-          // Create new chat entry
-          const firstUserMessage = messages.find(m => m.isUser);
-          const newChat: ChatHistory = {
-            id: currentChatId,
-            title: firstUserMessage ? 
-              firstUserMessage.text.substring(0, 30) + (firstUserMessage.text.length > 30 ? '...' : '') : 
-              'New Chat',
-            messages: messages,
-            createdAt: new Date()
-          };
-          updatedHistory.unshift(newChat);
-        }
-        
-        setChatHistory(updatedHistory);
-        saveChatHistory(updatedHistory);
-        console.log('💾 Saved guest chat to localStorage');
-      } catch (error) {
-        console.error('❌ Error saving guest chat to localStorage:', error);
-      }
-    }
-
-    // Clear current chat state
-    setCurrentChatId('');
-    setMessages([]);
-    setTypingMessage(null);
-    console.log('✅ New chat started');
-  };
-
-  const handleLoadChat = async (chatId: string) => {
-    try {
-      console.log('🔄 Loading chat:', chatId);
-      
-      if (!isGuest) {
-        // Load from Supabase for authenticated users
-        const messages = await getMessagesForSession(chatId);
-        setCurrentChatId(chatId);
-        setMessages(messages);
-        setTypingMessage(null);
-        console.log('✅ Chat loaded from database with', messages.length, 'messages');
-      } else {
-        // Load from localStorage for guests
-        const chatData = chatHistory.find(chat => chat.id === chatId);
-        if (chatData) {
-          setCurrentChatId(chatId);
-          setMessages(chatData.messages);
-          setTypingMessage(null);
-          console.log('✅ Chat loaded from localStorage with', chatData.messages.length, 'messages');
-        }
-      }
-    } catch (error) {
-      console.error('❌ Error loading chat:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load chat',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleDeleteChats = async (chatIds: string[]) => {
-    try {
-      console.log('🗑️ Deleting chats:', chatIds);
-      
-      if (!isGuest) {
-        // Delete from Supabase for authenticated users
-        for (const chatId of chatIds) {
-          await deleteChatSession(chatId);
-        }
-        await loadChatHistoryData();
-        console.log('✅ Chats deleted from database');
-      } else {
-        // Delete from localStorage for guests
-        const updatedHistory = chatHistory.filter(chat => !chatIds.includes(chat.id));
-        setChatHistory(updatedHistory);
-        saveChatHistory(updatedHistory);
-        console.log('✅ Chats deleted from localStorage');
-      }
-      
-      if (chatIds.includes(currentChatId)) {
-        handleNewChat();
-      }
-      
-      toast({
-        title: 'Success',
-        description: `Deleted ${chatIds.length} chat${chatIds.length > 1 ? 's' : ''}`,
-      });
-    } catch (error) {
-      console.error('❌ Error deleting chats:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete chats',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleClearAllHistory = async () => {
-    try {
-      console.log('🗑️ Clearing all chat history...');
-      
-      if (!isGuest) {
-        // Clear from Supabase for authenticated users
-        const sessions = await getChatSessions();
-        for (const session of sessions) {
-          await deleteChatSession(session.id);
-        }
-        await loadChatHistoryData();
-        console.log('✅ All chat history cleared from database');
-      } else {
-        // Clear localStorage for guests
-        setChatHistory([]);
-        saveChatHistory([]);
-        console.log('✅ All chat history cleared from localStorage');
-      }
-      
-      handleNewChat();
-      toast({
-        title: 'Success',
-        description: 'All chat history cleared',
-      });
-    } catch (error) {
-      console.error('❌ Error clearing history:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to clear history',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleHeaderClick = () => {
-    handleNewChat();
-  };
-
-  const handleOpenChatSummary = () => {
-    setShowChatSummary(true);
-  };
-
-  const handleCloseChatSummary = () => {
-    setShowChatSummary(false);
-  };
-
-  const handleOpenTranslationMode = () => {
-    setShowTranslationMode(true);
-  };
-
-  const handleCloseTranslationMode = () => {
-    setShowTranslationMode(false);
-  };
-
-  const handleRenameChat = async (chatId: string, newTitle: string) => {
-    try {
-      console.log('✏️ Renaming chat:', chatId, 'to:', newTitle);
-      
-      if (!isGuest) {
-        // Update in Supabase for authenticated users
-        const success = await updateChatSessionTitle(chatId, newTitle);
-        if (success) {
-          await loadChatHistoryData();
-          console.log('✅ Chat renamed in database');
-        } else {
-          throw new Error('Failed to update chat title in database');
-        }
-      } else {
-        // Update in localStorage for guests
-        const updatedHistory = chatHistory.map(chat => 
-          chat.id === chatId ? { ...chat, title: newTitle } : chat
-        );
-        setChatHistory(updatedHistory);
-        saveChatHistory(updatedHistory);
-        console.log('✅ Chat renamed in localStorage');
-      }
-      
-      toast({
-        title: 'Success',
-        description: 'Chat renamed successfully',
-      });
-    } catch (error) {
-      console.error('❌ Error renaming chat:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to rename chat',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  // ============================
-  // EFFECTS
-  // ============================
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  useEffect(() => {
-    const initializeApp = async () => {
-      console.log('🚀 Initializing app...');
-      
-      try {
-        // Run migration for authenticated users only
-        if (!isGuest) {
-          // Check if there's any localStorage data that needs migration
-          const oldMessages = getChatHistory();
-          const oldChatHistory = loadChatHistory();
-          
-          if (oldMessages.length > 0 || oldChatHistory.length > 0) {
-            console.log('🔄 Found localStorage data, running force migration...');
-            const migrationSuccess = await forceMigration();
-            if (migrationSuccess) {
-              toast({
-                title: 'Data Migrated',
-                description: 'Your chat history has been successfully migrated to your account!',
-              });
-            }
-          } else {
-            // Standard migration check
-            const needsMigration = await shouldRunMigration();
-            if (needsMigration) {
-              console.log('🔄 Running standard localStorage to Supabase migration...');
-              const migrationSuccess = await migrateLocalStorageToSupabase();
-              if (migrationSuccess) {
-                toast({
-                  title: 'Data Migrated',
-                  description: 'Your chat history has been migrated to your account!',
-                });
-              }
-            }
-          }
-        }
-        
-        // Load chat history (with backfill for authenticated users)
-        await loadChatHistoryData();
-        
-        // Check onboarding status
-        await checkOnboardingStatus();
-        
-        setMigrationCompleted(true);
-        console.log('✅ App initialization complete');
-      } catch (error) {
-        console.error('❌ Error during app initialization:', error);
-        setMigrationCompleted(true);
-      }
-    };
-
-    initializeApp();
-  }, [isGuest]);
-
-  useEffect(() => {
-    return () => {
-      if (requestTimeoutRef.current) {
-        clearTimeout(requestTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // ============================
-  // RENDER
-  // ============================
 
   return (
-    <ProtectedRoute>
-      <SidebarProvider>
-        <div className="flex h-screen w-full relative">
-          {/* Chat History Sidebar - show for all users but with different functionality */}
-          <ChatHistorySidebar
-            chatHistory={chatHistory}
-            currentChatId={currentChatId}
-            onNewChat={handleNewChat}
-            onLoadChat={handleLoadChat}
-            onDeleteChats={handleDeleteChats}
-            onClearAllHistory={handleClearAllHistory}
-            onRenameChat={handleRenameChat}
-          />
-
-          {/* Main Content Area */}
-          <SidebarInset className="flex-1">
-            <div className="flex flex-col h-full relative">
-              {/* Header with navigation and controls */}
-              <header className="glass-effect border-b px-4 py-3 modern-shadow">
-                <div className="flex items-center justify-between max-w-6xl mx-auto">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={handleHeaderClick}
-                      title="Start new chat"
-                    >
-                      <img 
-                        src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-                        alt="JamAI Logo" 
-                        className="w-12 h-12 object-contain"
-                      />
-                      <div>
-                        <h1 className="font-bold text-lg jamaican-text-gradient">JamAI</h1>
-                        <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
-                      </div>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/20">
+        <ChatHistorySidebar 
+          chatHistory={chatHistory} 
+          currentChatId={currentChatId}
+          onNewChat={startNewChat}
+          onLoadChat={loadChat}
+          onDeleteChats={deleteChats}
+          onClearAllHistory={clearAllHistory}
+          onRenameChat={renameChat}
+        />
+        
+        <div className="flex-1 flex flex-col relative">
+          {/* Main content area */}
+          <div className="flex-1 flex flex-col">
+            {messages.length === 0 ? (
+              // Empty state with enhanced welcome message
+              <div className="flex-1 flex items-center justify-center p-4">
+                <div className="max-w-2xl w-full space-y-8 text-center">
+                  {/* Welcome header */}
+                  <div className="space-y-4">
+                    <div className="flex justify-center items-center gap-3 mb-6">
+                      <span className="text-4xl font-bold">🇯🇲</span>
+                      <h1 className="text-4xl font-bold jamaican-text-gradient">
+                        Welcome to JamAI
+                      </h1>
                     </div>
+                    <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
+                      Your AI assistant with a Jamaican twist. Ask me anything in English or Patois!
+                    </p>
                   </div>
-                  
-                  {isGuest && (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 border border-yellow-300 rounded-full">
-                        <Users className="w-4 h-4 text-yellow-700" />
-                        <span className="text-sm font-medium text-yellow-700">
-                          Guest: {guestMessagesRemaining} messages left
-                        </span>
-                      </div>
-                      <Button
-                        onClick={() => window.location.href = '/auth'}
-                        size="sm"
-                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
-                      >
-                        Sign Up / Log In
-                      </Button>
-                    </div>
-                  )}
 
-                  <div className="hidden md:flex items-center gap-3">
-                    <Button
-                      onClick={handleOpenChatSummary}
-                      variant="ghost"
-                      size="sm"
-                      className="group relative overflow-hidden bg-gradient-to-r from-green-400 via-green-300 to-green-500 hover:from-green-500 hover:via-green-400 hover:to-green-600 text-white font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
+                  {/* Enhanced Start New Chat button - larger than "Ready for another chat" */}
+                  <div className="space-y-6">
+                    <button
+                      onClick={startNewChat}
+                      className="w-full max-w-md mx-auto bg-gradient-to-r from-green-500 via-yellow-500 to-green-600 hover:from-green-600 hover:via-yellow-600 hover:to-green-700 text-white font-semibold py-4 px-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-3 text-lg"
                     >
-                      <div className="flex items-center gap-2 relative z-10">
-                        <FileText className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                        <span className="hidden sm:inline font-medium">Summary</span>
-                      </div>
-                    </Button>
-                    {messages.length > 0 && (
-                      <Button
-                        onClick={handleOpenTranslationMode}
-                        variant="ghost"
-                        size="sm"
-                        className="group relative overflow-hidden bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 hover:from-yellow-500 hover:via-yellow-400 hover:to-yellow-600 text-black font-medium shadow-lg hover:shadow-xl transition-all duration-300 border border-white/30 backdrop-blur-sm"
-                      >
-                        <div className="flex items-center gap-2 relative z-10">
-                          <Languages className="w-4 h-4 transition-transform duration-200 group-hover:scale-110" />
-                          <span className="hidden sm:inline font-medium">Translation</span>
-                        </div>
-                      </Button>
-                    )}
-                    <Sheet open={showSettings} onOpenChange={setShowSettings}>
-                      <SheetTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Settings className="w-4 h-4" />
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent side="right" className="w-96 overflow-y-auto">
-                        <SheetHeader>
-                          <SheetTitle>Settings & Profile</SheetTitle>
-                        </SheetHeader>
-                        <div className="mt-6">
-                          {isGuest ? (
-                            <div className="text-center py-12">
-                              <div className="mb-6">
-                                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4">
-                                  <span className="text-2xl">🇯🇲</span>
-                                </div>
-                                <h3 className="text-xl font-bold mb-2">Sign Up for Full Access</h3>
-                                <p className="text-muted-foreground mb-6">
-                                  Create an account to access settings, unlimited messages, and more features!
+                      <MessageSquare className="w-6 h-6" />
+                      Start a New Chat
+                    </button>
+                    
+                    {/* Chat suggestions */}
+                    <div className="space-y-4">
+                      <p className="text-sm text-muted-foreground font-medium">Try asking me about:</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                        {CHAT_SUGGESTIONS.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleSuggestionClick(suggestion.text)}
+                            className="p-4 text-left bg-card hover:bg-accent rounded-xl border border-border hover:border-accent-foreground/20 transition-all duration-200 group"
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="text-xl flex-shrink-0 mt-1">{suggestion.icon}</span>
+                              <div>
+                                <h3 className="font-medium text-sm mb-1 group-hover:text-accent-foreground">
+                                  {suggestion.title}
+                                </h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  {suggestion.text}
                                 </p>
                               </div>
-                              <div className="space-y-3">
-                                <Button
-                                  onClick={() => window.location.href = '/auth'}
-                                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
-                                >
-                                  Sign Up Now
-                                </Button>
-                                <div className="text-sm text-muted-foreground">
-                                  <p>You have {guestMessagesRemaining} messages remaining</p>
-                                </div>
-                              </div>
                             </div>
-                          ) : (
-                            <UserProfileSettings />
-                          )}
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-                    
-                    <ThemeToggle />
-                    <SubscriptionBadge />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </header>
-
-              {/* Main chat area */}
-              <div className="flex-1 flex flex-col overflow-hidden">
-                <div className="flex-1 overflow-y-auto px-4 py-6">
-                  <div className="max-w-4xl mx-auto space-y-6">
-                    {/* Welcome message and suggestions */}
-                    {messages.length === 0 && !typingMessage && (
-                      <>
-                        <div className="text-center py-12">
-                          <div className="mb-1 flex justify-center">
-                            <img 
-                              src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-                              alt="JamAI Logo" 
-                              className="w-32 h-32 object-contain"
-                            />
-                          </div>
-                          <h2 className="text-3xl font-bold mb-4 jamaican-text-gradient">
-                            Welcome to JamAI
-                          </h2>
-                          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                            Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, 
-                            find nearby places, and I'll respond in authentic Jamaican style!
-                          </p>
-                          {chatHistory.length > 0 && (
-                            <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-yellow-50 border border-green-200 rounded-xl max-w-lg mx-auto">
-                              <div className="flex items-center justify-center gap-2 mb-2">
-                                <Sparkles className="w-5 h-5 text-green-600" />
-                                <span className="text-green-800 font-semibold">Ready for another chat?</span>
-                              </div>
-                              <p className="text-green-700 text-sm">
-                                Welcome back! Ask me more about Jamaica or start a fresh conversation.
-                              </p>
-                            </div>
-                          )}
-                          {isGuest && (
-                            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-md mx-auto">
-                              <p className="text-yellow-800 font-medium">
-                                👋 You're trying JamAI as a guest!
-                              </p>
-                              <p className="text-yellow-700 text-sm mb-3">
-                                You have {guestMessagesRemaining} free messages. Sign up for unlimited access!
-                              </p>
-                              <Button
-                                onClick={() => window.location.href = '/auth'}
-                                size="sm"
-                                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
-                              >
-                                Sign Up Now
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Only show the main empty state for first time users */}
-                        {chatHistory.length === 0 && (
-                          <EmptyStateCard
-                            icon={MessageCircle}
-                            title="Start Your First Conversation"
-                            description="Ready to chat with your Jamaican AI assistant? Ask me about Jamaica, local places, culture, or anything else. I'll respond in authentic Patois style!"
-                            actionLabel="Try a Sample Question"
-                            onAction={() => handleSuggestionClick('Tell me about Jamaica in a nutshell')}
-                            className="mb-6 max-w-2xl mx-auto"
-                          />
-                        )}
-
-                        <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
-                      </>
-                    )}
-
-                    {/* Chat messages */}
+              </div>
+            ) : (
+              // Chat interface
+              <div className="flex-1 flex flex-col">
+                {/* Messages area */}
+                <div className="flex-1 overflow-y-auto">
+                  <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
                     {messages.map((message) => (
-                      <ChatMessage 
-                        key={message.id} 
-                        message={message.text}
-                        isUser={message.isUser}
+                      <ChatMessage
+                        key={message.id}
+                        message={message.content}
+                        isUser={message.role === 'user'}
                         timestamp={message.timestamp}
                       />
                     ))}
-
-                    {/* Typing message */}
-                    {typingMessage && (
-                      <TypingMessage
-                        key={typingMessage.id}
-                        fullMessage={typingMessage.text}
-                        isUser={typingMessage.isUser}
-                        timestamp={typingMessage.timestamp}
-                        onComplete={handleTypingComplete}
-                      />
-                    )}
-
-                    {/* Typing indicator */}
-                    {isTyping && !typingMessage && <TypingIndicator />}
-
+                    {isTyping && <TypingIndicator />}
                     <div ref={messagesEndRef} />
                   </div>
                 </div>
 
-                {/* Chat input area */}
-                <div className="px-4 pb-4">
+                {/* Ready for another chat section - smaller than "Start a new chat" */}
+                {messages.length > 0 && (
+                  <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm p-4">
+                    <div className="max-w-4xl mx-auto flex justify-center">
+                      <button
+                        onClick={startNewChat}
+                        className="bg-gradient-to-r from-green-500 via-yellow-500 to-green-600 hover:from-green-600 hover:via-yellow-600 hover:to-green-700 text-white font-medium py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Ready for another chat?
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Input area */}
+                <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4">
                   <div className="max-w-4xl mx-auto">
                     <ChatInput 
-                      onSendMessage={handleSendMessage} 
-                      disabled={isTyping || (isGuest && guestMessagesRemaining <= 0)}
+                      onSendMessage={handleSendMessage}
+                      disabled={isTyping}
                     />
-                    {isGuest && guestMessagesRemaining <= 0 && (
-                      <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-center">
-                        <p className="text-red-800 font-medium">Guest limit reached!</p>
-                        <p className="text-red-700 text-sm mb-3">
-                          Sign up now for unlimited messages and features.
-                        </p>
-                        <Button
-                          onClick={() => window.location.href = '/auth'}
-                          size="sm"
-                          className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
-                        >
-                          Sign Up Now
-                        </Button>
-                      </div>
-                    )}
-                    {isGuest && guestMessagesRemaining <= 3 && guestMessagesRemaining > 0 && (
-                      <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                        <p className="text-yellow-800 font-medium">Only {guestMessagesRemaining} messages left!</p>
-                        <p className="text-yellow-700 text-sm mb-3">
-                          Sign up now to get unlimited messages and keep the conversation going.
-                        </p>
-                        <Button
-                          onClick={() => window.location.href = '/auth'}
-                          size="sm"
-                          variant="outline"
-                          className="border-yellow-300 text-yellow-800 hover:bg-yellow-100"
-                        >
-                          Sign Up for Unlimited Messages
-                        </Button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
-            </div>
-          </SidebarInset>
-
-          {/* Chat Summary Overlay */}
-          {showChatSummary && (
-            <ChatSummary
-              messages={messages}
-              onClose={handleCloseChatSummary}
-            />
-          )}
-
-          {/* Translation Mode Overlay */}
-          {showTranslationMode && (
-            <TranslationMode
-              messages={messages}
-              onClose={handleCloseTranslationMode}
-            />
-          )}
-
-          {/* Onboarding Tutorial */}
-          <OnboardingTutorial
-            isOpen={showOnboarding}
-            onComplete={handleOnboardingComplete}
-          />
+            )}
+          </div>
         </div>
-        <Toaster />
-      </SidebarProvider>
-    </ProtectedRoute>
+      </div>
+    </SidebarProvider>
   );
 };
 
