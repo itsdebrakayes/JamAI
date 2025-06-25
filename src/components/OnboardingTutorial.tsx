@@ -99,7 +99,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
   const isLastStep = currentStep === onboardingSteps.length - 1;
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={handleSkip}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center justify-between">

@@ -20,6 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import chatSuggestionsData from '@/data/chatSuggestions.json';
+import { getChatSessions, getMessagesForSession, generateIntelligentTitle } from '@/utils/chatHistory';
 
 // Define the structure for chat messages
 type ChatMessageData = {
@@ -61,53 +62,85 @@ const Index = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages]);
 
-  // Load chat history from local storage on component mount
+  // Load chat history from both localStorage and database
   useEffect(() => {
-    console.log('🔍 Loading chat history from localStorage...');
-    const storedHistory = localStorage.getItem('chatHistory');
-    console.log('📦 Raw stored history:', storedHistory);
-    
-    if (storedHistory) {
-      try {
-        const parsedHistory = JSON.parse(storedHistory).map((chat: any) => ({
-          ...chat,
-          createdAt: new Date(chat.createdAt),
-          messages: chat.messages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }))
-        }));
-        setChatHistory(parsedHistory);
-        console.log('✅ Successfully loaded chat history:', parsedHistory.length, 'chats');
-        console.log('📊 Chat history sample:', parsedHistory.slice(0, 2));
-      } catch (error) {
-        console.error('❌ Failed to parse chat history:', error);
-      }
-    } else {
-      console.log('📝 No chat history found in localStorage');
-    }
+    const loadChatHistory = async () => {
+      console.log('🔍 Loading chat history...');
+      let loadedHistory: ChatHistory[] = [];
 
-    // Also check for the alternative storage key
-    const altStoredHistory = localStorage.getItem('jamai_chat_list');
-    console.log('📦 Alternative stored history:', altStoredHistory);
-    
-    if (altStoredHistory && !storedHistory) {
+      // First, try localStorage
       try {
-        const parsedAltHistory = JSON.parse(altStoredHistory).map((chat: any) => ({
-          ...chat,
-          createdAt: new Date(chat.createdAt),
-          messages: chat.messages.map((msg: any) => ({
-            ...msg,
-            timestamp: new Date(msg.timestamp)
-          }))
-        }));
-        setChatHistory(parsedAltHistory);
-        console.log('✅ Successfully loaded alternative chat history:', parsedAltHistory.length, 'chats');
+        const storedHistory = localStorage.getItem('chatHistory') || localStorage.getItem('jamai_chat_list');
+        console.log('📦 Raw stored history:', storedHistory);
+        
+        if (storedHistory) {
+          const parsedHistory = JSON.parse(storedHistory).map((chat: any) => ({
+            ...chat,
+            createdAt: new Date(chat.createdAt),
+            messages: chat.messages.map((msg: any) => ({
+              ...msg,
+              timestamp: new Date(msg.timestamp)
+            }))
+          }));
+          loadedHistory = parsedHistory;
+          console.log('✅ Loaded from localStorage:', loadedHistory.length, 'chats');
+        }
       } catch (error) {
-        console.error('❌ Failed to parse alternative chat history:', error);
+        console.error('❌ Failed to parse localStorage history:', error);
       }
-    }
-  }, []);
+
+      // If user is logged in, also load from database
+      if (user) {
+        try {
+          console.log('🔍 Loading chat sessions from database...');
+          const sessions = await getChatSessions();
+          console.log('📊 Database sessions:', sessions.length);
+
+          // Convert database sessions to ChatHistory format
+          const dbHistory: ChatHistory[] = await Promise.all(
+            sessions.map(async (session) => {
+              const messages = await getMessagesForSession(session.id);
+              return {
+                id: session.id,
+                title: session.title,
+                autoTitle: session.auto_title || undefined,
+                messages: messages.map(msg => ({
+                  id: msg.id,
+                  content: msg.text,
+                  role: msg.isUser ? 'user' : 'assistant',
+                  timestamp: msg.timestamp
+                })),
+                createdAt: new Date(session.created_at),
+                keywords: session.keywords || undefined,
+                summary: session.summary || undefined
+              };
+            })
+          );
+
+          // Merge localStorage and database history (database takes precedence)
+          const mergedHistory = [...loadedHistory];
+          dbHistory.forEach(dbChat => {
+            const existingIndex = mergedHistory.findIndex(chat => chat.id === dbChat.id);
+            if (existingIndex >= 0) {
+              mergedHistory[existingIndex] = dbChat; // Database version takes precedence
+            } else {
+              mergedHistory.push(dbChat);
+            }
+          });
+
+          loadedHistory = mergedHistory;
+          console.log('✅ Merged history:', loadedHistory.length, 'total chats');
+        } catch (error) {
+          console.error('❌ Failed to load database history:', error);
+        }
+      }
+
+      setChatHistory(loadedHistory);
+      console.log('📊 Final chat history:', loadedHistory.length, 'chats');
+    };
+
+    loadChatHistory();
+  }, [user]);
 
   // Save chat history to local storage whenever it changes
   useEffect(() => {
@@ -290,19 +323,44 @@ const Index = () => {
 
       if (existingChatIndex !== -1) {
         // Update existing chat
-        const updatedChat = {
+        const updatedMessages = [...prevHistory[existingChatIndex].messages, userMessage, aiMessage];
+        
+        // Generate intelligent title if this is the first exchange
+        let updatedChat = {
           ...prevHistory[existingChatIndex],
-          messages: [...prevHistory[existingChatIndex].messages, userMessage, aiMessage],
+          messages: updatedMessages,
         };
+
+        // If no auto title exists and we have enough messages, generate one
+        if (!updatedChat.autoTitle && updatedMessages.length >= 2) {
+          const intelligentTitle = generateIntelligentTitle(updatedMessages.map(msg => ({
+            id: msg.id,
+            text: msg.content,
+            isUser: msg.role === 'user',
+            timestamp: msg.timestamp
+          })));
+          updatedChat.autoTitle = intelligentTitle;
+          updatedChat.title = intelligentTitle;
+        }
+
         const newHistory = [...prevHistory];
         newHistory[existingChatIndex] = updatedChat;
         return newHistory;
       } else {
-        // Create new chat
+        // Create new chat with intelligent title
+        const newMessages = [userMessage, aiMessage];
+        const intelligentTitle = generateIntelligentTitle(newMessages.map(msg => ({
+          id: msg.id,
+          text: msg.content,
+          isUser: msg.role === 'user',
+          timestamp: msg.timestamp
+        })));
+
         const newChat: ChatHistory = {
           id: currentChatId || uuidv4(),
-          title: `Chat started on ${new Date().toLocaleDateString()}`,
-          messages: [userMessage, aiMessage],
+          title: intelligentTitle,
+          autoTitle: intelligentTitle,
+          messages: newMessages,
           createdAt: new Date(),
         };
         return [...prevHistory, newChat];
@@ -326,7 +384,7 @@ const Index = () => {
   };
 
   const hasExistingChats = chatHistory.length > 0 || messages.length > 0;
-  const showSummaryButton = messages.length > 0;
+  const showSummaryButton = messages.length > 0; // Show when current chat has messages
 
   console.log('🎯 Current state debug:', {
     messagesLength: messages.length,
