@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -280,17 +281,17 @@ const Index = () => {
                 <SidebarTrigger className="h-8 w-8" />
                 <button 
                   onClick={startNewChat}
-                  className="flex items-center gap-4 hover:opacity-80 transition-opacity cursor-pointer"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
                   aria-label="Start new chat"
                 >
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-16 h-16 object-contain"
+                    className="w-12 h-12 object-contain"
                   />
                   <div>
-                    <h1 className="text-2xl font-bold jamaican-text-gradient">JamAI</h1>
-                    <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
+                    <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
+                    <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
                   </div>
                 </button>
               </div>
@@ -301,7 +302,7 @@ const Index = () => {
                     onClick={() => setShowSummary(true)}
                     variant="ghost"
                     size="sm"
-                    className="h-9 px-3"
+                    className="h-9 px-3 bg-green-500 hover:bg-green-600 text-white rounded-xl"
                   >
                     <FileText className="w-4 h-4 mr-2" />
                     Summary
@@ -347,15 +348,15 @@ const Index = () => {
               <div className="flex-1 flex items-center justify-center p-4">
                 <div className="max-w-4xl w-full space-y-8 text-center">
                   {/* Welcome header */}
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="flex justify-center items-center gap-3 mb-6">
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-20 h-20 object-contain"
+                        className="w-24 h-24 object-contain"
                       />
                     </div>
-                    <h1 className="text-4xl font-bold jamaican-text-gradient mb-4 text-center">
+                    <h1 className="text-5xl font-bold jamaican-text-gradient mb-6 text-center">
                       Welcome to JamAI
                     </h1>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed text-center">
@@ -364,12 +365,12 @@ const Index = () => {
                   </div>
 
                   {/* Ready for another chat section */}
-                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 rounded-xl p-4 mb-6">
-                    <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300">
-                      <span className="text-lg">🌟</span>
-                      <span className="font-medium">Ready for another chat?</span>
+                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 rounded-xl p-6 mb-8">
+                    <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300 mb-2">
+                      <span className="text-xl">🌟</span>
+                      <span className="font-semibold text-lg">Ready for another chat?</span>
                     </div>
-                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">
+                    <p className="text-green-600 dark:text-green-400">
                       Welcome back! Ask me more about Jamaica or start a fresh conversation.
                     </p>
                   </div>
@@ -381,9 +382,9 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-left bg-white dark:bg-black border-2 border-green-600 dark:border-green-600 hover:bg-green-100 dark:hover:bg-green-200/20 rounded-lg transition-all duration-200 group hover:shadow-sm text-center"
+                          className="p-4 text-center bg-white dark:bg-gray-900 border-2 border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-500 dark:hover:border-green-500 rounded-xl transition-all duration-200 group hover:shadow-md"
                         >
-                          <div className="text-sm font-medium text-green-800 dark:text-green-200 group-hover:text-green-900 dark:group-hover:text-green-100 transition-colors">
+                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
                             {suggestion.text}
                           </div>
                         </button>
@@ -397,7 +398,7 @@ const Index = () => {
               <div className="flex-1 flex flex-col">
                 {/* Messages area */}
                 <div className="flex-1 overflow-y-auto">
-                  <div className="max-w-4xl mx-auto px-4 py-6 space-y-6 text-center">
+                  <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
                     {messages.map((message) => (
                       <ChatMessage
                         key={message.id}
