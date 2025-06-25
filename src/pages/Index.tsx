@@ -326,10 +326,10 @@ const Index = () => {
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-12 h-12 object-contain"
+                    className="w-10 h-10 object-contain"
                   />
                   <div className="text-left">
-                    <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
+                    <h1 className="text-lg font-bold jamaican-text-gradient">JamAI</h1>
                     <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
                   </div>
                 </button>
@@ -444,7 +444,16 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-center bg-white dark:bg-black border-2 border-green-400 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-950/50 hover:border-green-600 dark:hover:border-green-400 rounded-lg transition-all duration-200 group hover:shadow-md"
+                          className="p-3 text-center bg-white dark:bg-black border-2 hover:shadow-md rounded-lg transition-all duration-200 group"
+                          style={{
+                            borderColor: '#D1E7D7'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#E6F2EB';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '';
+                          }}
                         >
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
                             {suggestion.text}
