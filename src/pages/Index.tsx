@@ -166,17 +166,41 @@ const Index = () => {
         variant: "destructive",
       })
     } finally {
-      // Set typing indicator to false
+      // Always set typing indicator to false, even if there's an error
       setIsTyping(false);
     }
   };
 
-  // Simulate AI response (replace with actual API call)
+  // Enhanced AI response simulation with proper error handling
   const simulateAIResponse = async (userMessage: string): Promise<string> => {
-    // Basic Patois translation simulation
-    const patoisResponse = `Mi understand seh yu say "${userMessage}" ennit. Mek mi tink 'bout dat...`;
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
-    return patoisResponse;
+    const lowerMessage = userMessage.toLowerCase();
+    
+    try {
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Handle weather queries
+      if (lowerMessage.includes('weather')) {
+        return `🌴 Weather inna Jamaica nice today! Sunny and warm, bout 28°C (82°F). Perfect weather fi go beach or just lime outside. Di trade winds a blow nice breeze too! What else yuh waan know bout Jamaica weather?`;
+      }
+      
+      // Handle food queries
+      if (lowerMessage.includes('food') || lowerMessage.includes('eat') || lowerMessage.includes('hungry')) {
+        return `Yow! Mi know some nice Jamaican food fi yuh! Try some jerk chicken, rice and peas, curry goat, or ackee and saltfish. All a dem taste real good! Which one yuh waan learn bout?`;
+      }
+      
+      // Handle patois teaching
+      if (lowerMessage.includes('patois') || lowerMessage.includes('teach')) {
+        return `Big up! Mi ago teach yuh some patois. "Wah gwaan" means "What's going on?" and "Irie" means everything good. "Big up yuself" means respect yuself. Want fi learn more?`;
+      }
+      
+      // Default response
+      return `Mi understand seh yu say "${userMessage}" ennit. Dat interesting! Tell mi more bout what yuh waan know, mi here fi help yuh learn bout Jamaica culture and language.`;
+      
+    } catch (error) {
+      console.error('Error in simulateAIResponse:', error);
+      throw new Error('Failed to generate response');
+    }
   };
 
   const updateChatHistory = (userMessage: ChatMessageData, aiMessage: ChatMessageData) => {
