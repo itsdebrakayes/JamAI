@@ -154,7 +154,7 @@ const Index = () => {
           .eq('id', user.id)
           .single();
         
-        if (!error && !data?.onboarding_completed) {
+        if (!error && data && !data.onboarding_completed) {
           setShowOnboarding(true);
         }
       } catch (error) {

@@ -79,13 +79,11 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
     // Mark onboarding as completed
     if (user) {
       try {
+        // Use update instead of upsert to avoid the TypeScript error
         await supabase
           .from('profiles')
-          .upsert({
-            id: user.id,
-            onboarding_completed: true,
-            updated_at: new Date().toISOString()
-          });
+          .update({ onboarding_completed: true })
+          .eq('id', user.id);
       } catch (error) {
         console.error('Error updating onboarding status:', error);
       }

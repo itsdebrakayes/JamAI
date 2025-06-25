@@ -94,6 +94,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string | null
+          onboarding_completed: boolean | null
           preferences: Json | null
           subscription_tier: string | null
           updated_at: string
@@ -105,6 +106,7 @@ export type Database = {
           first_name?: string
           id: string
           last_name?: string | null
+          onboarding_completed?: boolean | null
           preferences?: Json | null
           subscription_tier?: string | null
           updated_at?: string
@@ -116,6 +118,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string | null
+          onboarding_completed?: boolean | null
           preferences?: Json | null
           subscription_tier?: string | null
           updated_at?: string
