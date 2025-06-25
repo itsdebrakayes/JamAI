@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -10,6 +9,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
 import UserProfileSettings from '@/components/UserProfileSettings';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useToast } from "@/hooks/use-toast"
 import { MessageSquare, Plus, Settings, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -280,15 +280,29 @@ const Index = () => {
                   </Button>
                 )}
                 
-                <Button
-                  onClick={() => setShowSettings(true)}
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 px-3"
-                >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </Button>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 px-3"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Settings
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[400px] sm:w-[400px]">
+                    <SheetHeader>
+                      <SheetTitle className="flex items-center gap-3">
+                        <Settings className="w-6 h-6" />
+                        Settings
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6">
+                      <UserProfileSettings />
+                    </div>
+                  </SheetContent>
+                </Sheet>
                 
                 <ThemeToggle />
               </div>
@@ -307,7 +321,7 @@ const Index = () => {
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-16 h-16 object-contain"
+                        className="w-24 h-24 object-contain"
                       />
                     </div>
                     <h1 className="text-4xl font-bold jamaican-text-gradient mb-4">
@@ -325,7 +339,7 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-4 text-left bg-card/60 backdrop-blur-sm hover:bg-card border border-border/50 hover:border-border rounded-2xl transition-all duration-200 group"
+                          className="p-6 text-left bg-card hover:bg-card/80 border border-border rounded-xl transition-all duration-200 group hover:shadow-md"
                         >
                           <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
                             {suggestion.text}
@@ -389,21 +403,6 @@ const Index = () => {
               messages={convertToMessages(messages)}
               onClose={() => setShowSummary(false)}
             />
-          )}
-
-          {/* Settings Modal */}
-          {showSettings && (
-            <Dialog open={showSettings} onOpenChange={setShowSettings}>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-3">
-                    <Settings className="w-6 h-6" />
-                    Settings
-                  </DialogTitle>
-                </DialogHeader>
-                <UserProfileSettings />
-              </DialogContent>
-            </Dialog>
           )}
         </div>
       </div>
