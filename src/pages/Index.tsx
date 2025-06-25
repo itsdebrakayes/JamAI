@@ -410,18 +410,18 @@ const Index = () => {
                     </div>
                   </div>
                 )}
-
-                {/* Input area */}
-                <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4">
-                  <div className="max-w-4xl mx-auto">
-                    <ChatInput 
-                      onSendMessage={handleSendMessage}
-                      disabled={isTyping}
-                    />
-                  </div>
-                </div>
               </div>
             )}
+
+            {/* Input area - Always show at bottom */}
+            <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4">
+              <div className="max-w-4xl mx-auto">
+                <ChatInput 
+                  onSendMessage={handleSendMessage}
+                  disabled={isTyping}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Summary Modal */}
