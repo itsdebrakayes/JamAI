@@ -34,7 +34,7 @@ type ChatSuggestion = {
   icon: string;
 };
 
-// Mock chat suggestions
+// Updated chat suggestions with the ones you liked
 const CHAT_SUGGESTIONS: ChatSuggestion[] = [
   {
     title: "Explain Patois",
@@ -252,7 +252,7 @@ const Index = () => {
           {/* Main content area */}
           <div className="flex-1 flex flex-col">
             {messages.length === 0 ? (
-              // Empty state with enhanced welcome message
+              // Empty state with enhanced welcome message - same for all users (authenticated, guest, or anonymous)
               <div className="flex-1 flex items-center justify-center p-4">
                 <div className="max-w-2xl w-full space-y-8 text-center">
                   {/* Welcome header */}
