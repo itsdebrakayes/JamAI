@@ -26,7 +26,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
     
     setIsProcessing(true);
     try {
-      const prompt = `Please provide a concise summary of the following text in both English and Jamaican Patois:\n\n${inputText}`;
+      const prompt = `Please provide a concise summary of the following text. Respond in both English and Jamaican Patois for comparison:\n\n${inputText}`;
       const response = await geminiService.generateResponse(prompt, false, []);
       setSummary(response.message);
     } catch (error) {
@@ -76,12 +76,19 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
         aria-describedby="chat-summary-description"
       >
         <DialogHeader>
-          <DialogTitle className="text-2xl font-semibold flex items-center gap-3">
-            <FileText className="w-6 h-6 text-primary" aria-hidden="true" />
-            Chat Summary & Translation
-          </DialogTitle>
+          <div className="flex items-center gap-3">
+            <img 
+              src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+              alt="JamAI Crest" 
+              className="w-6 h-6 object-contain"
+            />
+            <DialogTitle className="text-2xl font-semibold flex items-center gap-3">
+              <FileText className="w-6 h-6 text-primary" aria-hidden="true" />
+              Text Summary & Translation
+            </DialogTitle>
+          </div>
           <p id="chat-summary-description" className="text-muted-foreground mt-2">
-            Paste text below to get summaries or translations (auto-detects language)
+            Paste any large text below to get quick summaries in English and Patois, or translate between languages
           </p>
         </DialogHeader>
 
@@ -90,18 +97,18 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
           {/* Input Area */}
           <div>
             <label htmlFor="text-input" className="text-sm font-medium mb-2 block">
-              Text to Process
+              Large Text to Process
             </label>
             <Textarea
               id="text-input"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              placeholder="Paste your text here for summary or translation..."
+              placeholder="Paste your large text here for summarization or translation..."
               className="min-h-[120px] resize-none"
               aria-describedby="text-input-help"
             />
             <div id="text-input-help" className="sr-only">
-              Enter or paste text to summarize or translate
+              Enter or paste large text to summarize or translate
             </div>
           </div>
 
@@ -121,10 +128,10 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
               ) : (
                 <FileText className="w-4 h-4 mr-2" aria-hidden="true" />
               )}
-              Summarize
+              Summarize Text
             </Button>
             <div id="summarize-help" className="sr-only">
-              Generate a summary of the input text
+              Generate a concise summary of large text in both English and Patois
             </div>
             
             <Button
@@ -145,7 +152,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
               Auto-Translate
             </Button>
             <div id="translate-help" className="sr-only">
-              Automatically translate the input text between English and Jamaican Patois
+              Automatically translate text between English and Jamaican Patois
             </div>
           </div>
 

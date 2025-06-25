@@ -43,10 +43,12 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
           
           let translatedText: string;
           
+          // Always translate to the opposite language
           if (detectedLanguage === 'patois') {
+            console.log('🔄 Translating from Patois to English...');
             translatedText = await translateToEnglish(message.text);
           } else {
-            // If it's English (or detected as English), translate to Patois
+            console.log('🔄 Translating from English to Patois...');
             translatedText = await translateToPatois(message.text);
           }
           
@@ -73,19 +75,19 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
 
   const translateToEnglish = async (patoisText: string): Promise<string> => {
     try {
-      console.log('🔄 Translating Patois to English:', patoisText.substring(0, 50) + '...');
+      console.log('🔄 Calling Gemini for Patois to English translation...');
       
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          userMessage: `Please translate this Jamaican Patois text to clear, natural English while preserving the meaning and tone: "${patoisText}"`,
-          isUserMessagePatois: false,
+          userMessage: `Please translate this Jamaican Patois text to clear, natural English while preserving the meaning and tone. Only provide the translation, no explanation: "${patoisText}"`,
+          isUserMessagePatois: false, // We want English response
           conversationHistory: [],
           storedKnowledge: ''
         }
       });
 
       if (error) {
-        console.error('Translation error:', error);
+        console.error('Gemini translation error:', error);
         throw new Error(`Translation service error: ${error.message}`);
       }
       
@@ -93,7 +95,7 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
         throw new Error('No translation response received');
       }
       
-      console.log('✅ Translation successful');
+      console.log('✅ Patois to English translation successful');
       return data.message;
     } catch (error) {
       console.error('English Translation Error:', error);
@@ -103,19 +105,19 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
 
   const translateToPatois = async (englishText: string): Promise<string> => {
     try {
-      console.log('🔄 Translating English to Patois:', englishText.substring(0, 50) + '...');
+      console.log('🔄 Calling Gemini for English to Patois translation...');
       
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          userMessage: `Please translate this English text to authentic Jamaican Patois while keeping the meaning and tone: "${englishText}"`,
-          isUserMessagePatois: true,
+          userMessage: `Please translate this English text to authentic Jamaican Patois while keeping the meaning and tone. Only provide the translation, no explanation: "${englishText}"`,
+          isUserMessagePatois: true, // We want Patois response
           conversationHistory: [],
           storedKnowledge: ''
         }
       });
 
       if (error) {
-        console.error('Translation error:', error);
+        console.error('Gemini translation error:', error);
         throw new Error(`Translation service error: ${error.message}`);
       }
       
@@ -123,7 +125,7 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
         throw new Error('No translation response received');
       }
       
-      console.log('✅ Translation successful');
+      console.log('✅ English to Patois translation successful');
       return data.message;
     } catch (error) {
       console.error('Patois Translation Error:', error);

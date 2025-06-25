@@ -40,10 +40,10 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     id: 4,
-    title: "Translation & Summary",
-    description: "Use the Translation button to convert between English and Patois, or the Summary button to get a quick overview of your conversation. Perfect for learning or reviewing!",
+    title: "Summary & Translation Tools",
+    description: "Use the Summary button to quickly summarize large blocks of text and get responses in English or Patois. The Translation button converts AI responses between English and Patois automatically!",
     icon: <Languages className="w-8 h-8 text-yellow-500" />,
-    highlight: "Translation & Summary tools"
+    highlight: "Text summarization & auto-translation"
   },
   {
     id: 5,
@@ -103,9 +103,16 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-bold">
-              Getting Started
-            </DialogTitle>
+            <div className="flex items-center gap-3">
+              <img 
+                src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+                alt="JamAI Crest" 
+                className="w-8 h-8 object-contain"
+              />
+              <DialogTitle className="text-xl font-bold">
+                Getting Started
+              </DialogTitle>
+            </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary">
                 {currentStep + 1} of {onboardingSteps.length}
