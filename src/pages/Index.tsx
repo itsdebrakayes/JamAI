@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -259,21 +260,23 @@ const Index = () => {
           {/* Header */}
           <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4">
             <div className="max-w-4xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-4">
                 <SidebarTrigger className="h-8 w-8" />
                 <img 
                   src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                   alt="JamAI Logo" 
-                  className="w-8 h-8 object-contain"
+                  className="w-16 h-16 object-contain"
                 />
                 <div>
-                  <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
-                  <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
+                  <h1 className="text-2xl font-bold jamaican-text-gradient">JamAI</h1>
+                  <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
                 </div>
               </div>
               
               <div className="flex items-center gap-3">
                 <SubscriptionBadge />
+                
+                <ThemeToggle />
                 
                 <Sheet>
                   <SheetTrigger asChild>
@@ -311,8 +314,6 @@ const Index = () => {
                     Summary
                   </Button>
                 )}
-                
-                <ThemeToggle />
               </div>
             </div>
           </header>
@@ -329,7 +330,7 @@ const Index = () => {
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-16 h-16 object-contain"
+                        className="w-20 h-20 object-contain"
                       />
                     </div>
                     <h1 className="text-4xl font-bold jamaican-text-gradient mb-4">
