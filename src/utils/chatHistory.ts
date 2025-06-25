@@ -44,13 +44,23 @@ function generateUUID(): string {
   });
 }
 
-// Generate intelligent title from conversation
+// Improved intelligent title generation
 function generateIntelligentTitle(messages: Message[]): string {
-  if (messages.length === 0) return 'New Chat';
+  console.log('🤖 Generating intelligent title for', messages.length, 'messages');
+  
+  if (messages.length === 0) {
+    console.log('⚠️ No messages found for title generation');
+    return 'New Chat';
+  }
   
   const firstUserMessage = messages.find(m => m.isUser)?.text || '';
   
-  if (firstUserMessage.length === 0) return 'New Chat';
+  if (firstUserMessage.length === 0) {
+    console.log('⚠️ No user message found for title generation');
+    return 'New Chat';
+  }
+  
+  console.log('📝 First user message for title:', firstUserMessage.substring(0, 50) + '...');
   
   // Extract meaningful parts and create a concise title
   const cleanText = firstUserMessage
@@ -61,22 +71,35 @@ function generateIntelligentTitle(messages: Message[]): string {
   // Create title based on content patterns
   if (cleanText.toLowerCase().includes('recipe') || cleanText.toLowerCase().includes('cook')) {
     const match = cleanText.match(/recipe|cook.*?(\w+)/i);
-    return match ? `Recipe: ${match[1]}` : 'Recipe Discussion';
+    const title = match ? `Recipe: ${match[1]}` : 'Recipe Discussion';
+    console.log('🍳 Generated recipe title:', title);
+    return title;
   }
   
   if (cleanText.toLowerCase().includes('translate') || cleanText.toLowerCase().includes('patois')) {
+    console.log('🌐 Generated translation title');
     return 'Translation Help';
   }
   
   if (cleanText.toLowerCase().includes('help') || cleanText.toLowerCase().includes('how')) {
     const topic = cleanText.split(/help|how/i)[1]?.trim().split(' ').slice(0, 3).join(' ');
-    return topic ? `Help: ${topic}` : 'Help Request';
+    const title = topic ? `Help: ${topic}` : 'Help Request';
+    console.log('❓ Generated help title:', title);
+    return title;
+  }
+  
+  if (cleanText.toLowerCase().includes('jamaica') || cleanText.toLowerCase().includes('jamaican')) {
+    console.log('🇯🇲 Generated Jamaica title');
+    return 'About Jamaica';
   }
   
   // Default: use first 40 characters
-  return cleanText.length > 40 
+  const title = cleanText.length > 40 
     ? cleanText.substring(0, 40) + '...'
     : cleanText || 'New Chat';
+  
+  console.log('💬 Generated default title:', title);
+  return title;
 }
 
 // Extract conversation keywords
@@ -205,7 +228,7 @@ export const loadChatHistory = (): ChatHistory[] => {
   }
 };
 
-// Enhanced Supabase functions with better error handling and real-time saving
+// Enhanced Supabase functions with better error handling and reliable title generation
 export const createChatSession = async (title: string): Promise<string | null> => {
   try {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -272,6 +295,7 @@ export const getChatSessions = async (): Promise<ChatSession[]> => {
   }
 };
 
+// Improved message saving with reliable intelligent title generation
 export const saveMessageToDatabase = async (
   sessionId: string,
   content: string,
@@ -309,6 +333,8 @@ export const saveMessageToDatabase = async (
       return false;
     }
 
+    console.log(`✅ Message saved to database - User: ${isUser}, Session: ${sessionId}`);
+
     // Update chat session's updated_at timestamp
     await supabase
       .from('chat_sessions')
@@ -316,18 +342,27 @@ export const saveMessageToDatabase = async (
       .eq('id', sessionId)
       .eq('user_id', user.id);
 
-    // Generate intelligent title and metadata after AI response
+    // Generate intelligent title and metadata after AI response (not user message)
     if (!isUser) {
+      console.log('🤖 AI message saved, generating intelligent title...');
+      
       try {
         // Get all messages for this session to generate intelligent data
-        const { data: sessionMessages } = await supabase
+        const { data: sessionMessages, error: messagesError } = await supabase
           .from('messages')
           .select('*')
           .eq('session_id', sessionId)
           .eq('user_id', user.id)
           .order('created_at', { ascending: true });
 
+        if (messagesError) {
+          console.error('❌ Error fetching session messages for title generation:', messagesError);
+          return true; // Message was saved, just title generation failed
+        }
+
         if (sessionMessages && sessionMessages.length > 0) {
+          console.log(`📚 Found ${sessionMessages.length} messages for intelligent title generation`);
+          
           const messages: Message[] = sessionMessages.map((msg: DatabaseMessage) => ({
             id: msg.id,
             text: msg.content,
@@ -340,8 +375,15 @@ export const saveMessageToDatabase = async (
           const keywords = extractKeywords(messages);
           const summary = generateSummary(messages);
 
+          console.log('🎯 Generated intelligent data:', {
+            autoTitle,
+            keywords: keywords.slice(0, 3),
+            summary: summary.substring(0, 50) + '...',
+            messageCount: messages.length
+          });
+
           // Update the chat session with intelligent data
-          await supabase
+          const { error: updateError } = await supabase
             .from('chat_sessions')
             .update({ 
               auto_title: autoTitle,
@@ -353,14 +395,19 @@ export const saveMessageToDatabase = async (
             .eq('id', sessionId)
             .eq('user_id', user.id);
 
-          console.log(`🤖 Generated intelligent title: "${autoTitle}" for session ${sessionId}`);
+          if (updateError) {
+            console.error('❌ Error updating chat session with intelligent data:', updateError);
+          } else {
+            console.log(`✅ Successfully generated intelligent title: "${autoTitle}" for session ${sessionId}`);
+          }
+        } else {
+          console.log('⚠️ No messages found for session, cannot generate intelligent title');
         }
       } catch (titleError) {
-        console.log('⚠️ Could not generate intelligent title:', titleError);
+        console.error('❌ Error in intelligent title generation process:', titleError);
       }
     }
 
-    console.log('✅ Message saved to database');
     return true;
   } catch (error) {
     console.error('❌ Error saving message to database:', error);
@@ -406,6 +453,87 @@ export const getMessagesForSession = async (sessionId: string): Promise<Message[
   } catch (error) {
     console.error('❌ Error fetching messages for session:', error);
     return [];
+  }
+};
+
+// New function to backfill missing intelligent titles for existing chats
+export const backfillMissingTitles = async (): Promise<void> => {
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      console.log('🔐 Cannot backfill titles without authenticated user');
+      return;
+    }
+
+    // Get sessions that don't have auto_title or have empty auto_title
+    const { data: sessionsNeedingTitles, error: sessionsError } = await supabase
+      .from('chat_sessions')
+      .select('id, title')
+      .eq('user_id', user.id)
+      .or('auto_title.is.null,auto_title.eq.');
+
+    if (sessionsError) {
+      console.error('❌ Error fetching sessions needing titles:', sessionsError);
+      return;
+    }
+
+    if (!sessionsNeedingTitles || sessionsNeedingTitles.length === 0) {
+      console.log('✅ No sessions need title backfill');
+      return;
+    }
+
+    console.log(`🔄 Backfilling titles for ${sessionsNeedingTitles.length} sessions...`);
+
+    for (const session of sessionsNeedingTitles) {
+      try {
+        // Get messages for this session
+        const { data: sessionMessages, error: messagesError } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('session_id', session.id)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: true });
+
+        if (messagesError || !sessionMessages || sessionMessages.length === 0) {
+          console.log(`⚠️ No messages found for session ${session.id}, skipping`);
+          continue;
+        }
+
+        const messages: Message[] = sessionMessages.map((msg: DatabaseMessage) => ({
+          id: msg.id,
+          text: msg.content,
+          isUser: msg.is_user,
+          timestamp: new Date(msg.created_at)
+        }));
+
+        // Generate intelligent data
+        const autoTitle = generateIntelligentTitle(messages);
+        const keywords = extractKeywords(messages);
+        const summary = generateSummary(messages);
+
+        // Update the session
+        await supabase
+          .from('chat_sessions')
+          .update({ 
+            auto_title: autoTitle,
+            keywords: keywords,
+            summary: summary,
+            message_count: messages.length,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', session.id)
+          .eq('user_id', user.id);
+
+        console.log(`✅ Backfilled title for session ${session.id}: "${autoTitle}"`);
+      } catch (sessionError) {
+        console.error(`❌ Error backfilling title for session ${session.id}:`, sessionError);
+      }
+    }
+
+    console.log('🎉 Completed title backfill process');
+  } catch (error) {
+    console.error('❌ Error in backfill process:', error);
   }
 };
 

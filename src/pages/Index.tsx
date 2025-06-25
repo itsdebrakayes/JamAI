@@ -131,6 +131,29 @@ const Index = () => {
         }));
         setChatHistory(chatHistoryData);
         console.log('📚 Chat history state updated with:', chatHistoryData.length, 'chats');
+        
+        // Run backfill for missing titles (only once per session)
+        if (!sessionStorage.getItem('titles_backfilled')) {
+          console.log('🔄 Running title backfill process...');
+          await backfillMissingTitles();
+          sessionStorage.setItem('titles_backfilled', 'true');
+          
+          // Reload chat history after backfill
+          setTimeout(async () => {
+            const updatedSessions = await getChatSessions();
+            const updatedChatHistoryData = updatedSessions.map(session => ({
+              id: session.id,
+              title: session.title,
+              autoTitle: session.auto_title,
+              keywords: session.keywords,
+              summary: session.summary,
+              messages: [] as Message[],
+              createdAt: new Date(session.created_at)
+            }));
+            setChatHistory(updatedChatHistoryData);
+            console.log('🎉 Chat history updated after backfill');
+          }, 2000);
+        }
       } else {
         // Load from localStorage for guests
         const localHistory = loadChatHistory();
@@ -189,10 +212,12 @@ const Index = () => {
         if (currentChatIndex >= 0) {
           updatedHistory[currentChatIndex].messages = finalMessages;
         } else if (finalMessages.length >= 2) {
-          // Create new chat entry
+          // Create new chat entry with intelligent title
+          const intelligentTitle = generateIntelligentTitle(finalMessages);
           const newChat = {
             id: currentChatId,
-            title: userMessage.text.substring(0, 30) + (userMessage.text.length > 30 ? '...' : ''),
+            title: intelligentTitle,
+            autoTitle: intelligentTitle,
             messages: finalMessages,
             createdAt: new Date()
           };
@@ -366,21 +391,19 @@ const Index = () => {
           console.log('💾 Saving AI message to database...');
           const saveSuccess = await saveMessageToDatabase(sessionId, response.message, false, 'text', {});
           if (saveSuccess) {
-            console.log('✅ AI message saved successfully');
+            console.log('✅ AI message saved successfully - intelligent title will be generated');
             await incrementUsage('messages');
             
-            // Reload chat history after successful save - only if it's a new session
-            if (isNewSession) {
-              setTimeout(async () => {
-                try {
-                  console.log('🔄 Reloading chat history after new session creation...');
-                  await loadChatHistoryData();
-                  console.log('✅ Chat history reloaded successfully');
-                } catch (error) {
-                  console.error('❌ Error reloading chat history:', error);
-                }
-              }, 3000); // Increased delay for title generation
-            }
+            // Reload chat history after successful save to show updated intelligent title
+            setTimeout(async () => {
+              try {
+                console.log('🔄 Reloading chat history to show intelligent title...');
+                await loadChatHistoryData();
+                console.log('✅ Chat history reloaded with intelligent titles');
+              } catch (error) {
+                console.error('❌ Error reloading chat history:', error);
+              }
+            }, 1500);
           } else {
             console.warn('⚠️ Failed to save AI message to database');
           }
@@ -617,7 +640,7 @@ const Index = () => {
           }
         }
         
-        // Load chat history
+        // Load chat history (with backfill for authenticated users)
         await loadChatHistoryData();
         
         // Check onboarding status
@@ -632,7 +655,7 @@ const Index = () => {
     };
 
     initializeApp();
-  }, [isGuest]); // Add isGuest as dependency to re-run when auth state changes
+  }, [isGuest]);
 
   useEffect(() => {
     return () => {
