@@ -17,6 +17,7 @@ import { MessageSquare, Plus, Settings, FileText, Languages } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 import chatSuggestionsData from '@/data/chatSuggestions.json';
 
 // Define the structure for chat messages
@@ -325,34 +326,34 @@ const Index = () => {
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-16 h-16 object-contain"
+                    className="w-12 h-12 object-contain"
                   />
-                  <div>
-                    <h1 className="text-2xl font-bold jamaican-text-gradient">JamAI</h1>
-                    <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
+                  <div className="text-left">
+                    <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
+                    <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
                   </div>
                 </button>
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 {messages.length > 0 && (
                   <>
                     <Button
                       onClick={() => setShowSummary(true)}
                       variant="default"
                       size="sm"
-                      className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium"
+                      className="h-8 px-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium text-xs"
                     >
-                      <FileText className="w-4 h-4 mr-2" />
+                      <FileText className="w-3 h-3 mr-1" />
                       Summary
                     </Button>
                     
                     <Button
                       variant="default"
                       size="sm"
-                      className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 text-black rounded-xl font-medium"
+                      className="h-8 px-3 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg font-medium text-xs"
                     >
-                      <Languages className="w-4 h-4 mr-2" />
+                      <Languages className="w-3 h-3 mr-1" />
                       Translation
                     </Button>
                   </>
@@ -363,9 +364,9 @@ const Index = () => {
                     <Button
                       variant="ghost"
                       size="sm" 
-                      className="h-9 w-9 p-0"
+                      className="h-8 w-8 p-0"
                     >
-                      <Settings className="w-4 h-4" />
+                      <Settings className="w-3 h-3" />
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="right" className="w-[400px] sm:w-[400px]">
@@ -395,55 +396,55 @@ const Index = () => {
             {messages.length === 0 ? (
               // Empty state with welcome message
               <div className="flex-1 flex items-center justify-center p-4">
-                <div className="max-w-4xl w-full space-y-8 text-center">
+                <div className="max-w-3xl w-full space-y-6 text-center">
                   {/* Welcome header */}
-                  <div className="space-y-6">
-                    <div className="flex justify-center items-center gap-3 mb-6">
+                  <div className="space-y-4">
+                    <div className="flex justify-center items-center gap-3 mb-4">
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-24 h-24 object-contain"
+                        className="w-16 h-16 object-contain"
                       />
                     </div>
-                    <h1 className="text-5xl font-bold jamaican-text-gradient mb-6 text-center">
+                    <h1 className="text-3xl font-bold jamaican-text-gradient mb-4 text-center">
                       Welcome to JamAI
                     </h1>
-                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed text-center">
+                    <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed text-center">
                       Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
                     </p>
                   </div>
 
                   {/* Conditional section based on existing chats */}
                   {hasExistingChats ? (
-                    <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 rounded-xl p-6 mb-8">
+                    <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 rounded-lg p-4 mb-6">
                       <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300 mb-2">
-                        <span className="text-xl">🌟</span>
-                        <span className="font-semibold text-lg">Ready for another chat?</span>
+                        <span className="text-lg">🌟</span>
+                        <span className="font-semibold">Ready for another chat?</span>
                       </div>
-                      <p className="text-green-600 dark:text-green-400">
+                      <p className="text-green-600 dark:text-green-400 text-sm">
                         Welcome back! Ask me more about Jamaica or start a fresh conversation.
                       </p>
                     </div>
                   ) : (
-                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl p-6 mb-8">
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-lg p-4 mb-6">
                       <div className="flex items-center justify-center gap-2 text-blue-700 dark:text-blue-300 mb-2">
-                        <span className="text-xl">👋</span>
-                        <span className="font-semibold text-lg">Start a new chat</span>
+                        <span className="text-lg">👋</span>
+                        <span className="font-semibold">Start a new chat</span>
                       </div>
-                      <p className="text-blue-600 dark:text-blue-400">
+                      <p className="text-blue-600 dark:text-blue-400 text-sm">
                         Get started by asking me anything about Jamaica, language, or general questions!
                       </p>
                     </div>
                   )}
 
                   {/* Chat suggestions */}
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
                       {CHAT_SUGGESTIONS.map((suggestion) => (
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-4 text-center bg-white dark:bg-gray-900 border-2 border-green-400 dark:border-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 hover:border-green-700 dark:hover:border-green-500 rounded-xl transition-all duration-200 group hover:shadow-md"
+                          className="p-3 text-center bg-white dark:bg-gray-900 border-2 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-950/50 hover:border-green-600 dark:hover:border-green-600 rounded-lg transition-all duration-200 group hover:shadow-md"
                         >
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
                             {suggestion.text}
@@ -479,7 +480,7 @@ const Index = () => {
                     <div className="max-w-4xl mx-auto flex justify-center">
                       <button
                         onClick={startNewChat}
-                        className="bg-gradient-to-r from-green-500 via-yellow-500 to-green-600 hover:from-green-600 hover:via-yellow-600 hover:to-green-700 text-white font-medium py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2"
+                        className="bg-gradient-to-r from-green-500 via-yellow-500 to-green-600 hover:from-green-600 hover:via-yellow-600 hover:to-green-700 text-white font-medium py-2 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center gap-2 text-sm"
                       >
                         <Plus className="w-4 h-4" />
                         Ready for another chat?
