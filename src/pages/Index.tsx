@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -250,6 +251,16 @@ const Index = () => {
     handleSendMessage(suggestionText);
   };
 
+  // Convert ChatMessageData to Message format for ChatSummary
+  const convertToMessages = (chatMessages: ChatMessageData[]) => {
+    return chatMessages.map(msg => ({
+      id: msg.id,
+      text: msg.content,
+      isUser: msg.role === 'user',
+      timestamp: msg.timestamp
+    }));
+  };
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-muted/20">
@@ -416,7 +427,7 @@ const Index = () => {
           {/* Summary Modal */}
           {showSummary && (
             <ChatSummary
-              messages={messages}
+              messages={convertToMessages(messages)}
               onClose={() => setShowSummary(false)}
             />
           )}
