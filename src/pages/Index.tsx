@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -6,6 +5,7 @@ import ChatInput from '@/components/ChatInput';
 import TypingIndicator from '@/components/TypingIndicator';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import ChatSummary from '@/components/ChatSummary';
+import OnboardingTutorial from '@/components/OnboardingTutorial';
 import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
 import UserProfileSettings from '@/components/UserProfileSettings';
@@ -13,9 +13,10 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from "@/hooks/use-toast"
-import { MessageSquare, Plus, Settings, FileText } from 'lucide-react';
+import { MessageSquare, Plus, Settings, FileText, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 import chatSuggestionsData from '@/data/chatSuggestions.json';
 
 // Define the structure for chat messages
@@ -48,8 +49,10 @@ const Index = () => {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Scroll to bottom on new message
   useEffect(() => {
@@ -84,6 +87,39 @@ const Index = () => {
       console.log('💾 Saved chat history:', chatHistory.length, 'chats');
     }
   }, [chatHistory]);
+
+  // Check for onboarding on mount
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      if (user) {
+        // For authenticated users, check database
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('onboarding_completed')
+            .eq('id', user.id)
+            .single();
+          
+          if (!data?.onboarding_completed) {
+            setShowOnboarding(true);
+          }
+        } catch (error) {
+          console.error('Error checking onboarding status:', error);
+        }
+      } else {
+        // For guests, check localStorage
+        const completed = localStorage.getItem('jamai_onboarding_completed');
+        if (!completed) {
+          setShowOnboarding(true);
+        }
+      }
+    };
+
+    // Only check onboarding if there are no existing messages or chat history
+    if (messages.length === 0 && chatHistory.length === 0) {
+      checkOnboarding();
+    }
+  }, [user, messages.length, chatHistory.length]);
 
   // Function to start a new chat
   const startNewChat = () => {
@@ -260,6 +296,8 @@ const Index = () => {
     }));
   };
 
+  const hasExistingChats = chatHistory.length > 0 || messages.length > 0;
+
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
@@ -287,26 +325,37 @@ const Index = () => {
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-12 h-12 object-contain"
+                    className="w-16 h-16 object-contain"
                   />
                   <div>
-                    <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
-                    <p className="text-xs text-muted-foreground">Jamaican AI Assistant</p>
+                    <h1 className="text-2xl font-bold jamaican-text-gradient">JamAI</h1>
+                    <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
                   </div>
                 </button>
               </div>
               
               <div className="flex items-center gap-3">
                 {messages.length > 0 && (
-                  <Button
-                    onClick={() => setShowSummary(true)}
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 px-3 bg-green-500 hover:bg-green-600 text-white rounded-xl"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    Summary
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => setShowSummary(true)}
+                      variant="default"
+                      size="sm"
+                      className="h-9 px-4 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Summary
+                    </Button>
+                    
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 text-black rounded-xl font-medium"
+                    >
+                      <Languages className="w-4 h-4 mr-2" />
+                      Translation
+                    </Button>
+                  </>
                 )}
                 
                 <Sheet>
@@ -364,16 +413,28 @@ const Index = () => {
                     </p>
                   </div>
 
-                  {/* Ready for another chat section */}
-                  <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 rounded-xl p-6 mb-8">
-                    <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300 mb-2">
-                      <span className="text-xl">🌟</span>
-                      <span className="font-semibold text-lg">Ready for another chat?</span>
+                  {/* Conditional section based on existing chats */}
+                  {hasExistingChats ? (
+                    <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800/50 rounded-xl p-6 mb-8">
+                      <div className="flex items-center justify-center gap-2 text-green-700 dark:text-green-300 mb-2">
+                        <span className="text-xl">🌟</span>
+                        <span className="font-semibold text-lg">Ready for another chat?</span>
+                      </div>
+                      <p className="text-green-600 dark:text-green-400">
+                        Welcome back! Ask me more about Jamaica or start a fresh conversation.
+                      </p>
                     </div>
-                    <p className="text-green-600 dark:text-green-400">
-                      Welcome back! Ask me more about Jamaica or start a fresh conversation.
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 rounded-xl p-6 mb-8">
+                      <div className="flex items-center justify-center gap-2 text-blue-700 dark:text-blue-300 mb-2">
+                        <span className="text-xl">👋</span>
+                        <span className="font-semibold text-lg">Start a new chat</span>
+                      </div>
+                      <p className="text-blue-600 dark:text-blue-400">
+                        Get started by asking me anything about Jamaica, language, or general questions!
+                      </p>
+                    </div>
+                  )}
 
                   {/* Chat suggestions */}
                   <div className="space-y-6">
@@ -382,7 +443,7 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-4 text-center bg-white dark:bg-gray-900 border-2 border-green-300 dark:border-green-700 hover:bg-green-50 dark:hover:bg-green-900/20 hover:border-green-500 dark:hover:border-green-500 rounded-xl transition-all duration-200 group hover:shadow-md"
+                          className="p-4 text-center bg-white dark:bg-gray-900 border-2 border-green-400 dark:border-green-600 hover:bg-green-100 dark:hover:bg-green-900/30 hover:border-green-700 dark:hover:border-green-500 rounded-xl transition-all duration-200 group hover:shadow-md"
                         >
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
                             {suggestion.text}
@@ -447,6 +508,12 @@ const Index = () => {
               onClose={() => setShowSummary(false)}
             />
           )}
+
+          {/* Onboarding Tutorial */}
+          <OnboardingTutorial
+            isOpen={showOnboarding}
+            onComplete={() => setShowOnboarding(false)}
+          />
         </div>
       </div>
     </SidebarProvider>
