@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, History, Languages, FileText, Sparkles, ArrowRight, X } from 'lucide-react';
+import { MessageCircle, History, Languages, FileText, Sparkles, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -113,19 +113,9 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
                 Getting Started
               </DialogTitle>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary">
-                {currentStep + 1} of {onboardingSteps.length}
-              </Badge>
-              <Button
-                variant="ghost" 
-                size="sm"
-                onClick={handleSkip}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
+            <Badge variant="secondary">
+              {currentStep + 1} of {onboardingSteps.length}
+            </Badge>
           </div>
         </DialogHeader>
 

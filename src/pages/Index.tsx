@@ -444,7 +444,7 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-center bg-white dark:bg-gray-900 border-2 border-green-400 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-950/50 hover:border-green-600 dark:hover:border-green-400 rounded-lg transition-all duration-200 group hover:shadow-md"
+                          className="p-3 text-center bg-white dark:bg-black border-2 border-green-400 dark:border-green-600 hover:bg-green-50 dark:hover:bg-green-950/50 hover:border-green-600 dark:hover:border-green-400 rounded-lg transition-all duration-200 group hover:shadow-md"
                         >
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
                             {suggestion.text}
