@@ -123,7 +123,7 @@ const Index = () => {
           dbHistory.forEach(dbChat => {
             const existingIndex = mergedHistory.findIndex(chat => chat.id === dbChat.id);
             if (existingIndex >= 0) {
-              mergedHistory[existingChatIndex] = dbChat; // Database version takes precedence
+              mergedHistory[existingIndex] = dbChat; // Database version takes precedence
             } else {
               mergedHistory.push(dbChat);
             }
