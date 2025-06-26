@@ -123,7 +123,7 @@ const Index = () => {
           dbHistory.forEach(dbChat => {
             const existingIndex = mergedHistory.findIndex(chat => chat.id === dbChat.id);
             if (existingIndex >= 0) {
-              mergedHistory[existingIndex] = dbChat; // Database version takes precedence
+              mergedHistory[existingChatIndex] = dbChat; // Database version takes precedence
             } else {
               mergedHistory.push(dbChat);
             }
@@ -237,7 +237,7 @@ const Index = () => {
     console.log('✏️ Renamed chat:', chatId, 'to:', newTitle);
   };
 
-  // Core function to handle sending messages - Updated to use actual AI service
+  // Core function to handle sending messages - Enhanced for proverb requests
   const handleSendMessage = async (messageContent: string) => {
     if (!messageContent.trim()) return;
 
@@ -259,6 +259,11 @@ const Index = () => {
       const isPatois = detectedLanguage === 'patois';
       console.log('🗣️ Detected language - Patois:', isPatois);
 
+      // Check if this is a proverb request
+      const lowerMessage = messageContent.toLowerCase();
+      const isProverbRequest = lowerMessage.includes('proverb') || lowerMessage.includes('saying') || 
+                              lowerMessage.includes('wise word') || lowerMessage.includes('old time saying');
+
       // Convert current messages to the format expected by AI service
       const conversationHistory = messages.map(msg => ({
         id: msg.id,
@@ -267,9 +272,18 @@ const Index = () => {
         timestamp: msg.timestamp
       }));
 
+      let enhancedMessage = messageContent;
+      
+      // Enhance proverb requests with specific instructions
+      if (isProverbRequest) {
+        enhancedMessage = isPatois 
+          ? `${messageContent}. Please respond in Patois and include: the proverb in Patois, its English translation, the meaning, and how it's used.`
+          : `${messageContent}. Please respond in English and include: the Jamaican proverb in Patois, its English translation, the meaning, and how it's used in Jamaican culture.`;
+      }
+
       // Call the location-aware AI service
       const aiResponse = await locationAwareService.processQuery(
-        messageContent,
+        enhancedMessage,
         isPatois,
         conversationHistory
       );
@@ -410,7 +424,6 @@ const Index = () => {
           <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-0.5 flex-1 min-w-0">
-                <SidebarTrigger className="h-8 w-8 flex-shrink-0" />
                 <button 
                   onClick={startNewChat}
                   className="flex items-center gap-0.5 hover:opacity-80 transition-opacity cursor-pointer min-w-0"

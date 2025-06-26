@@ -558,12 +558,12 @@ const ChatHistorySidebar = ({
     );
   }
 
-  // Desktop sidebar
+  // Desktop sidebar - Fixed positioning without collapsible functionality
   return (
     <>
-      <Sidebar side="left" className="border-r border-border bg-background/95 backdrop-blur-md">
+      <div className="w-80 border-r border-border bg-background/95 backdrop-blur-md flex flex-col">
         {/* Sidebar header with new chat button and controls */}
-        <SidebarHeader className="p-4 bg-background/90 border-b border-border/30">
+        <div className="p-4 bg-background/90 border-b border-border/30">
           <Button 
             onClick={handleNewChat}
             className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-2 transition-all duration-200"
@@ -629,10 +629,10 @@ const ChatHistorySidebar = ({
               )}
             </div>
           )}
-        </SidebarHeader>
+        </div>
         
         {/* Sidebar content with chat list */}
-        <SidebarContent className="px-2 bg-background/90">
+        <div className="flex-1 overflow-y-auto px-2 bg-background/90">
           {groupedChats.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -645,73 +645,74 @@ const ChatHistorySidebar = ({
                   <h3 className="text-xs font-medium text-muted-foreground px-3 py-1 bg-muted/50 rounded sticky top-0 z-10">
                     {group.label} ({group.chats.length})
                   </h3>
-                  <SidebarMenu>
+                  <div className="space-y-1">
                     {group.chats.map((chat) => (
-                      <SidebarMenuItem key={chat.id}>
-                        <ContextMenu>
-                          <ContextMenuTrigger asChild>
-                            <div className="flex items-center gap-2 group">
-                              {isSelectionMode && (
-                                <input
-                                  type="checkbox"
-                                  checked={selectedChats.has(chat.id)}
-                                  onChange={() => handleChatSelect(chat.id)}
-                                  className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
-                                />
-                              )}
-                              
-                              <SidebarMenuButton
-                                onClick={() => handleChatSelect(chat.id)}
-                                isActive={chat.id === currentChatId && !isSelectionMode}
-                                className="flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted data-[active=true]:bg-accent data-[active=true]:text-accent-foreground data-[active=true]:font-medium"
-                              >
+                      <ContextMenu key={chat.id}>
+                        <ContextMenuTrigger asChild>
+                          <div className="flex items-center gap-2 group">
+                            {isSelectionMode && (
+                              <input
+                                type="checkbox"
+                                checked={selectedChats.has(chat.id)}
+                                onChange={() => handleChatSelect(chat.id)}
+                                className="w-4 h-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+                              />
+                            )}
+                            
+                            <button
+                              onClick={() => handleChatSelect(chat.id)}
+                              className={`flex-1 justify-start gap-3 py-3 px-3 text-left hover:bg-muted rounded-lg transition-colors ${
+                                chat.id === currentChatId && !isSelectionMode ? 'bg-accent text-accent-foreground font-medium' : ''
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
                                 <MessageSquare className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate text-sm">{getDisplayTitle(chat)}</span>
-                              </SidebarMenuButton>
-                              
-                              {!isSelectionMode && (
-                                <Button
-                                  onClick={(e) => handleDeleteSingle(chat.id, e)}
-                                  variant="ghost"
-                                  size="sm"
-                                  className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
-                          </ContextMenuTrigger>
-                          <ContextMenuContent>
-                            <ContextMenuItem onClick={() => handleRenameChat(chat.id)}>
-                              <Edit2 className="w-4 h-4 mr-2" />
-                              Rename
-                            </ContextMenuItem>
-                            <ContextMenuItem 
-                              onClick={() => handleDeleteSingle(chat.id, {} as React.MouseEvent)}
-                              className="text-red-600 dark:text-red-400"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </ContextMenuItem>
-                          </ContextMenuContent>
-                        </ContextMenu>
-                      </SidebarMenuItem>
+                              </div>
+                            </button>
+                            
+                            {!isSelectionMode && (
+                              <Button
+                                onClick={(e) => handleDeleteSingle(chat.id, e)}
+                                variant="ghost"
+                                size="sm"
+                                className="opacity-0 group-hover:opacity-100 h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem onClick={() => handleRenameChat(chat.id)}>
+                            <Edit2 className="w-4 h-4 mr-2" />
+                            Rename
+                          </ContextMenuItem>
+                          <ContextMenuItem 
+                            onClick={() => handleDeleteSingle(chat.id, {} as React.MouseEvent)}
+                            className="text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
                     ))}
-                  </SidebarMenu>
+                  </div>
                 </div>
               ))}
             </div>
           )}
-        </SidebarContent>
+        </div>
         
         {/* Sidebar footer with app branding - dark mode support */}
-        <SidebarFooter className="p-4 bg-background/90 border-t border-border/30">
+        <div className="p-4 bg-background/90 border-t border-border/30">
           <div className="flex items-center gap-3 px-3 py-2 text-sm">
             <span className="text-lg font-bold">🇯🇲</span>
             <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
           </div>
-        </SidebarFooter>
-      </Sidebar>
+        </div>
+      </div>
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
