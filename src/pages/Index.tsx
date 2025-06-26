@@ -410,26 +410,26 @@ const Index = () => {
           {/* Header */}
           <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4">
             <div className="max-w-4xl mx-auto flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <SidebarTrigger className="h-8 w-8" />
+              <div className="flex items-center gap-4 flex-1 min-w-0">
+                <SidebarTrigger className="h-8 w-8 flex-shrink-0" />
                 <button 
                   onClick={startNewChat}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer"
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer min-w-0"
                   aria-label="Start new chat"
                 >
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-16 h-16 object-contain"
+                    className="w-16 h-16 object-contain flex-shrink-0"
                   />
-                  <div className="text-left">
+                  <div className="text-left min-w-0">
                     <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
                     <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
                   </div>
                 </button>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {/* Summary button - always visible */}
                 <Button
                   onClick={() => setShowSummary(true)}
@@ -439,13 +439,15 @@ const Index = () => {
                   Summary
                 </Button>
                 
-                {/* Translation button - always visible */}
-                <Button
-                  className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-black dark:text-black rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
-                >
-                  <Languages className="w-4 h-4 mr-2" />
-                  Translation
-                </Button>
+                {/* Translation button - only show when there are messages */}
+                {messages.length > 0 && (
+                  <Button
+                    className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-black dark:text-black rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
+                  >
+                    <Languages className="w-4 h-4 mr-2" />
+                    Translation
+                  </Button>
+                )}
 
                 <Sheet>
                   <SheetTrigger asChild>
@@ -491,7 +493,7 @@ const Index = () => {
                       <img 
                         src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                         alt="JamAI Logo" 
-                        className="w-32 h-32 object-contain"
+                        className="w-48 h-48 object-contain"
                       />
                     </div>
                     <h1 className="text-3xl font-bold jamaican-text-gradient mb-4 text-center">
@@ -578,7 +580,7 @@ const Index = () => {
                     <div className="max-w-4xl mx-auto flex justify-center">
                       <button
                         onClick={startNewChat}
-                        className="bg-gradient-to-r from-green-100 to-yellow-100 hover:from-green-200 hover:to-yellow-200 text-green-800 border border-green-300 font-medium py-3 px-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 flex items-center gap-2 text-sm"
+                        className="bg-gradient-to-r from-green-100 to-yellow-100 hover:from-green-200 hover:to-yellow-200 dark:from-green-900/50 dark:to-yellow-900/50 dark:hover:from-green-800/60 dark:hover:to-yellow-800/60 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700 font-medium py-3 px-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 flex items-center gap-2 text-sm"
                       >
                         <Plus className="w-4 h-4" />
                         Ready for another chat?
