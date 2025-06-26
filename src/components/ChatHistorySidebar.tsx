@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MessageSquare, Plus, Trash2, MoreVertical, Edit2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -296,10 +295,10 @@ const ChatHistorySidebar = ({
     setNewChatTitle('');
   };
 
-  // Helper function to get display title for a chat
+  // Helper function to get display title for a chat - Updated to reflect renamed titles
   const getDisplayTitle = (chat: ChatHistory) => {
-    // Prefer autoTitle over title for intelligent naming
-    return chat.autoTitle || chat.title || 'New Chat';
+    // Use the current title (which gets updated by rename), fallback to autoTitle, then 'New Chat'
+    return chat.title || chat.autoTitle || 'New Chat';
   };
 
   // ============================

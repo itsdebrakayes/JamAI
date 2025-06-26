@@ -419,7 +419,7 @@ const Index = () => {
                 <SidebarTrigger className="h-8 w-8 flex-shrink-0" />
                 <button 
                   onClick={startNewChat}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer min-w-0"
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer min-w-0"
                   aria-label="Start new chat"
                 >
                   <img 
