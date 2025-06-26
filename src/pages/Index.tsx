@@ -20,6 +20,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import chatSuggestionsData from '@/data/chatSuggestions.json';
 import { getChatSessions, getMessagesForSession, generateIntelligentTitle } from '@/utils/chatHistory';
+import { locationAwareService } from '@/services/locationAwareService';
+import { detectLanguage } from '@/utils/languageDetection';
 
 // Define the structure for chat messages
 type ChatMessageData = {
@@ -235,7 +237,7 @@ const Index = () => {
     console.log('✏️ Renamed chat:', chatId, 'to:', newTitle);
   };
 
-  // Core function to handle sending messages
+  // Core function to handle sending messages - Updated to use actual AI service
   const handleSendMessage = async (messageContent: string) => {
     if (!messageContent.trim()) return;
 
@@ -252,13 +254,29 @@ const Index = () => {
     setIsTyping(true);
 
     try {
-      // Simulate AI response (replace with actual API call)
-      const aiResponse = await simulateAIResponse(messageContent);
+      // Detect if user message is in Patois
+      const isPatois = detectLanguage(messageContent);
+      console.log('🗣️ Detected language - Patois:', isPatois);
+
+      // Convert current messages to the format expected by AI service
+      const conversationHistory = messages.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isUser: msg.role === 'user',
+        timestamp: msg.timestamp
+      }));
+
+      // Call the location-aware AI service
+      const aiResponse = await locationAwareService.processQuery(
+        messageContent,
+        isPatois,
+        conversationHistory
+      );
 
       // Add AI message to the chat
       const aiMessage: ChatMessageData = {
         id: uuidv4(),
-        content: aiResponse,
+        content: aiResponse.message,
         role: 'assistant',
         timestamp: new Date(),
       };
@@ -268,6 +286,18 @@ const Index = () => {
       updateChatHistory(userMessage, aiMessage);
     } catch (error: any) {
       console.error('Error processing message:', error);
+      
+      // Add fallback error message
+      const errorMessage: ChatMessageData = {
+        id: uuidv4(),
+        content: isPatois 
+          ? "Mi sorry, mi having some trouble right now. Try again later, nuh?"
+          : "I'm sorry, I'm having some technical difficulties right now. Please try again later.",
+        role: 'assistant',
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      
       toast({
         title: "Uh oh! Something went wrong.",
         description: error.message || "There was a problem processing your request.",
@@ -276,47 +306,6 @@ const Index = () => {
     } finally {
       // Always set typing indicator to false, even if there's an error
       setIsTyping(false);
-    }
-  };
-
-  // Enhanced AI response simulation with proper error handling
-  const simulateAIResponse = async (userMessage: string): Promise<string> => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    try {
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Handle proverb requests
-      if (lowerMessage.includes('proverb') || lowerMessage.includes('saying')) {
-        const proverbSuggestion = chatSuggestionsData.suggestions.find(s => s.id === 'proverbs');
-        if (proverbSuggestion && proverbSuggestion.responses) {
-          const randomResponse = proverbSuggestion.responses[Math.floor(Math.random() * proverbSuggestion.responses.length)];
-          return randomResponse;
-        }
-      }
-      
-      // Handle weather queries
-      if (lowerMessage.includes('weather')) {
-        return `🌴 Weather inna Jamaica nice today! Sunny and warm, bout 28°C (82°F). Perfect weather fi go beach or just lime outside. Di trade winds a blow nice breeze too! What else yuh waan know bout Jamaica weather?`;
-      }
-      
-      // Handle food queries
-      if (lowerMessage.includes('food') || lowerMessage.includes('eat') || lowerMessage.includes('hungry')) {
-        return `Yow! Mi know some nice Jamaican food fi yuh! Try some jerk chicken, rice and peas, curry goat, or ackee and saltfish. All a dem taste real good! Which one yuh waan learn bout?`;
-      }
-      
-      // Handle patois teaching
-      if (lowerMessage.includes('patois') || lowerMessage.includes('teach')) {
-        return `Big up! Mi ago teach yuh some patois. "Wah gwaan" means "What's going on?" and "Irie" means everything good. "Big up yuself" means respect yuself. Want fi learn more?`;
-      }
-      
-      // Default response
-      return `Mi understand seh yu say "${userMessage}" ennit. Dat interesting! Tell mi more bout what yuh waan know, mi here fi help yuh learn bout Jamaica culture and language.`;
-      
-    } catch (error) {
-      console.error('Error in simulateAIResponse:', error);
-      throw new Error('Failed to generate response');
     }
   };
 
@@ -415,17 +404,17 @@ const Index = () => {
           {/* Header */}
           <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0">
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="flex items-center gap-1 flex-1 min-w-0">
                 <SidebarTrigger className="h-8 w-8 flex-shrink-0" />
                 <button 
                   onClick={startNewChat}
-                  className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer min-w-0"
+                  className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer min-w-0"
                   aria-label="Start new chat"
                 >
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-12 h-12 object-contain flex-shrink-0"
+                    className="w-14 h-14 object-contain flex-shrink-0"
                   />
                   <div className="text-left min-w-0 hidden sm:block">
                     <h1 className="text-lg font-bold jamaican-text-gradient truncate">JamAI</h1>
