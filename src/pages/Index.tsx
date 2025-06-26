@@ -255,7 +255,8 @@ const Index = () => {
 
     try {
       // Detect if user message is in Patois
-      const isPatois = detectLanguage(messageContent);
+      const detectedLanguage = detectLanguage(messageContent);
+      const isPatois = detectedLanguage === 'patois';
       console.log('🗣️ Detected language - Patois:', isPatois);
 
       // Convert current messages to the format expected by AI service
@@ -287,10 +288,14 @@ const Index = () => {
     } catch (error: any) {
       console.error('Error processing message:', error);
       
+      // Detect language for error message
+      const detectedLanguage = detectLanguage(messageContent);
+      const isPatoisForError = detectedLanguage === 'patois';
+      
       // Add fallback error message
       const errorMessage: ChatMessageData = {
         id: uuidv4(),
-        content: isPatois 
+        content: isPatoisForError 
           ? "Mi sorry, mi having some trouble right now. Try again later, nuh?"
           : "I'm sorry, I'm having some technical difficulties right now. Please try again later.",
         role: 'assistant',
@@ -404,11 +409,11 @@ const Index = () => {
           {/* Header */}
           <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0">
             <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-1 flex-1 min-w-0">
+              <div className="flex items-center gap-0.5 flex-1 min-w-0">
                 <SidebarTrigger className="h-8 w-8 flex-shrink-0" />
                 <button 
                   onClick={startNewChat}
-                  className="flex items-center gap-1 hover:opacity-80 transition-opacity cursor-pointer min-w-0"
+                  className="flex items-center gap-0.5 hover:opacity-80 transition-opacity cursor-pointer min-w-0"
                   aria-label="Start new chat"
                 >
                   <img 
