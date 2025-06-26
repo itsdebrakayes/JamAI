@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -412,10 +411,10 @@ const Index = () => {
           onRenameChat={renameChat}
         />
         
-        <div className="flex-1 flex flex-col relative">
+        <div className="flex-1 flex flex-col relative min-w-0">
           {/* Header */}
-          <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4">
-            <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0">
+            <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <SidebarTrigger className="h-8 w-8 flex-shrink-0" />
                 <button 
@@ -426,11 +425,11 @@ const Index = () => {
                   <img 
                     src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
                     alt="JamAI Logo" 
-                    className="w-16 h-16 object-contain flex-shrink-0"
+                    className="w-12 h-12 object-contain flex-shrink-0"
                   />
-                  <div className="text-left min-w-0">
-                    <h1 className="text-xl font-bold jamaican-text-gradient">JamAI</h1>
-                    <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
+                  <div className="text-left min-w-0 hidden sm:block">
+                    <h1 className="text-lg font-bold jamaican-text-gradient truncate">JamAI</h1>
+                    <p className="text-xs text-muted-foreground truncate">Jamaican AI Assistant</p>
                   </div>
                 </button>
               </div>
@@ -439,7 +438,7 @@ const Index = () => {
                 {/* Summary button - green and white gradient */}
                 <Button
                   onClick={() => setShowSummary(true)}
-                  className="h-9 px-4 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
+                  className="h-9 px-3 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
                   style={{
                     background: 'linear-gradient(90deg, #16a34a 0%, #ffffff 50%, #16a34a 100%)',
                     backgroundSize: '200% 100%',
@@ -452,14 +451,14 @@ const Index = () => {
                     e.currentTarget.style.background = 'linear-gradient(90deg, #16a34a 0%, #ffffff 50%, #16a34a 100%)';
                   }}
                 >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Summary
+                  <FileText className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Summary</span>
                 </Button>
                 
                 {/* Translation button - yellow gradient, only show when there are messages */}
                 {messages.length > 0 && (
                   <Button
-                    className="h-9 px-4 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
+                    className="h-9 px-3 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
                     style={{
                       background: 'linear-gradient(90deg, #eab308 0%, #fbbf24 50%, #eab308 100%)',
                       color: '#000000'
@@ -471,8 +470,8 @@ const Index = () => {
                       e.currentTarget.style.background = 'linear-gradient(90deg, #eab308 0%, #fbbf24 50%, #eab308 100%)';
                     }}
                   >
-                    <Languages className="w-4 h-4 mr-2" />
-                    Translation
+                    <Languages className="w-4 h-4 mr-1 sm:mr-2" />
+                    <span className="hidden sm:inline">Translation</span>
                   </Button>
                 )}
 
@@ -509,7 +508,7 @@ const Index = () => {
           </header>
 
           {/* Main content area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {messages.length === 0 ? (
               // Empty state with welcome message
               <div className="flex-1 flex items-center justify-center p-4">
@@ -600,27 +599,12 @@ const Index = () => {
                     <div ref={messagesEndRef} />
                   </div>
                 </div>
-
-                {/* Ready for another chat section */}
-                {messages.length > 0 && (
-                  <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm p-4">
-                    <div className="max-w-4xl mx-auto flex justify-center">
-                      <button
-                        onClick={startNewChat}
-                        className="bg-gradient-to-r from-green-100 to-yellow-100 hover:from-green-200 hover:to-yellow-200 dark:from-green-900/50 dark:to-yellow-900/50 dark:hover:from-green-800/60 dark:hover:to-yellow-800/60 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700 font-medium py-3 px-6 rounded-lg shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 flex items-center gap-2 text-sm"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Ready for another chat?
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
 
           {/* Input area - Always show at bottom */}
-          <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4">
+          <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0">
             <div className="max-w-4xl mx-auto">
               <ChatInput 
                 onSendMessage={handleSendMessage}

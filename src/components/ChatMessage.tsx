@@ -17,9 +17,11 @@ const ChatMessage = ({ message, isUser, timestamp }: ChatMessageProps) => {
     <div className={`flex gap-4 p-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
         <div className="flex-shrink-0">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 via-yellow-400 to-green-500 flex items-center justify-center text-white font-bold text-sm">
-            🇯🇲
-          </div>
+          <img 
+            src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+            alt="JamAI Logo" 
+            className="w-8 h-8 object-contain rounded-full"
+          />
         </div>
       )}
       
