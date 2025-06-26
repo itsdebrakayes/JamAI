@@ -76,20 +76,30 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
   };
 
   const handleComplete = async () => {
+    console.log('🎓 Completing onboarding tutorial...');
+    
     // Mark onboarding as completed
     if (user) {
       try {
-        // Use update instead of upsert to avoid the TypeScript error
-        await supabase
+        console.log('👤 Marking onboarding completed for authenticated user:', user.id);
+        const { error } = await supabase
           .from('profiles')
           .update({ onboarding_completed: true })
           .eq('id', user.id);
+        
+        if (error) {
+          console.error('❌ Error updating onboarding status:', error);
+        } else {
+          console.log('✅ Onboarding marked as completed in database');
+        }
       } catch (error) {
-        console.error('Error updating onboarding status:', error);
+        console.error('❌ Error updating onboarding status:', error);
       }
     } else {
       // For guests, store in localStorage
+      console.log('👤 Marking onboarding completed for guest user');
       localStorage.setItem('jamai_onboarding_completed', 'true');
+      console.log('✅ Onboarding marked as completed in localStorage');
     }
     
     onComplete();

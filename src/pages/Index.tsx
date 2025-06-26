@@ -149,9 +149,14 @@ const Index = () => {
     }
   }, [chatHistory]);
 
-  // Check for onboarding on mount
+  // Check for onboarding on mount - only for truly new users
   useEffect(() => {
     const checkOnboarding = async () => {
+      // Only show onboarding if user has no messages AND no chat history
+      if (messages.length > 0 || chatHistory.length > 0) {
+        return; // Don't show onboarding if user already has activity
+      }
+
       if (user) {
         // For authenticated users, check database
         try {
@@ -176,8 +181,8 @@ const Index = () => {
       }
     };
 
-    // Only check onboarding if there are no existing messages or chat history
-    if (messages.length === 0 && chatHistory.length === 0) {
+    // Only check onboarding after chat history is loaded
+    if (chatHistory.length >= 0) { // This ensures the effect runs after history is loaded
       checkOnboarding();
     }
   }, [user, messages.length, chatHistory.length]);
@@ -430,10 +435,21 @@ const Index = () => {
               </div>
               
               <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Summary button - always visible */}
+                {/* Summary button - always visible with green and white gradient */}
                 <Button
                   onClick={() => setShowSummary(true)}
-                  className="h-9 px-4 bg-green-600 hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700 text-white rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
+                  className="h-9 px-4 bg-gradient-to-r from-green-600 via-green-400 to-green-600 hover:from-green-700 hover:via-green-500 hover:to-green-700 text-white rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(90deg, #16a34a 0%, #ffffff 50%, #16a34a 100%)',
+                    backgroundSize: '200% 100%',
+                    color: '#000000'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundPosition = '100% 0';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundPosition = '0% 0';
+                  }}
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Summary
