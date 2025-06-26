@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -435,30 +436,40 @@ const Index = () => {
               </div>
               
               <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Summary button - always visible with green and white gradient */}
+                {/* Summary button - green and white gradient */}
                 <Button
                   onClick={() => setShowSummary(true)}
-                  className="h-9 px-4 bg-gradient-to-r from-green-600 via-green-400 to-green-600 hover:from-green-700 hover:via-green-500 hover:to-green-700 text-white rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
+                  className="h-9 px-4 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
                   style={{
                     background: 'linear-gradient(90deg, #16a34a 0%, #ffffff 50%, #16a34a 100%)',
                     backgroundSize: '200% 100%',
                     color: '#000000'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundPosition = '100% 0';
+                    e.currentTarget.style.background = 'linear-gradient(90deg, #15803d 0%, #f0f0f0 50%, #15803d 100%)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundPosition = '0% 0';
+                    e.currentTarget.style.background = 'linear-gradient(90deg, #16a34a 0%, #ffffff 50%, #16a34a 100%)';
                   }}
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   Summary
                 </Button>
                 
-                {/* Translation button - only show when there are messages */}
+                {/* Translation button - yellow gradient, only show when there are messages */}
                 {messages.length > 0 && (
                   <Button
-                    className="h-9 px-4 bg-yellow-500 hover:bg-yellow-600 dark:bg-yellow-500 dark:hover:bg-yellow-600 text-black dark:text-black rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200"
+                    className="h-9 px-4 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
+                    style={{
+                      background: 'linear-gradient(90deg, #eab308 0%, #fbbf24 50%, #eab308 100%)',
+                      color: '#000000'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(90deg, #ca8a04 0%, #f59e0b 50%, #ca8a04 100%)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'linear-gradient(90deg, #eab308 0%, #fbbf24 50%, #eab308 100%)';
+                    }}
                   >
                     <Languages className="w-4 h-4 mr-2" />
                     Translation
