@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -92,5 +93,16 @@ export default {
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [
+		require("tailwindcss-animate"),
+		function({ addUtilities }) {
+			addUtilities({
+				'.hover-dark': {
+					'&:hover': {
+						'@apply dark:bg-gray-900/50': {}
+					}
+				}
+			})
+		}
+	],
 } satisfies Config;

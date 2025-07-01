@@ -5,6 +5,7 @@ import ChatInput from '@/components/ChatInput';
 import TypingIndicator from '@/components/TypingIndicator';
 import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import ChatSummary from '@/components/ChatSummary';
+import TranslationMode from '@/components/TranslationMode';
 import OnboardingTutorial from '@/components/OnboardingTutorial';
 import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
@@ -52,8 +53,10 @@ const Index = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [showSummary, setShowSummary] = useState(false);
+  const [showTranslation, setShowTranslation] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [hasSeenTutorial, setHasSeenTutorial] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -151,13 +154,10 @@ const Index = () => {
     }
   }, [chatHistory]);
 
-  // Check for onboarding on mount - only for truly new users
+  // Check tutorial status and show onboarding for truly first-time users only
   useEffect(() => {
-    const checkOnboarding = async () => {
-      // Only show onboarding if user has no messages AND no chat history
-      if (messages.length > 0 || chatHistory.length > 0) {
-        return; // Don't show onboarding if user already has activity
-      }
+    const checkTutorialStatus = async () => {
+      let tutorialSeen = false;
 
       if (user) {
         // For authenticated users, check database
@@ -168,24 +168,31 @@ const Index = () => {
             .eq('id', user.id)
             .single();
           
-          if (!data?.onboarding_completed) {
-            setShowOnboarding(true);
-          }
+          tutorialSeen = data?.onboarding_completed === true;
         } catch (error) {
           console.error('Error checking onboarding status:', error);
         }
       } else {
-        // For guests, check localStorage
+        // For guest users, check localStorage for any tutorial interaction
         const completed = localStorage.getItem('jamai_onboarding_completed');
-        if (!completed) {
-          setShowOnboarding(true);
-        }
+        const skipped = localStorage.getItem('jamai_onboarding_skipped');
+        tutorialSeen = completed === 'true' || skipped === 'true';
+      }
+
+      setHasSeenTutorial(tutorialSeen);
+
+      // Only show tutorial if:
+      // 1. User has never seen it before
+      // 2. No existing chat activity
+      // 3. Chat history has finished loading
+      if (!tutorialSeen && messages.length === 0 && chatHistory.length === 0) {
+        setShowOnboarding(true);
       }
     };
 
-    // Only check onboarding after chat history is loaded
-    if (chatHistory.length >= 0) { // This ensures the effect runs after history is loaded
-      checkOnboarding();
+    // Only check after chat history is loaded
+    if (chatHistory.length >= 0) {
+      checkTutorialStatus();
     }
   }, [user, messages.length, chatHistory.length]);
 
@@ -385,7 +392,7 @@ const Index = () => {
     handleSendMessage(suggestionText);
   };
 
-  // Convert ChatMessageData to Message format for ChatSummary
+  // Convert ChatMessageData to Message format for ChatSummary and TranslationMode
   const convertToMessages = (chatMessages: ChatMessageData[]) => {
     return chatMessages.map(msg => ({
       id: msg.id,
@@ -396,12 +403,11 @@ const Index = () => {
   };
 
   const hasExistingChats = chatHistory.length > 0 || messages.length > 0;
-  const showSummaryButton = messages.length > 0; // Show when current chat has messages
 
   console.log('🎯 Current state debug:', {
     messagesLength: messages.length,
     chatHistoryLength: chatHistory.length,
-    showSummaryButton,
+    showSummaryButton: messages.length > 0, // Show when current chat has messages
     hasExistingChats,
     currentChatId
   });
@@ -465,6 +471,7 @@ const Index = () => {
                 {/* Translation button - yellow gradient, only show when there are messages */}
                 {messages.length > 0 && (
                   <Button
+                    onClick={() => setShowTranslation(true)}
                     className="h-9 px-3 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
                     style={{
                       background: 'linear-gradient(90deg, #eab308 0%, #fbbf24 50%, #eab308 100%)',
@@ -537,25 +544,25 @@ const Index = () => {
                     </p>
                   </div>
 
-                  {/* Conditional section based on existing chats */}
+                  {/* Conditional banner based on existing chats - smaller and centered */}
                   {hasExistingChats ? (
-                    <div className="bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-4 mb-6">
-                      <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-2">
-                        <span className="text-lg">🌟</span>
-                        <span className="font-semibold">Ready for another chat?</span>
+                    <div className="max-w-md mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
+                      <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
+                        <span className="text-sm">🌟</span>
+                        <span className="font-semibold text-sm">Ready for another chat?</span>
                       </div>
-                      <p className="text-green-700 dark:text-green-300 text-sm">
-                        Welcome back! Ask me more about Jamaica or start a fresh conversation.
+                      <p className="text-green-700 dark:text-green-300 text-xs">
+                        Welcome back! Ask me more about Jamaica or start fresh.
                       </p>
                     </div>
                   ) : (
-                    <div className="bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-4 mb-6">
-                      <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-2">
-                        <span className="text-lg">👋</span>
-                        <span className="font-semibold">Start a new chat</span>
+                    <div className="max-w-md mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
+                      <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
+                        <span className="text-sm">👋</span>
+                        <span className="font-semibold text-sm">Start a new chat</span>
                       </div>
-                      <p className="text-green-700 dark:text-green-300 text-sm">
-                        Get started by asking me anything about Jamaica, language, or general questions!
+                      <p className="text-green-700 dark:text-green-300 text-xs">
+                        Get started by asking me anything about Jamaica!
                       </p>
                     </div>
                   )}
@@ -628,10 +635,21 @@ const Index = () => {
             />
           )}
 
-          {/* Onboarding Tutorial */}
+          {/* Translation Mode */}
+          {showTranslation && (
+            <TranslationMode
+              messages={convertToMessages(messages)}
+              onClose={() => setShowTranslation(false)}
+            />
+          )}
+
+          {/* Onboarding Tutorial - only for first-time users */}
           <OnboardingTutorial
             isOpen={showOnboarding}
-            onComplete={() => setShowOnboarding(false)}
+            onComplete={() => {
+              setShowOnboarding(false);
+              setHasSeenTutorial(true);
+            }}
           />
         </div>
       </div>

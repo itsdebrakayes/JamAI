@@ -78,7 +78,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
   const handleComplete = async () => {
     console.log('🎓 Completing onboarding tutorial...');
     
-    // Mark onboarding as completed
+    // Mark onboarding as completed or skipped
     if (user) {
       try {
         console.log('👤 Marking onboarding completed for authenticated user:', user.id);
@@ -96,10 +96,40 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
         console.error('❌ Error updating onboarding status:', error);
       }
     } else {
-      // For guests, store in localStorage
-      console.log('👤 Marking onboarding completed for guest user');
+      // For guests, store both completed and skipped flags
+      console.log('👤 Marking onboarding interaction for guest user');
       localStorage.setItem('jamai_onboarding_completed', 'true');
       console.log('✅ Onboarding marked as completed in localStorage');
+    }
+    
+    onComplete();
+  };
+
+  // Handle skip specifically to track that user has seen tutorial
+  const handleSkipTutorial = async () => {
+    console.log('⏭️ Skipping onboarding tutorial...');
+    
+    if (user) {
+      try {
+        console.log('👤 Marking onboarding skipped for authenticated user:', user.id);
+        const { error } = await supabase
+          .from('profiles')
+          .update({ onboarding_completed: true }) // Mark as completed even if skipped
+          .eq('id', user.id);
+        
+        if (error) {
+          console.error('❌ Error updating onboarding status:', error);
+        } else {
+          console.log('✅ Onboarding marked as skipped in database');
+        }
+      } catch (error) {
+        console.error('❌ Error updating onboarding status:', error);
+      }
+    } else {
+      // For guests, store that they've seen the tutorial
+      console.log('👤 Marking onboarding skipped for guest user');
+      localStorage.setItem('jamai_onboarding_skipped', 'true');
+      console.log('✅ Onboarding marked as skipped in localStorage');
     }
     
     onComplete();
@@ -109,7 +139,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
   const isLastStep = currentStep === onboardingSteps.length - 1;
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleSkip}>
+    <Dialog open={isOpen} onOpenChange={handleSkipTutorial}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center justify-between">
@@ -171,7 +201,7 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
           <div className="flex justify-between items-center pt-4">
             <Button 
               variant="outline" 
-              onClick={handleSkip}
+              onClick={handleSkipTutorial}
               className="text-muted-foreground"
             >
               Skip Tutorial
