@@ -22,8 +22,6 @@ const TranslationModeToggle: React.FC<TranslationModeToggleProps> = ({
   onTranslationToggle,
   translationDirection,
   onTranslationDirectionChange,
-  isSummaryEnabled,
-  onSummaryToggle,
   isOpen,
   onClose
 }) => {
@@ -33,7 +31,7 @@ const TranslationModeToggle: React.FC<TranslationModeToggleProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Languages className="w-5 h-5" />
-            Language & Summary Settings
+            Translation Settings
           </DialogTitle>
         </DialogHeader>
         
@@ -71,25 +69,6 @@ const TranslationModeToggle: React.FC<TranslationModeToggleProps> = ({
                 </Select>
               </div>
             )}
-          </div>
-
-          {/* Summary Mode Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-medium flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Summary Mode
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  Summarize long messages automatically
-                </p>
-              </div>
-              <Switch
-                checked={isSummaryEnabled}
-                onCheckedChange={onSummaryToggle}
-              />
-            </div>
           </div>
 
           <div className="flex justify-end">

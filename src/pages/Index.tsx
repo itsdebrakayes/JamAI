@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -483,38 +482,18 @@ const Index = () => {
                   <FileText className="w-4 h-4 mr-1 sm:mr-2" />
                   <span className="hidden sm:inline">Summary</span>
                 </Button>
-                
-                {/* Translation button */}
+
+                {/* Translation icon button */}
                 {messages.length > 0 && (
                   <Button
-                    onClick={() => setShowTranslation(true)}
-                    className="h-9 px-3 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
-                    style={{
-                      background: 'linear-gradient(90deg, #eab308 0%, #fbbf24 50%, #eab308 100%)',
-                      color: '#000000'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(90deg, #ca8a04 0%, #f59e0b 50%, #ca8a04 100%)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'linear-gradient(90deg, #eab308 0%, #fbbf24 50%, #eab308 100%)';
-                    }}
+                    onClick={() => setShowLanguageSettings(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 w-9 p-0"
                   >
-                    <Languages className="w-4 h-4 mr-1 sm:mr-2" />
-                    <span className="hidden sm:inline">Translation</span>
+                    <Languages className="w-4 h-4" />
                   </Button>
                 )}
-
-                {/* Language Settings Button */}
-                <Button
-                  onClick={() => setShowLanguageSettings(true)}
-                  variant="outline"
-                  size="sm"
-                  className="h-9 px-3"
-                >
-                  <Languages className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Modes</span>
-                </Button>
 
                 <Sheet>
                   <SheetTrigger asChild>
@@ -534,7 +513,34 @@ const Index = () => {
                       </SheetTitle>
                     </SheetHeader>
                     <ScrollArea className="h-[calc(100vh-100px)] mt-6">
-                      <div className="pr-6">
+                      <div className="pr-6 space-y-6">
+                        {/* Summary Mode Settings */}
+                        <div className="border rounded-lg p-4">
+                          <h3 className="font-semibold mb-3 flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            Summary Mode
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium">Auto-summarize long messages</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Automatically summarize user messages that are longer than usual
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id="summary-mode"
+                                  checked={isSummaryEnabled}
+                                  onChange={(e) => setIsSummaryEnabled(e.target.checked)}
+                                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        
                         <UserProfileSettings />
                       </div>
                     </ScrollArea>
