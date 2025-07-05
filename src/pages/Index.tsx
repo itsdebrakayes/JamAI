@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import ChatMessage from '@/components/ChatMessage';
@@ -572,22 +573,22 @@ const Index = () => {
 
                   {/* Conditional banner based on existing chats - smaller and centered */}
                   {hasExistingChats ? (
-                    <div className="max-w-md mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
+                    <div className="max-w-sm mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
                       <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
                         <span className="text-sm">🌟</span>
                         <span className="font-semibold text-sm">Ready for another chat?</span>
                       </div>
-                      <p className="text-green-700 dark:text-green-300 text-xs">
+                      <p className="text-green-700 dark:text-green-300 text-xs text-center">
                         Welcome back! Ask me more about Jamaica or start fresh.
                       </p>
                     </div>
                   ) : (
-                    <div className="max-w-md mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
+                    <div className="max-w-sm mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
                       <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
                         <span className="text-sm">👋</span>
                         <span className="font-semibold text-sm">Start a new chat</span>
                       </div>
-                      <p className="text-green-700 dark:text-green-300 text-xs">
+                      <p className="text-green-700 dark:text-green-300 text-xs text-center">
                         Get started by asking me anything about Jamaica!
                       </p>
                     </div>
@@ -600,16 +601,10 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group"
+                          className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group hover:bg-gray-50 dark:hover:bg-gray-900"
                           style={{
                             borderColor: '#D1E7D7',
                             backgroundColor: 'transparent'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#E6F2EB';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
                           }}
                         >
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
@@ -636,7 +631,7 @@ const Index = () => {
                         />
                         
                         {/* Show translation for AI responses */}
-                        {!message.isUser && isTranslationEnabled && (
+                        {message.role === 'assistant' && isTranslationEnabled && (
                           <TranslatedResponse
                             originalText={message.content}
                             translationDirection={translationDirection}
@@ -644,7 +639,7 @@ const Index = () => {
                         )}
                         
                         {/* Show summary for user messages */}
-                        {message.isUser && isSummaryEnabled && (
+                        {message.role === 'user' && isSummaryEnabled && (
                           <SummaryResponse
                             originalText={message.content}
                           />
