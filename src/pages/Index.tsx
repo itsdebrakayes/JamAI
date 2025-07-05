@@ -10,6 +10,9 @@ import OnboardingTutorial from '@/components/OnboardingTutorial';
 import ThemeToggle from '@/components/ThemeToggle';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
 import UserProfileSettings from '@/components/UserProfileSettings';
+import TranslationModeToggle from '@/components/TranslationModeToggle';
+import TranslatedResponse from '@/components/TranslatedResponse';
+import SummaryResponse from '@/components/SummaryResponse';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -57,6 +60,11 @@ const Index = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [hasSeenTutorial, setHasSeenTutorial] = useState(false);
+  const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
+  const [translationDirection, setTranslationDirection] = useState<'auto' | 'to-english' | 'to-patois'>('auto');
+  const [isSummaryEnabled, setIsSummaryEnabled] = useState(false);
+  const [showLanguageSettings, setShowLanguageSettings] = useState(false);
+  const [hasCompletedTutorial, setHasCompletedTutorial] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -154,10 +162,10 @@ const Index = () => {
     }
   }, [chatHistory]);
 
-  // Check tutorial status and show onboarding for truly first-time users only
+  // Enhanced tutorial status check - fixed logic
   useEffect(() => {
     const checkTutorialStatus = async () => {
-      let tutorialSeen = false;
+      let tutorialCompleted = false;
 
       if (user) {
         // For authenticated users, check database
@@ -168,7 +176,8 @@ const Index = () => {
             .eq('id', user.id)
             .single();
           
-          tutorialSeen = data?.onboarding_completed === true;
+          tutorialCompleted = data?.onboarding_completed === true;
+          console.log('🎓 Database tutorial status:', tutorialCompleted);
         } catch (error) {
           console.error('Error checking onboarding status:', error);
         }
@@ -176,21 +185,27 @@ const Index = () => {
         // For guest users, check localStorage for any tutorial interaction
         const completed = localStorage.getItem('jamai_onboarding_completed');
         const skipped = localStorage.getItem('jamai_onboarding_skipped');
-        tutorialSeen = completed === 'true' || skipped === 'true';
+        tutorialCompleted = completed === 'true' || skipped === 'true';
+        console.log('🎓 LocalStorage tutorial status - completed:', completed, 'skipped:', skipped);
       }
 
-      setHasSeenTutorial(tutorialSeen);
+      setHasCompletedTutorial(tutorialCompleted);
 
       // Only show tutorial if:
-      // 1. User has never seen it before
+      // 1. User has never seen it before (tutorialCompleted is false)
       // 2. No existing chat activity
       // 3. Chat history has finished loading
-      if (!tutorialSeen && messages.length === 0 && chatHistory.length === 0) {
-        setShowOnboarding(true);
+      if (!tutorialCompleted && messages.length === 0 && chatHistory.length === 0) {
+        setTimeout(() => {
+          setShowOnboarding(true);
+          console.log('🎓 Showing tutorial for first-time user');
+        }, 500); // Small delay to ensure everything is loaded
+      } else {
+        console.log('🎓 Not showing tutorial - completed:', tutorialCompleted, 'messages:', messages.length, 'history:', chatHistory.length);
       }
     };
 
-    // Only check after chat history is loaded
+    // Only check after chat history loading is complete
     if (chatHistory.length >= 0) {
       checkTutorialStatus();
     }
@@ -244,7 +259,7 @@ const Index = () => {
     console.log('✏️ Renamed chat:', chatId, 'to:', newTitle);
   };
 
-  // Core function to handle sending messages - Enhanced for proverb requests
+  // Enhanced handleSendMessage to include translation and summary features
   const handleSendMessage = async (messageContent: string) => {
     if (!messageContent.trim()) return;
 
@@ -448,7 +463,7 @@ const Index = () => {
               </div>
               
               <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Summary button - green and white gradient */}
+                {/* Summary button */}
                 <Button
                   onClick={() => setShowSummary(true)}
                   className="h-9 px-3 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
@@ -468,7 +483,7 @@ const Index = () => {
                   <span className="hidden sm:inline">Summary</span>
                 </Button>
                 
-                {/* Translation button - yellow gradient, only show when there are messages */}
+                {/* Translation button */}
                 {messages.length > 0 && (
                   <Button
                     onClick={() => setShowTranslation(true)}
@@ -488,6 +503,17 @@ const Index = () => {
                     <span className="hidden sm:inline">Translation</span>
                   </Button>
                 )}
+
+                {/* Language Settings Button */}
+                <Button
+                  onClick={() => setShowLanguageSettings(true)}
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-3"
+                >
+                  <Languages className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Modes</span>
+                </Button>
 
                 <Sheet>
                   <SheetTrigger asChild>
@@ -601,13 +627,29 @@ const Index = () => {
                 {/* Messages area */}
                 <div className="flex-1 overflow-y-auto">
                   <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-                    {messages.map((message) => (
-                      <ChatMessage
-                        key={message.id}
-                        message={message.content}
-                        isUser={message.role === 'user'}
-                        timestamp={message.timestamp}
-                      />
+                    {messages.map((message, index) => (
+                      <div key={message.id}>
+                        <ChatMessage
+                          message={message.content}
+                          isUser={message.role === 'user'}
+                          timestamp={message.timestamp}
+                        />
+                        
+                        {/* Show translation for AI responses */}
+                        {!message.isUser && isTranslationEnabled && (
+                          <TranslatedResponse
+                            originalText={message.content}
+                            translationDirection={translationDirection}
+                          />
+                        )}
+                        
+                        {/* Show summary for user messages */}
+                        {message.isUser && isSummaryEnabled && (
+                          <SummaryResponse
+                            originalText={message.content}
+                          />
+                        )}
+                      </div>
                     ))}
                     {isTyping && <TypingIndicator />}
                     <div ref={messagesEndRef} />
@@ -626,6 +668,18 @@ const Index = () => {
               />
             </div>
           </div>
+
+          {/* Language Settings Modal */}
+          <TranslationModeToggle
+            isTranslationEnabled={isTranslationEnabled}
+            onTranslationToggle={setIsTranslationEnabled}
+            translationDirection={translationDirection}
+            onTranslationDirectionChange={setTranslationDirection}
+            isSummaryEnabled={isSummaryEnabled}
+            onSummaryToggle={setIsSummaryEnabled}
+            isOpen={showLanguageSettings}
+            onClose={() => setShowLanguageSettings(false)}
+          />
 
           {/* Summary Modal */}
           {showSummary && (
@@ -648,7 +702,7 @@ const Index = () => {
             isOpen={showOnboarding}
             onComplete={() => {
               setShowOnboarding(false);
-              setHasSeenTutorial(true);
+              setHasCompletedTutorial(true);
             }}
           />
         </div>

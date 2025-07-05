@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -78,7 +77,6 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
   const handleComplete = async () => {
     console.log('🎓 Completing onboarding tutorial...');
     
-    // Mark onboarding as completed or skipped
     if (user) {
       try {
         console.log('👤 Marking onboarding completed for authenticated user:', user.id);
@@ -96,8 +94,8 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
         console.error('❌ Error updating onboarding status:', error);
       }
     } else {
-      // For guests, store both completed and skipped flags
-      console.log('👤 Marking onboarding interaction for guest user');
+      // For guests, store completion flag
+      console.log('👤 Marking onboarding completed for guest user');
       localStorage.setItem('jamai_onboarding_completed', 'true');
       console.log('✅ Onboarding marked as completed in localStorage');
     }
@@ -105,7 +103,6 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
     onComplete();
   };
 
-  // Handle skip specifically to track that user has seen tutorial
   const handleSkipTutorial = async () => {
     console.log('⏭️ Skipping onboarding tutorial...');
     
