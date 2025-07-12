@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from '@/components/ui/button';
-import { Send, Plus, X, Copy, CheckCircle } from 'lucide-react';
+import { Send, Plus, X, Copy, CheckCircle, Menu, Settings, Sun, Moon } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +12,11 @@ import { useToast } from "@/hooks/use-toast"
 import { detectLanguage } from '@/utils/languageDetection';
 import { locationAwareService } from '@/services/locationAwareService';
 import ChatInput from '@/components/ChatInput';
+import ChatHistorySidebar from '@/components/ChatHistorySidebar';
+import ChatSuggestions from '@/components/ChatSuggestions';
+import SubscriptionBadge from '@/components/SubscriptionBadge';
+import ThemeToggle from '@/components/ThemeToggle';
+import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 
 interface Message {
   id: string;
@@ -21,8 +26,35 @@ interface Message {
   isPatois?: boolean;
 }
 
-const Index = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
+interface ChatHistory {
+  id: string;
+  title: string;
+  messages: Message[];
+  createdAt: Date;
+  autoTitle?: string;
+  keywords?: string[];
+  summary?: string;
+}
+
+interface MainContentProps {
+  messages: Message[];
+  setMessages: (messages: Message[]) => void;
+  currentChatId: string;
+  setCurrentChatId: (id: string) => void;
+  chatHistory: ChatHistory[];
+  saveChatHistory: (history: ChatHistory[]) => void;
+  startNewChat: () => void;
+}
+
+const MainContent = ({ 
+  messages, 
+  setMessages, 
+  currentChatId, 
+  setCurrentChatId, 
+  chatHistory, 
+  saveChatHistory, 
+  startNewChat 
+}: MainContentProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isConfigured, setIsConfigured] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
@@ -149,64 +181,121 @@ const Index = () => {
     }
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage(suggestion);
+  };
+
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b glass-effect modern-shadow">
         <div className="flex items-center gap-4">
+          <SidebarTrigger className="lg:hidden" />
           <Avatar>
             <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
             <AvatarFallback>JA</AvatarFallback>
           </Avatar>
-          <h1 className="text-lg font-semibold">JamAI Assistant</h1>
+          <div>
+            <h1 className="text-lg font-semibold text-primary">JamAI</h1>
+            <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="hidden sm:flex">
+            📋 Summary
+          </Button>
+          <Button variant="ghost" size="icon">
+            <Settings className="w-4 h-4" />
+          </Button>
+          <ThemeToggle />
+          <SubscriptionBadge />
         </div>
       </header>
 
       {/* Chat Messages */}
       <div className="flex-1 p-4 overflow-y-auto">
         <ScrollArea className="h-full">
-          <div className="space-y-4">
-            {messages.map((message) => (
-              <div key={message.id} className={`flex flex-col ${message.isUser ? 'items-end' : 'items-start'}`}>
-                <div className="flex items-start gap-2 max-w-[80%]">
-                  {!message.isUser && (
-                    <Avatar className="w-8 h-8 flex-shrink-0 mt-1">
-                      <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
-                      <AvatarFallback>AI</AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div className="flex flex-col gap-2 w-full">
-                    <Card className="w-fit">
-                      <CardContent className="p-3">
-                        <p className="text-sm break-words whitespace-pre-wrap">{message.text}</p>
-                      </CardContent>
-                      <CardFooter className="text-xs text-muted-foreground justify-between items-center p-3 pt-0">
-                        <span>{message.timestamp.toLocaleTimeString()}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="hover:bg-secondary/50 h-6 w-6"
-                          onClick={() => copyToClipboard(message.text)}
-                          disabled={isCopied}
-                        >
-                          {isCopied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  </div>
-                  
-                  {message.isUser && (
-                    <Avatar className="w-8 h-8 flex-shrink-0 mt-1">
-                      <AvatarFallback className="bg-primary text-primary-foreground">
-                        YOU
-                      </AvatarFallback>
-                    </Avatar>
-                  )}
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full space-y-8">
+              {/* Welcome Section */}
+              <div className="text-center space-y-4 max-w-2xl">
+                <div className="w-32 h-32 mx-auto mb-6">
+                  <Avatar className="w-full h-full">
+                    <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
+                    <AvatarFallback className="text-4xl">🇯🇲</AvatarFallback>
+                  </Avatar>
                 </div>
+                
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  Welcome to JamAI
+                </h1>
+                
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  Your friendly Jamaican AI assistant with location awareness. Ask me anything in 
+                  English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
+                </p>
+                
+                <Card className="bg-gradient-to-r from-secondary/10 to-accent/10 border-secondary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">👋</span>
+                      <div className="text-left">
+                        <p className="font-semibold text-secondary">Ready for another chat?</p>
+                        <p className="text-sm text-muted-foreground">Welcome back! Ask me more about Jamaica or start fresh.</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            ))}
-            <div ref={bottomRef} />
-          </div>
+              
+              {/* Chat Suggestions */}
+              <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map((message) => (
+                <div key={message.id} className={`flex flex-col ${message.isUser ? 'items-end' : 'items-start'}`}>
+                  <div className="flex items-start gap-2 max-w-[80%]">
+                    {!message.isUser && (
+                      <Avatar className="w-8 h-8 flex-shrink-0 mt-1">
+                        <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
+                        <AvatarFallback>AI</AvatarFallback>
+                      </Avatar>
+                    )}
+                    <div className="flex flex-col gap-2 w-full">
+                      <Card className="w-fit">
+                        <CardContent className="p-3">
+                          <p className="text-sm break-words whitespace-pre-wrap">{message.text}</p>
+                        </CardContent>
+                        <CardFooter className="text-xs text-muted-foreground justify-between items-center p-3 pt-0">
+                          <span>{message.timestamp.toLocaleTimeString()}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-secondary/50 h-6 w-6"
+                            onClick={() => copyToClipboard(message.text)}
+                            disabled={isCopied}
+                          >
+                            {isCopied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                    
+                    {message.isUser && (
+                      <Avatar className="w-8 h-8 flex-shrink-0 mt-1">
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          YOU
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
+                </div>
+              ))}
+              <div ref={bottomRef} />
+            </div>
+          )}
         </ScrollArea>
       </div>
 
@@ -215,6 +304,88 @@ const Index = () => {
         <ChatInput onSendMessage={sendMessage} disabled={isLoading} />
       </div>
     </div>
+  );
+};
+
+const Index = () => {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string>('');
+
+  useEffect(() => {
+    // Load chat history
+    const storedHistory = localStorage.getItem('chat-history');
+    if (storedHistory) {
+      setChatHistory(JSON.parse(storedHistory));
+    }
+  }, []);
+
+  const saveChatHistory = (history: ChatHistory[]) => {
+    localStorage.setItem('chat-history', JSON.stringify(history));
+    setChatHistory(history);
+  };
+
+  const startNewChat = () => {
+    if (messages.length > 0) {
+      // Save current chat to history
+      const newChatHistory: ChatHistory = {
+        id: currentChatId || uuidv4(),
+        title: messages.find(m => m.isUser)?.text?.substring(0, 50) + '...' || 'New Chat',
+        messages: messages,
+        createdAt: new Date()
+      };
+      const updatedHistory = [newChatHistory, ...chatHistory];
+      saveChatHistory(updatedHistory);
+    }
+    
+    // Clear current messages and start fresh
+    setMessages([]);
+    setCurrentChatId(uuidv4());
+  };
+
+  const loadChat = (chatId: string) => {
+    const chat = chatHistory.find(c => c.id === chatId);
+    if (chat) {
+      setMessages(chat.messages);
+      setCurrentChatId(chatId);
+    }
+  };
+
+  const deleteChats = (chatIds: string[]) => {
+    const updatedHistory = chatHistory.filter(chat => !chatIds.includes(chat.id));
+    saveChatHistory(updatedHistory);
+  };
+
+  const clearAllHistory = () => {
+    saveChatHistory([]);
+    setMessages([]);
+    setCurrentChatId(uuidv4());
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="flex min-h-screen w-full">
+        <ChatHistorySidebar 
+          chatHistory={chatHistory} 
+          currentChatId={currentChatId}
+          onNewChat={startNewChat}
+          onLoadChat={loadChat}
+          onDeleteChats={deleteChats}
+          onClearAllHistory={clearAllHistory}
+        />
+        <main className="flex-1">
+          <MainContent 
+            messages={messages}
+            setMessages={setMessages}
+            currentChatId={currentChatId}
+            setCurrentChatId={setCurrentChatId}
+            chatHistory={chatHistory}
+            saveChatHistory={saveChatHistory}
+            startNewChat={startNewChat}
+          />
+        </main>
+      </div>
+    </SidebarProvider>
   );
 };
 
