@@ -1,13 +1,16 @@
 import React from 'react';
 import { 
   Image, 
-  Eye, 
-  Mic, 
-  GraduationCap, 
-  Heart, 
-  Brain, 
-  ChefHat, 
-  Cloud, 
+  Search, 
+  Globe, 
+  FileText, 
+  Code, 
+  Calculator, 
+  Languages, 
+  Lightbulb,
+  GraduationCap,
+  Heart,
+  ChefHat,
   Calendar 
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -21,57 +24,75 @@ interface ToolsDropdownProps {
 const tools = [
   {
     icon: Image,
-    title: "Create an image",
-    description: "Generate artwork, logos, or any visual",
-    prompt: "Create an image for me"
+    title: "Generate image",
+    description: "Create artwork, logos, or any visual",
+    prompt: "Generate an image of "
   },
   {
-    icon: Eye,
-    title: "Analyze image",
-    description: "Upload and analyze any image",
-    prompt: "Help me analyze an image"
+    icon: Search,
+    title: "Search the web",
+    description: "Find current information online",
+    prompt: "Search the web for "
   },
   {
-    icon: Mic,
-    title: "Voice chat",
-    description: "Have a conversation using voice",
-    prompt: "Let's have a voice conversation"
+    icon: Globe,
+    title: "Deep web search", 
+    description: "Comprehensive research and analysis",
+    prompt: "Do a deep web search about "
+  },
+  {
+    icon: FileText,
+    title: "Write content",
+    description: "Create articles, essays, or documents",
+    prompt: "Write "
+  },
+  {
+    icon: Code,
+    title: "Code assistance",
+    description: "Help with programming and debugging",
+    prompt: "Help me code "
+  },
+  {
+    icon: Calculator,
+    title: "Solve math",
+    description: "Calculate and solve equations",
+    prompt: "Calculate "
+  },
+  {
+    icon: Languages,
+    title: "Translate",
+    description: "Translate between languages",
+    prompt: "Translate "
+  },
+  {
+    icon: Lightbulb,
+    title: "Brainstorm ideas",
+    description: "Generate creative solutions",
+    prompt: "Brainstorm ideas for "
   },
   {
     icon: GraduationCap,
     title: "Teach me Patois",
     description: "Learn Jamaican Patois phrases",
-    prompt: "Teach me some Jamaican Patois"
+    prompt: "Teach me Patois about "
   },
   {
     icon: Heart,
     title: "Jamaican proverbs",
     description: "Share wisdom through proverbs",
-    prompt: "Tell me a Jamaican proverb and explain its meaning"
-  },
-  {
-    icon: Brain,
-    title: "Cultural quiz",
-    description: "Test your knowledge of Jamaica",
-    prompt: "Give me a quiz about Jamaican culture"
+    prompt: "Tell me a Jamaican proverb about "
   },
   {
     icon: ChefHat,
     title: "Jamaican recipes",
     description: "Cook authentic Jamaican dishes",
-    prompt: "Teach me how to cook a traditional Jamaican dish"
-  },
-  {
-    icon: Cloud,
-    title: "Weather in Jamaica",
-    description: "Current weather conditions",
-    prompt: "What's the weather like in Jamaica today?"
+    prompt: "Give me a Jamaican recipe for "
   },
   {
     icon: Calendar,
     title: "Cultural events",
     description: "Upcoming festivals and events",
-    prompt: "Tell me about upcoming Jamaican cultural events"
+    prompt: "Tell me about Jamaican events related to "
   }
 ];
 
