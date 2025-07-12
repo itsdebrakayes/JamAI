@@ -383,12 +383,12 @@ const MainContent = ({
                 
                 <Card className="bg-gradient-to-r from-secondary/10 to-accent/10 border-secondary/20">
                   <CardContent className="p-4">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-col items-center gap-3 text-center">
                       <span className="text-2xl">👋</span>
-                    <div className="text-center">
-                      <p className="font-semibold text-secondary">Ready for another chat?</p>
-                      <p className="text-sm text-muted-foreground">Welcome back! Ask me more about Jamaica or start fresh.</p>
-                    </div>
+                      <div>
+                        <p className="font-semibold text-secondary">Ready for another chat?</p>
+                        <p className="text-sm text-muted-foreground">Welcome back! Ask me more about Jamaica or start fresh.</p>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -427,13 +427,10 @@ const MainContent = ({
                         </CardFooter>
                       </Card>
                     </div>
-                    
                     {message.isUser && (
-                      <Avatar className="w-8 h-8 flex-shrink-0 mt-1">
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          YOU
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <span className="text-white text-xs font-bold">YOU</span>
+                      </div>
                     )}
                   </div>
                 </div>
