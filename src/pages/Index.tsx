@@ -19,7 +19,6 @@ interface Message {
   isUser: boolean;
   timestamp: Date;
   isPatois?: boolean;
-  files?: { name: string; type: 'file' | 'image' }[];
 }
 
 const Index = () => {
@@ -93,73 +92,30 @@ const Index = () => {
       });
   };
 
-  const sendMessage = async (
-    messageText: string, 
-    attachedFiles?: Array<{file: File, type: 'file' | 'image', content?: string}>, 
-    imagePrompt?: string
-  ) => {
-    console.log('Index: sendMessage called with:', messageText, attachedFiles?.length || 0, 'files');
-    
-    if ((!messageText.trim() && (!attachedFiles || attachedFiles.length === 0)) || isLoading) return;
+  const sendMessage = async (messageText: string) => {
+    if (!messageText.trim() || isLoading) return;
 
-    console.log('Index: Proceeding with message send');
-    
     setIsLoading(true);
     
-    // Build the complete message including file contents
-    let completeMessage = messageText;
-    
-    if (attachedFiles && attachedFiles.length > 0) {
-      const fileContents = attachedFiles.map(file => {
-        if (file.type === 'file' && file.content) {
-          return `\n\n[File: ${file.file.name}]\n${file.content}`;
-        } else if (file.type === 'image') {
-          return `\n\n[Image uploaded: ${file.file.name}]`;
-        }
-        return `\n\n[File uploaded: ${file.file.name}]`;
-      }).join('');
-      
-      completeMessage = messageText + fileContents;
-    }
-
     const userMessage = {
       id: Date.now().toString(),
       text: messageText,
       isUser: true,
-      timestamp: new Date(),
-      files: attachedFiles?.map(f => ({ name: f.file.name, type: f.type }))
+      timestamp: new Date()
     };
 
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-
     saveMessagesToLocalStorage(newMessages);
 
     try {
-      console.log('Index: Calling AI service with complete message');
-      let response;
+      const isPatois = detectLanguage(messageText) === 'patois';
       
-      if (imagePrompt) {
-        // Handle image generation
-        console.log('Index: Processing image generation request');
-        response = await locationAwareService.processQuery(
-          `Generate an image with this description: ${imagePrompt}`,
-          detectLanguage(completeMessage) === 'patois',
-          newMessages
-        );
-      } else {
-        // Regular message processing with file contents
-        const isPatois = detectLanguage(completeMessage) === 'patois';
-        console.log('Index: Detected language is patois:', isPatois);
-        
-        response = await locationAwareService.processQuery(
-          completeMessage,
-          isPatois,
-          newMessages
-        );
-      }
-
-      console.log('Index: AI response received:', response.message.substring(0, 100) + '...');
+      const response = await locationAwareService.processQuery(
+        messageText,
+        isPatois,
+        newMessages
+      );
 
       const aiMessage = {
         id: (Date.now() + 1).toString(),
@@ -171,12 +127,11 @@ const Index = () => {
 
       const finalMessages = [...newMessages, aiMessage];
       setMessages(finalMessages);
-
       saveMessagesToLocalStorage(finalMessages);
       incrementUsageCount();
       
     } catch (error) {
-      console.error('Index: Error in sendMessage:', error);
+      console.error('Error in sendMessage:', error);
       
       const errorMessage = {
         id: (Date.now() + 1).toString(),
@@ -188,7 +143,6 @@ const Index = () => {
 
       const finalMessages = [...newMessages, errorMessage];
       setMessages(finalMessages);
-      
       saveMessagesToLocalStorage(finalMessages);
     } finally {
       setIsLoading(false);
@@ -239,21 +193,6 @@ const Index = () => {
                         </Button>
                       </CardFooter>
                     </Card>
-                    
-                    {/* File attachments display */}
-                    {message.files && message.files.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {message.files.map((file, index) => (
-                          <Badge 
-                            key={index} 
-                            variant="secondary" 
-                            className="flex items-center gap-1 p-2"
-                          >
-                            {file.type === 'image' ? '🖼️' : '📄'} {file.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
                   </div>
                   
                   {message.isUser && (
