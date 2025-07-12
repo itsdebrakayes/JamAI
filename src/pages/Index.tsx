@@ -182,11 +182,9 @@ const Index = () => {
           console.error('Error checking onboarding status:', error);
         }
       } else {
-        // For guest users, check localStorage for any tutorial interaction
-        const completed = localStorage.getItem('jamai_onboarding_completed');
-        const skipped = localStorage.getItem('jamai_onboarding_skipped');
-        tutorialCompleted = completed === 'true' || skipped === 'true';
-        console.log('🎓 LocalStorage tutorial status - completed:', completed, 'skipped:', skipped);
+        // For guest users, always show tutorial (don't check localStorage)
+        tutorialCompleted = false;
+        console.log('🎓 Guest user - tutorial will be shown every session');
       }
 
       setHasCompletedTutorial(tutorialCompleted);
@@ -483,28 +481,17 @@ const Index = () => {
                   <span className="hidden sm:inline">Summary</span>
                 </Button>
 
-                {/* Translation icon button */}
+                {/* Translation split-screen button */}
                 {messages.length > 0 && (
-                  <>
-                    <Button
-                      onClick={() => setShowTranslation(true)}
-                      variant="outline"
-                      size="sm"
-                      className="h-9 w-9 p-0"
-                      title="Split-screen translation"
-                    >
-                      <Languages className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      onClick={() => setShowLanguageSettings(true)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 p-0"
-                      title="Translation settings"
-                    >
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                  </>
+                  <Button
+                    onClick={() => setShowTranslation(true)}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 w-9 p-0"
+                    title="Split-screen translation"
+                  >
+                    <Languages className="w-4 h-4" />
+                  </Button>
                 )}
 
                 <Sheet>
@@ -526,6 +513,50 @@ const Index = () => {
                     </SheetHeader>
                     <ScrollArea className="h-[calc(100vh-100px)] mt-6">
                       <div className="pr-6 space-y-6">
+                        {/* Translation Mode Settings */}
+                        <div className="border rounded-lg p-4">
+                          <h3 className="font-semibold mb-3 flex items-center gap-2">
+                            <Languages className="w-4 h-4" />
+                            Translation Mode
+                          </h3>
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm font-medium">Auto-translate AI responses</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Automatically translate AI responses between English and Patois
+                                </p>
+                              </div>
+                              <div className="flex items-center space-x-2">
+                                <input
+                                  type="checkbox"
+                                  id="translation-mode"
+                                  checked={isTranslationEnabled}
+                                  onChange={(e) => setIsTranslationEnabled(e.target.checked)}
+                                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                                />
+                              </div>
+                            </div>
+                            
+                            {isTranslationEnabled && (
+                              <div className="ml-4 pt-2 border-t border-border">
+                                <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                                  Translation Direction:
+                                </label>
+                                <select
+                                  value={translationDirection}
+                                  onChange={(e) => setTranslationDirection(e.target.value as 'auto' | 'to-english' | 'to-patois')}
+                                  className="w-full text-xs p-2 border border-border rounded bg-background"
+                                >
+                                  <option value="auto">🔄 Auto Detect & Flip</option>
+                                  <option value="to-english">🇬🇧 Always to English</option>
+                                  <option value="to-patois">🇯🇲 Always to Patois</option>
+                                </select>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
                         {/* Summary Mode Settings */}
                         <div className="border rounded-lg p-4">
                           <h3 className="font-semibold mb-3 flex items-center gap-2">
@@ -677,26 +708,6 @@ const Index = () => {
               />
             </div>
           </div>
-
-          {/* Language Settings Modal */}
-          <TranslationModeToggle
-            isTranslationEnabled={isTranslationEnabled}
-            onTranslationToggle={setIsTranslationEnabled}
-            translationDirection={translationDirection}
-            onTranslationDirectionChange={setTranslationDirection}
-            isSummaryEnabled={isSummaryEnabled}
-            onSummaryToggle={setIsSummaryEnabled}
-            isOpen={showLanguageSettings}
-            onClose={() => setShowLanguageSettings(false)}
-          />
-
-          {/* Summary Modal */}
-          {showSummary && (
-            <ChatSummary
-              messages={convertToMessages(messages)}
-              onClose={() => setShowSummary(false)}
-            />
-          )}
 
           {/* Translation Mode */}
           {showTranslation && (

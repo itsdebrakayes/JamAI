@@ -94,10 +94,9 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
         console.error('❌ Error updating onboarding status:', error);
       }
     } else {
-      // For guests, store completion flag
-      console.log('👤 Marking onboarding completed for guest user');
-      localStorage.setItem('jamai_onboarding_completed', 'true');
-      console.log('✅ Onboarding marked as completed in localStorage');
+      // For guests, don't store completion - show tutorial every time
+      console.log('👤 Guest user completed tutorial - no persistence needed');
+      console.log('✅ Tutorial completed for guest session');
     }
     
     onComplete();
@@ -123,10 +122,9 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
         console.error('❌ Error updating onboarding status:', error);
       }
     } else {
-      // For guests, store that they've seen the tutorial
-      console.log('👤 Marking onboarding skipped for guest user');
-      localStorage.setItem('jamai_onboarding_skipped', 'true');
-      console.log('✅ Onboarding marked as skipped in localStorage');
+      // For guests, don't store skip status - show tutorial every time
+      console.log('👤 Guest user skipped tutorial - no persistence needed');
+      console.log('✅ Tutorial skipped for guest session');
     }
     
     onComplete();
