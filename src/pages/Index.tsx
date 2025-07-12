@@ -278,14 +278,81 @@ const Index = () => {
     console.log(`📝 Message feedback: ${messageId} - ${feedbackType}`);
   };
 
-  // Enhanced handleSendMessage to include structured prompt system
-  const handleSendMessage = async (messageContent: string, explicitMode?: PromptMode) => {
-    if (!messageContent.trim()) return;
+  // Enhanced handleSendMessage to include file uploads and image generation
+  const handleSendMessage = async (messageContent: string, files?: Array<{file: File, type: 'file' | 'image'}>, imagePrompt?: string) => {
+    if (!messageContent.trim() && (!files || files.length === 0)) return;
+
+    // Handle image generation request
+    if (imagePrompt) {
+      const userMessage: ChatMessageData = {
+        id: uuidv4(),
+        content: messageContent,
+        role: 'user',
+        timestamp: new Date(),
+      };
+      setMessages((prevMessages) => [...prevMessages, userMessage]);
+      setIsTyping(true);
+
+      try {
+        const { data, error } = await supabase.functions.invoke('openai-image-generation', {
+          body: { prompt: imagePrompt }
+        });
+
+        if (error) throw error;
+
+        const aiMessage: ChatMessageData = {
+          id: uuidv4(),
+          content: `Here's the image I generated for "${imagePrompt}":\n\n![Generated Image](${data.imageUrl})`,
+          role: 'assistant',
+          timestamp: new Date(),
+        };
+        setMessages((prevMessages) => [...prevMessages, aiMessage]);
+        updateChatHistory(userMessage, aiMessage);
+      } catch (error: any) {
+        console.error('Image generation error:', error);
+        const errorMessage: ChatMessageData = {
+          id: uuidv4(),
+          content: "Sorry, I couldn't generate that image right now. Please try again later.",
+          role: 'assistant',
+          timestamp: new Date(),
+        };
+        setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      } finally {
+        setIsTyping(false);
+      }
+      return;
+    }
+
+    // Process file uploads
+    let fileContext = '';
+    if (files && files.length > 0) {
+      const fileDescriptions = await Promise.all(
+        files.map(async ({ file, type }) => {
+          if (type === 'image') {
+            return `[Image uploaded: ${file.name}, ${(file.size / 1024).toFixed(1)}KB]`;
+          } else {
+            // For text files, try to read content
+            try {
+              const text = await file.text();
+              return `[File: ${file.name}]\n${text.substring(0, 1000)}${text.length > 1000 ? '...' : ''}`;
+            } catch {
+              return `[File uploaded: ${file.name}, ${(file.size / 1024).toFixed(1)}KB]`;
+            }
+          }
+        })
+      );
+      fileContext = fileDescriptions.join('\n\n');
+    }
+
+    // Combine message content with file context
+    const fullMessageContent = fileContext 
+      ? `${messageContent}\n\n${fileContext}`
+      : messageContent;
 
     // Add user message to the chat
     const userMessage: ChatMessageData = {
       id: uuidv4(),
-      content: messageContent,
+      content: messageContent, // Display original message without file context
       role: 'user',
       timestamp: new Date(),
     };
@@ -296,7 +363,7 @@ const Index = () => {
 
     try {
       // Detect if user message is in Patois
-      const detectedLanguage = detectLanguage(messageContent);
+      const detectedLanguage = detectLanguage(fullMessageContent);
       const isPatois = detectedLanguage === 'patois';
       console.log('🗣️ Detected language - Patois:', isPatois);
 
@@ -324,12 +391,11 @@ const Index = () => {
         })
         .slice(-3);
 
-      // Use the location-aware service with structured prompts
+      // Use the location-aware service with full content including files
       const aiResponse = await locationAwareService.processQuery(
-        messageContent,
+        fullMessageContent,
         isPatois,
-        conversationHistory,
-        explicitMode
+        conversationHistory
       );
 
       // Add AI message to the chat
@@ -347,7 +413,7 @@ const Index = () => {
       console.error('Error processing message:', error);
       
       // Detect language for error message
-      const detectedLanguage = detectLanguage(messageContent);
+      const detectedLanguage = detectLanguage(fullMessageContent);
       const isPatoisForError = detectedLanguage === 'patois';
       
       // Add fallback error message
