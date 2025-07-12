@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Image, 
   Search, 
@@ -11,7 +11,8 @@ import {
   GraduationCap,
   Heart,
   ChefHat,
-  Calendar 
+  Calendar,
+  Menu
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -97,8 +98,14 @@ const tools = [
 ];
 
 const ToolsDropdown = ({ onToolSelect, disabled }: ToolsDropdownProps) => {
+  const [colorIndex, setColorIndex] = useState(0);
+  const colors = ['text-green-600', 'text-yellow-500', 'text-black'];
+  
+  const handleMenuClick = () => {
+    setColorIndex((prev) => (prev + 1) % colors.length);
+  };
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={handleMenuClick}>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
@@ -107,7 +114,7 @@ const ToolsDropdown = ({ onToolSelect, disabled }: ToolsDropdownProps) => {
           disabled={disabled}
           className="h-10 w-10 rounded-2xl hover:bg-muted/50 transition-all duration-200"
         >
-          <span className="text-lg">🛠️</span>
+          <Menu className={`w-5 h-5 ${colors[colorIndex]} transition-colors duration-300`} />
         </Button>
       </DropdownMenuTrigger>
       
