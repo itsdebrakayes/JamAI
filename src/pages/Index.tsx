@@ -427,11 +427,6 @@ const MainContent = ({
                         </CardFooter>
                       </Card>
                     </div>
-                    {message.isUser && (
-                      <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                        <span className="text-white text-xs font-bold">YOU</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               ))}

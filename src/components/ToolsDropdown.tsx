@@ -1,18 +1,4 @@
 import React from 'react';
-import { 
-  Image, 
-  Search, 
-  Globe, 
-  FileText, 
-  Code, 
-  Calculator, 
-  Languages, 
-  Lightbulb,
-  GraduationCap,
-  Heart,
-  ChefHat,
-  Calendar 
-} from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 
@@ -23,73 +9,73 @@ interface ToolsDropdownProps {
 
 const tools = [
   {
-    icon: Image,
+    emoji: "🖼️",
     title: "Generate image",
     description: "Create artwork, logos, or any visual",
     prompt: "Generate an image of "
   },
   {
-    icon: Search,
+    emoji: "🔍",
     title: "Search the web",
     description: "Find current information online",
     prompt: "Search the web for "
   },
   {
-    icon: Globe,
+    emoji: "🌐",
     title: "Deep web search", 
     description: "Comprehensive research and analysis",
     prompt: "Do a deep web search about "
   },
   {
-    icon: FileText,
+    emoji: "📝",
     title: "Write content",
     description: "Create articles, essays, or documents",
     prompt: "Write "
   },
   {
-    icon: Code,
+    emoji: "💻",
     title: "Code assistance",
     description: "Help with programming and debugging",
     prompt: "Help me code "
   },
   {
-    icon: Calculator,
+    emoji: "🧮",
     title: "Solve math",
     description: "Calculate and solve equations",
     prompt: "Calculate "
   },
   {
-    icon: Languages,
+    emoji: "🔤",
     title: "Translate",
     description: "Translate between languages",
     prompt: "Translate "
   },
   {
-    icon: Lightbulb,
+    emoji: "💡",
     title: "Brainstorm ideas",
     description: "Generate creative solutions",
     prompt: "Brainstorm ideas for "
   },
   {
-    icon: GraduationCap,
+    emoji: "🇯🇲",
     title: "Teach me Patois",
     description: "Learn Jamaican Patois phrases",
     prompt: "Teach me Patois about "
   },
   {
-    icon: Heart,
+    emoji: "❤️",
     title: "Jamaican proverbs",
     description: "Share wisdom through proverbs",
     prompt: "Tell me a Jamaican proverb about "
   },
   {
-    icon: ChefHat,
+    emoji: "🍛",
     title: "Jamaican recipes",
     description: "Cook authentic Jamaican dishes",
     prompt: "Give me a Jamaican recipe for "
   },
   {
-    icon: Calendar,
+    emoji: "🎉",
     title: "Cultural events",
     description: "Upcoming festivals and events",
     prompt: "Tell me about Jamaican events related to "
@@ -128,7 +114,7 @@ const ToolsDropdown = ({ onToolSelect, disabled }: ToolsDropdownProps) => {
             className="cursor-pointer hover:bg-muted/50 p-3 flex items-start gap-3"
           >
             <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <tool.icon className="w-4 h-4 text-primary" />
+              <span className="text-base">{tool.emoji}</span>
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-foreground">{tool.title}</div>
