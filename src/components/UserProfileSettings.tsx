@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { X, Eye, EyeOff, CreditCard, User, Shield, FileText, Languages, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface UserProfileSettingsProps {
   open: boolean;
@@ -16,6 +19,8 @@ interface UserProfileSettingsProps {
 
 const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) => {
   const { toast } = useToast();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState('debrakayesam@gmail.com');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -76,24 +81,38 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
   const handleSignOut = async () => {
     try {
       onOpenChange(false);
+      await signOut();
+      navigate('/auth');
       toast({
         title: "Signed out",
         description: "You have been successfully signed out.",
       });
     } catch (error) {
       console.error('Error signing out:', error);
+      toast({
+        variant: "destructive",
+        title: "Sign out failed",
+        description: "Failed to sign out. Please try again.",
+      });
     }
   };
 
   const handleSignOutAll = async () => {
     try {
       onOpenChange(false);
+      await supabase.auth.signOut({ scope: 'global' });
+      navigate('/auth');
       toast({
         title: "Signed out from all devices",
         description: "You have been successfully signed out from all devices.",
       });
     } catch (error) {
       console.error('Error signing out from all devices:', error);
+      toast({
+        variant: "destructive",
+        title: "Sign out failed",
+        description: "Failed to sign out from all devices. Please try again.",
+      });
     }
   };
 
