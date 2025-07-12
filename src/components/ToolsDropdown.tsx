@@ -98,14 +98,12 @@ const tools = [
 ];
 
 const ToolsDropdown = ({ onToolSelect, disabled }: ToolsDropdownProps) => {
-  const [colorIndex, setColorIndex] = useState(0);
-  const colors = ['text-green-600', 'text-yellow-500', 'text-black'];
-  
-  const handleMenuClick = () => {
-    setColorIndex((prev) => (prev + 1) % colors.length);
+  const getItemColor = (index: number) => {
+    const colors = ['text-black', 'text-green-600', 'text-yellow-500'];
+    return colors[index % 3];
   };
   return (
-    <DropdownMenu onOpenChange={handleMenuClick}>
+    <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
@@ -114,7 +112,7 @@ const ToolsDropdown = ({ onToolSelect, disabled }: ToolsDropdownProps) => {
           disabled={disabled}
           className="h-10 w-10 rounded-2xl hover:bg-muted/50 transition-all duration-200"
         >
-          <Menu className={`w-5 h-5 ${colors[colorIndex]} transition-colors duration-300`} />
+          <Menu className="w-5 h-5" />
         </Button>
       </DropdownMenuTrigger>
       
@@ -134,8 +132,8 @@ const ToolsDropdown = ({ onToolSelect, disabled }: ToolsDropdownProps) => {
             onClick={() => onToolSelect(tool.prompt)}
             className="cursor-pointer hover:bg-muted/50 p-3 flex items-start gap-3"
           >
-            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <tool.icon className="w-4 h-4 text-primary" />
+            <div className={`flex-shrink-0 w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center`}>
+              <tool.icon className={`w-4 h-4 ${getItemColor(index)}`} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium text-foreground">{tool.title}</div>
