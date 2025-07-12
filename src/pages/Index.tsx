@@ -199,7 +199,7 @@ const MainContent = ({
             <AvatarFallback>JA</AvatarFallback>
           </Avatar>
           <div>
-            <h1 className="text-lg font-semibold text-primary">JamAI</h1>
+            <h1 className="text-lg font-semibold bg-gradient-to-r from-yellow-500 to-green-600 bg-clip-text text-transparent">JamAI</h1>
             <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
           </div>
         </div>
@@ -208,7 +208,7 @@ const MainContent = ({
           <Button 
             variant="outline" 
             size="sm" 
-            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-400 hover:from-green-600 hover:to-green-500 text-white border-0 rounded-full px-4 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-green-700 via-white to-green-700 hover:from-green-800 hover:via-gray-100 hover:to-green-800 text-green-800 border-0 rounded-full px-4 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <FileText className="w-4 h-4" />
             Summary
@@ -252,10 +252,10 @@ const MainContent = ({
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">👋</span>
-                      <div className="text-left">
-                        <p className="font-semibold text-secondary">Ready for another chat?</p>
-                        <p className="text-sm text-muted-foreground">Welcome back! Ask me more about Jamaica or start fresh.</p>
-                      </div>
+                    <div className="text-center">
+                      <p className="font-semibold text-secondary">Ready for another chat?</p>
+                      <p className="text-sm text-muted-foreground">Welcome back! Ask me more about Jamaica or start fresh.</p>
+                    </div>
                     </div>
                   </CardContent>
                 </Card>

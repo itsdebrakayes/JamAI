@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { X, Eye, EyeOff, CreditCard, User, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { X, Eye, EyeOff, CreditCard, User, Shield, FileText, Languages, LogOut } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface UserProfileSettingsProps {
@@ -84,20 +85,24 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
     }
   };
 
+  const handleSignOutAll = async () => {
+    try {
+      onOpenChange(false);
+      toast({
+        title: "Signed out from all devices",
+        description: "You have been successfully signed out from all devices.",
+      });
+    } catch (error) {
+      console.error('Error signing out from all devices:', error);
+    }
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-sm">
-        <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <DialogTitle className="text-xl font-semibold">Settings & Profile</DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onOpenChange(false)}
-            className="h-8 w-8"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto">
+        <SheetHeader className="pb-4">
+          <SheetTitle className="text-xl font-semibold">Settings & Profile</SheetTitle>
+        </SheetHeader>
 
         <div className="space-y-6">
           {/* Subscription Plan */}
@@ -204,6 +209,35 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
             </CardContent>
           </Card>
 
+          {/* Summary & Translation Settings */}
+          <Card className="border border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <FileText className="w-5 h-5" />
+                Summary & Translation
+              </CardTitle>
+              <CardDescription>
+                Configure AI response settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="auto-summary" className="flex items-center gap-2">
+                  📝 Auto Summary
+                </Label>
+                <Switch id="auto-summary" defaultChecked />
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <Label htmlFor="translation-mode" className="flex items-center gap-2">
+                  <Languages className="w-4 h-4" />
+                  Translation Mode
+                </Label>
+                <Switch id="translation-mode" defaultChecked />
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Security Actions */}
           <Card className="border border-border/50">
             <CardHeader className="pb-3">
@@ -215,19 +249,29 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
                 Manage your account security and sessions
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-3">
               <Button
                 onClick={handleSignOut}
                 variant="secondary"
-                className="w-full bg-muted hover:bg-muted/80"
+                className="w-full bg-muted hover:bg-muted/80 flex items-center gap-2"
               >
+                <LogOut className="w-4 h-4" />
                 Sign out of account
+              </Button>
+              
+              <Button
+                onClick={handleSignOutAll}
+                variant="destructive"
+                className="w-full flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign out of all accounts
               </Button>
             </CardContent>
           </Card>
         </div>
-      </DialogContent>
-    </Dialog>
+      </SheetContent>
+    </Sheet>
   );
 };
 
