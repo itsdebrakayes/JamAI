@@ -318,20 +318,20 @@ const ChatHistorySidebar = ({
               <MessageSquare className="w-5 h-5" />
             </Button>
           </DrawerTrigger>
-          <DrawerContent className="h-[85vh]">
-            <DrawerHeader className="pb-4">
+          <DrawerContent className="h-[85vh] flex flex-col">
+            <DrawerHeader className="pb-4 flex-shrink-0">
               <DrawerTitle className="text-left flex items-center gap-2">
                 <span className="text-lg font-bold">🇯🇲</span>
                 <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
               </DrawerTitle>
             </DrawerHeader>
             
-            <div className="flex-1 overflow-hidden flex flex-col px-4">
+            <div className="flex-1 overflow-hidden flex flex-col px-4 min-h-0">
               {/* New chat button */}
               <DrawerClose asChild>
                 <Button 
                   onClick={handleNewChat}
-                  className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-4 transition-all duration-200"
+                  className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-4 transition-all duration-200 flex-shrink-0"
                   variant="outline"
                 >
                   <Plus className="w-4 h-4" />
@@ -341,7 +341,7 @@ const ChatHistorySidebar = ({
 
               {/* Chat management controls */}
               {chatHistory.length > 0 && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2 mb-4 flex-shrink-0">
                   {!isSelectionMode && (
                     <Popover>
                       <PopoverTrigger asChild>
@@ -397,8 +397,8 @@ const ChatHistorySidebar = ({
                 </div>
               )}
 
-              {/* Grouped chat list */}
-              <div className="flex-1 overflow-y-auto">
+              {/* Grouped chat list - now properly scrollable */}
+              <div className="flex-1 overflow-y-auto min-h-0">
                 {groupedChats.length === 0 ? (
                   <div className="text-center text-muted-foreground py-8">
                     <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -471,6 +471,14 @@ const ChatHistorySidebar = ({
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Fixed footer at bottom - separate from scrollable content */}
+              <div className="p-4 bg-background/90 border-t border-border/30 flex-shrink-0">
+                <div className="flex items-center gap-3 px-3 py-2 text-sm">
+                  <span className="text-lg font-bold">🇯🇲</span>
+                  <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
+                </div>
               </div>
             </div>
           </DrawerContent>
@@ -558,12 +566,12 @@ const ChatHistorySidebar = ({
     );
   }
 
-  // Desktop sidebar - Fixed positioning without collapsible functionality
+  // Desktop sidebar - Fixed positioning with proper footer placement
   return (
     <>
-      <div className="w-80 border-r border-border bg-background/95 backdrop-blur-md flex flex-col">
-        {/* Sidebar header with new chat button and controls */}
-        <div className="p-4 bg-background/90 border-b border-border/30">
+      <div className="w-80 border-r border-border bg-background/95 backdrop-blur-md flex flex-col h-screen">
+        {/* Sidebar header with new chat button and controls - fixed at top */}
+        <div className="p-4 bg-background/90 border-b border-border/30 flex-shrink-0">
           <Button 
             onClick={handleNewChat}
             className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-2 transition-all duration-200"
@@ -631,8 +639,8 @@ const ChatHistorySidebar = ({
           )}
         </div>
         
-        {/* Sidebar content with chat list */}
-        <div className="flex-1 overflow-y-auto px-2 bg-background/90">
+        {/* Sidebar content with chat list - scrollable middle section */}
+        <div className="flex-1 overflow-y-auto px-2 bg-background/90 min-h-0">
           {groupedChats.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
@@ -705,8 +713,8 @@ const ChatHistorySidebar = ({
           )}
         </div>
         
-        {/* Sidebar footer with app branding - dark mode support */}
-        <div className="p-4 bg-background/90 border-t border-border/30">
+        {/* Sidebar footer with app branding - fixed at bottom */}
+        <div className="p-4 bg-background/90 border-t border-border/30 flex-shrink-0">
           <div className="flex items-center gap-3 px-3 py-2 text-sm">
             <span className="text-lg font-bold">🇯🇲</span>
             <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
