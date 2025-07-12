@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import VoiceControls from './VoiceControls';
+import ToolsDropdown from './ToolsDropdown';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
@@ -65,38 +66,45 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     <div className="relative">
       <form onSubmit={handleSubmit}>
         <div className="flex items-end gap-3 glass-effect rounded-3xl p-4 modern-shadow-lg">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                disabled={disabled}
-                className="h-10 w-10 rounded-2xl hover:bg-muted/50 transition-all duration-200"
-              >
-                <Plus className="w-5 h-5" />
-              </Button>
-            </DropdownMenuTrigger>
+          <div className="flex gap-1">
+            <ToolsDropdown 
+              onToolSelect={onSendMessage}
+              disabled={disabled}
+            />
             
-            <DropdownMenuContent side="top" align="start" className="w-48 bg-background border shadow-lg">
-              <DropdownMenuItem
-                onClick={() => handleFileUpload('file')}
-                className="cursor-pointer hover:bg-muted/50"
-              >
-                <FileText className="w-4 h-4 mr-2" />
-                Upload File
-              </DropdownMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  disabled={disabled}
+                  className="h-10 w-10 rounded-2xl hover:bg-muted/50 transition-all duration-200"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
               
-              <DropdownMenuItem
-                onClick={() => handleFileUpload('image')}
-                className="cursor-pointer hover:bg-muted/50"
-              >
-                <Image className="w-4 h-4 mr-2" />
-                Upload Image
-              </DropdownMenuItem>
-              
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <DropdownMenuContent side="top" align="start" className="w-48 bg-background border shadow-lg">
+                <DropdownMenuItem
+                  onClick={() => handleFileUpload('file')}
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Upload File
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem
+                  onClick={() => handleFileUpload('image')}
+                  className="cursor-pointer hover:bg-muted/50"
+                >
+                  <Image className="w-4 h-4 mr-2" />
+                  Upload Image
+                </DropdownMenuItem>
+                
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           
           <Textarea
             value={message}

@@ -394,8 +394,6 @@ const MainContent = ({
                 </Card>
               </div>
               
-              {/* Chat Suggestions */}
-              <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
             </div>
           ) : (
             <div className="space-y-4">
