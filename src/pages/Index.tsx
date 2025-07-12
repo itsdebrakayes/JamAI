@@ -65,6 +65,7 @@ const Index = () => {
   const [isSummaryEnabled, setIsSummaryEnabled] = useState(false);
   const [showLanguageSettings, setShowLanguageSettings] = useState(false);
   const [hasCompletedTutorial, setHasCompletedTutorial] = useState(false);
+  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'positive' | 'negative'>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -259,6 +260,16 @@ const Index = () => {
     console.log('✏️ Renamed chat:', chatId, 'to:', newTitle);
   };
 
+  // Handle message feedback
+  const handleMessageFeedback = (messageId: string, isPositive: boolean) => {
+    const feedbackType = isPositive ? 'positive' : 'negative';
+    setMessageFeedback(prev => ({
+      ...prev,
+      [messageId]: feedbackType
+    }));
+    console.log(`📝 Message feedback: ${messageId} - ${feedbackType}`);
+  };
+
   // Enhanced handleSendMessage to include translation and summary features
   const handleSendMessage = async (messageContent: string) => {
     if (!messageContent.trim()) return;
@@ -294,6 +305,23 @@ const Index = () => {
         timestamp: msg.timestamp
       }));
 
+      // Get recent feedback for context
+      const recentFeedback = Object.entries(messageFeedback)
+        .filter(([msgId, feedback]) => {
+          // Only include feedback from recent messages in this conversation
+          const message = messages.find(m => m.id === msgId);
+          return message && message.role === 'assistant';
+        })
+        .map(([msgId, feedback]) => {
+          const message = messages.find(m => m.id === msgId);
+          return {
+            messageContent: message?.content || '',
+            feedback: feedback,
+            timestamp: message?.timestamp || new Date()
+          };
+        })
+        .slice(-3); // Only last 3 feedback items for context
+
       let enhancedMessage = messageContent;
       
       // Enhance proverb requests with specific instructions
@@ -301,6 +329,15 @@ const Index = () => {
         enhancedMessage = isPatois 
           ? `${messageContent}. Please respond in Patois and include: the proverb in Patois, its English translation, the meaning, and how it's used.`
           : `${messageContent}. Please respond in English and include: the Jamaican proverb in Patois, its English translation, the meaning, and how it's used in Jamaican culture.`;
+      }
+
+      // Add feedback context to the message if there's recent feedback
+      if (recentFeedback.length > 0) {
+        const feedbackContext = recentFeedback.map(fb => 
+          `Previous response "${fb.messageContent.substring(0, 50)}..." received ${fb.feedback} feedback`
+        ).join('. ');
+        
+        enhancedMessage += `\n\nContext: ${feedbackContext}. Please adjust your response style accordingly - if previous responses received negative feedback, try a different approach in tone, detail level, or cultural authenticity.`;
       }
 
       // Call the location-aware AI service
@@ -680,6 +717,8 @@ const Index = () => {
                           message={message.content}
                           isUser={message.role === 'user'}
                           timestamp={message.timestamp}
+                          messageId={message.id}
+                          onFeedback={handleMessageFeedback}
                         />
                         
                         {/* Show translation for AI responses */}

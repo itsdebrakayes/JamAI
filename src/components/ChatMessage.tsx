@@ -1,20 +1,23 @@
 
 import React from 'react';
 import { formatMessageWithBold, hasAsteriskFormatting } from '@/utils/messageFormatter';
+import MessageActions from './MessageActions';
 
 interface ChatMessageProps {
   message: string;
   isUser: boolean;
   timestamp: Date;
+  messageId?: string;
+  onFeedback?: (messageId: string, isPositive: boolean) => void;
 }
 
-const ChatMessage = ({ message, isUser, timestamp }: ChatMessageProps) => {
+const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: ChatMessageProps) => {
   const formattedMessage = !isUser && hasAsteriskFormatting(message) 
     ? formatMessageWithBold(message)
     : message;
 
   return (
-    <div className={`flex gap-4 p-4 ${isUser ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex gap-4 p-4 group ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
         <div className="flex-shrink-0">
           <img 
@@ -40,6 +43,15 @@ const ChatMessage = ({ message, isUser, timestamp }: ChatMessageProps) => {
         }`}>
           {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
+        
+        {/* Add action buttons for AI messages */}
+        {!isUser && messageId && onFeedback && (
+          <MessageActions
+            messageId={messageId}
+            messageContent={message}
+            onFeedback={onFeedback}
+          />
+        )}
       </div>
       
       {isUser && (
