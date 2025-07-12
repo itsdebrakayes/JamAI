@@ -16,7 +16,7 @@ const ChatSuggestions = ({ onSuggestionClick }: ChatSuggestionsProps) => {
             <button
               key={suggestion.id}
               onClick={() => onSuggestionClick(suggestion.text)}
-              className="group px-5 py-4 rounded-2xl border-2 border-secondary/30 bg-card/60 backdrop-blur-sm hover:bg-secondary/10 hover:border-secondary/60 transition-all duration-300 text-sm font-medium modern-shadow hover:modern-shadow-lg text-left hover:scale-[1.02]"
+              className="group px-5 py-4 rounded-2xl border-2 border-secondary/30 bg-card/60 backdrop-blur-sm hover:border-secondary transition-all duration-300 text-sm font-medium modern-shadow hover:modern-shadow-lg text-left hover:scale-[1.02] dark:hover:shadow-[0_0_20px_hsl(var(--secondary)/0.3)] dark:hover:border-secondary/80"
             >
               <span className="text-foreground/80 group-hover:text-foreground transition-colors duration-200">
                 {suggestion.text}
@@ -31,7 +31,7 @@ const ChatSuggestions = ({ onSuggestionClick }: ChatSuggestionsProps) => {
             <button
               key={suggestion.id}
               onClick={() => onSuggestionClick(suggestion.text)}
-              className="group px-5 py-4 rounded-2xl border-2 border-secondary/30 bg-card/60 backdrop-blur-sm hover:bg-secondary/10 hover:border-secondary/60 transition-all duration-300 text-sm font-medium modern-shadow hover:modern-shadow-lg text-left hover:scale-[1.02]"
+              className="group px-5 py-4 rounded-2xl border-2 border-secondary/30 bg-card/60 backdrop-blur-sm hover:border-secondary transition-all duration-300 text-sm font-medium modern-shadow hover:modern-shadow-lg text-left hover:scale-[1.02] dark:hover:shadow-[0_0_20px_hsl(var(--secondary)/0.3)] dark:hover:border-secondary/80"
             >
               <span className="text-foreground/80 group-hover:text-foreground transition-colors duration-200">
                 {suggestion.text}

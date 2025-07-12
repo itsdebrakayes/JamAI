@@ -485,14 +485,26 @@ const Index = () => {
 
                 {/* Translation icon button */}
                 {messages.length > 0 && (
-                  <Button
-                    onClick={() => setShowLanguageSettings(true)}
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-9 p-0"
-                  >
-                    <Languages className="w-4 h-4" />
-                  </Button>
+                  <>
+                    <Button
+                      onClick={() => setShowTranslation(true)}
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-9 p-0"
+                      title="Split-screen translation"
+                    >
+                      <Languages className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={() => setShowLanguageSettings(true)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-9 w-9 p-0"
+                      title="Translation settings"
+                    >
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </>
                 )}
 
                 <Sheet>
@@ -607,11 +619,7 @@ const Index = () => {
                         <button
                           key={suggestion.id}
                           onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group hover:bg-gray-50 dark:hover:bg-gray-900"
-                          style={{
-                            borderColor: '#D1E7D7',
-                            backgroundColor: 'transparent'
-                          }}
+                          className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group border-secondary/30 bg-transparent dark:hover:shadow-[0_0_20px_hsl(var(--secondary)/0.3)] dark:hover:border-secondary/80 hover:border-secondary"
                         >
                           <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
                             {suggestion.text}

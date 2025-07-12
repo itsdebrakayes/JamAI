@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { X, Languages, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -79,7 +78,7 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
       
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          userMessage: `Please translate this Jamaican Patois text to clear, natural English while preserving the meaning and tone. Only provide the translation, no explanation: "${patoisText}"`,
+          userMessage: `Please translate this Jamaican Patois text to clear, natural English while preserving the meaning and tone. Only provide the translation, no explanation: \\\"${patoisText}\\\"`,
           isUserMessagePatois: false, // We want English response
           conversationHistory: [],
           storedKnowledge: ''
@@ -109,7 +108,7 @@ const TranslationMode = ({ messages, onClose }: TranslationModeProps) => {
       
       const { data, error } = await supabase.functions.invoke('gemini-chat', {
         body: {
-          userMessage: `Please translate this English text to authentic Jamaican Patois while keeping the meaning and tone. Only provide the translation, no explanation: "${englishText}"`,
+          userMessage: `Please translate this English text to authentic Jamaican Patois while keeping the meaning and tone. Only provide the translation, no explanation: \\\"${englishText}\\\"`,
           isUserMessagePatois: true, // We want Patois response
           conversationHistory: [],
           storedKnowledge: ''
