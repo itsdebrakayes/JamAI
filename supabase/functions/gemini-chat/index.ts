@@ -40,16 +40,33 @@ serve(async (req) => {
       });
     }
 
-    // Build system prompt based on user's language preference
-    const systemPrompt = isUserMessagePatois 
-      ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
+    // Check if this is already a structured prompt
+    const isStructuredPrompt = userMessage.includes('MODE:') && userMessage.includes('USER INPUT:');
+    
+    let finalPrompt: string;
+    
+    if (isStructuredPrompt) {
+      // Use the structured prompt as-is, but add context if available
+      finalPrompt = userMessage;
+      
+      if (storedKnowledge) {
+        finalPrompt += `\n\nPrevious Knowledge:\n${storedKnowledge}`;
+      }
+      
+      if (conversationContext) {
+        finalPrompt += `\n\nCurrent Conversation:\n${conversationContext}`;
+      }
+    } else {
+      // Fallback to original system for backwards compatibility
+      const systemPrompt = isUserMessagePatois 
+        ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
 
 IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
 
 ${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}
 
 ${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`
-      : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.
+        : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.
 
 IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
 
@@ -57,9 +74,11 @@ ${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}
 
 ${conversationContext ? `Current Conversation:\n${conversationContext}\n` : ''}`;
 
+      finalPrompt = `${systemPrompt}\n\nUser message: ${userMessage}`;
+    }
+
     // Generate response from Gemini
-    const prompt = `${systemPrompt}\n\nUser message: ${userMessage}`;
-    const result = await model.generateContent(prompt);
+    const result = await model.generateContent(finalPrompt);
     const response = await result.response;
     const responseText = response.text();
 

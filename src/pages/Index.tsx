@@ -26,6 +26,7 @@ import chatSuggestionsData from '@/data/chatSuggestions.json';
 import { getChatSessions, getMessagesForSession, generateIntelligentTitle } from '@/utils/chatHistory';
 import { locationAwareService } from '@/services/locationAwareService';
 import { detectLanguage } from '@/utils/languageDetection';
+import { formatStructuredPrompt, determinePromptMode, type PromptMode } from '@/utils/promptFormatter';
 
 // Define the structure for chat messages
 type ChatMessageData = {
@@ -270,8 +271,8 @@ const Index = () => {
     console.log(`📝 Message feedback: ${messageId} - ${feedbackType}`);
   };
 
-  // Enhanced handleSendMessage to include translation and summary features
-  const handleSendMessage = async (messageContent: string) => {
+  // Enhanced handleSendMessage to include structured prompt system
+  const handleSendMessage = async (messageContent: string, explicitMode?: PromptMode) => {
     if (!messageContent.trim()) return;
 
     // Add user message to the chat
@@ -292,11 +293,6 @@ const Index = () => {
       const isPatois = detectedLanguage === 'patois';
       console.log('🗣️ Detected language - Patois:', isPatois);
 
-      // Check if this is a proverb request
-      const lowerMessage = messageContent.toLowerCase();
-      const isProverbRequest = lowerMessage.includes('proverb') || lowerMessage.includes('saying') || 
-                              lowerMessage.includes('wise word') || lowerMessage.includes('old time saying');
-
       // Convert current messages to the format expected by AI service
       const conversationHistory = messages.map(msg => ({
         id: msg.id,
@@ -308,7 +304,6 @@ const Index = () => {
       // Get recent feedback for context
       const recentFeedback = Object.entries(messageFeedback)
         .filter(([msgId, feedback]) => {
-          // Only include feedback from recent messages in this conversation
           const message = messages.find(m => m.id === msgId);
           return message && message.role === 'assistant';
         })
@@ -320,31 +315,14 @@ const Index = () => {
             timestamp: message?.timestamp || new Date()
           };
         })
-        .slice(-3); // Only last 3 feedback items for context
+        .slice(-3);
 
-      let enhancedMessage = messageContent;
-      
-      // Enhance proverb requests with specific instructions
-      if (isProverbRequest) {
-        enhancedMessage = isPatois 
-          ? `${messageContent}. Please respond in Patois and include: the proverb in Patois, its English translation, the meaning, and how it's used.`
-          : `${messageContent}. Please respond in English and include: the Jamaican proverb in Patois, its English translation, the meaning, and how it's used in Jamaican culture.`;
-      }
-
-      // Add feedback context to the message if there's recent feedback
-      if (recentFeedback.length > 0) {
-        const feedbackContext = recentFeedback.map(fb => 
-          `Previous response "${fb.messageContent.substring(0, 50)}..." received ${fb.feedback} feedback`
-        ).join('. ');
-        
-        enhancedMessage += `\n\nContext: ${feedbackContext}. Please adjust your response style accordingly - if previous responses received negative feedback, try a different approach in tone, detail level, or cultural authenticity.`;
-      }
-
-      // Call the location-aware AI service
+      // Use the location-aware service with structured prompts
       const aiResponse = await locationAwareService.processQuery(
-        enhancedMessage,
+        messageContent,
         isPatois,
-        conversationHistory
+        conversationHistory,
+        explicitMode
       );
 
       // Add AI message to the chat

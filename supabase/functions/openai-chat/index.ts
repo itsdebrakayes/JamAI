@@ -21,39 +21,68 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
-    // Build conversation messages array
-    const messages = [
-      {
-        role: "system",
-        content: isUserMessagePatois 
-          ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
-
-IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
-
-${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}`
-          : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.
-
-IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
-
-${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}`
+    // Check if this is already a structured prompt
+    const isStructuredPrompt = userMessage.includes('MODE:') && userMessage.includes('USER INPUT:');
+    
+    const messages = [];
+    
+    if (isStructuredPrompt) {
+      // Use the structured prompt as the system message
+      let systemContent = userMessage;
+      
+      if (storedKnowledge) {
+        systemContent += `\n\nPrevious Knowledge:\n${storedKnowledge}`;
       }
-    ];
-
-    // Add recent conversation history
-    if (conversationHistory && conversationHistory.length > 0) {
-      conversationHistory.forEach((msg: any) => {
-        messages.push({
-          role: msg.isUser ? "user" : "assistant",
-          content: msg.text
+      
+      messages.push({
+        role: "system",
+        content: systemContent
+      });
+      
+      // Add recent conversation history
+      if (conversationHistory && conversationHistory.length > 0) {
+        conversationHistory.forEach((msg: any) => {
+          messages.push({
+            role: msg.isUser ? "user" : "assistant",
+            content: msg.text
+          });
         });
+      }
+    } else {
+      // Fallback to original system for backwards compatibility
+      const systemPrompt = isUserMessagePatois 
+        ? `You are JamAI, an AI assistant that can speak Jamaican Patois. When users write in Patois, respond naturally in Patois. Be helpful and provide complete, detailed answers when needed. For complex questions, give thorough explanations. For simple greetings or quick questions, be more concise. Use Patois naturally but make sure your responses are clear and informative.
+
+IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
+
+${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}`
+        : `You are JamAI, an AI assistant with knowledge of Jamaican culture. Respond in clear, natural English. Be helpful and provide complete, detailed answers when users ask complex questions. Give thorough explanations when needed, but be more concise for simple questions. You can reference Jamaican culture when relevant.
+
+IMPORTANT: You have access to previous conversation history and comprehensive stored knowledge from past chats. Use this information to provide contextual responses and remember what has been discussed before.
+
+${storedKnowledge ? `Previous Knowledge:\n${storedKnowledge}\n` : ''}`;
+
+      messages.push({
+        role: "system",
+        content: systemPrompt
+      });
+
+      // Add recent conversation history
+      if (conversationHistory && conversationHistory.length > 0) {
+        conversationHistory.forEach((msg: any) => {
+          messages.push({
+            role: msg.isUser ? "user" : "assistant",
+            content: msg.text
+          });
+        });
+      }
+
+      // Add current user message
+      messages.push({
+        role: "user",
+        content: userMessage
       });
     }
-
-    // Add current user message
-    messages.push({
-      role: "user",
-      content: userMessage
-    });
 
     // Make API call to OpenAI
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
