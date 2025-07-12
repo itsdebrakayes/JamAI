@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Send, Plus, FileText, Image, Wand2 } from 'lucide-react';
+import { Send, Plus, FileText, Image } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -35,7 +35,7 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     setMessage(transcript);
   };
 
-  const handleFileUpload = (type: 'file' | 'image' | 'generate') => {
+  const handleFileUpload = (type: 'file' | 'image') => {
     if (type === 'file') {
       const input = document.createElement('input');
       input.type = 'file';
@@ -58,11 +58,6 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
         }
       };
       input.click();
-    } else if (type === 'generate') {
-      const prompt = window.prompt('Describe the image you want to generate:');
-      if (prompt) {
-        onSendMessage(`Generate an image: ${prompt}`);
-      }
     }
   };
 
@@ -100,13 +95,6 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
                 Upload Image
               </DropdownMenuItem>
               
-              <DropdownMenuItem
-                onClick={() => handleFileUpload('generate')}
-                className="cursor-pointer hover:bg-muted/50"
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                Generate Image
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           

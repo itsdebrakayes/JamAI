@@ -184,51 +184,100 @@ const MainContent = ({
     }
 
     try {
-      const isPatois = detectLanguage(messageText) === 'patois';
+      // Check if this is an image generation request
+      const isImageGenRequest = /\b(generate|create|make|draw|design)\b.*\b(image|picture|photo|art|artwork|illustration|graphic)\b/i.test(messageText) ||
+                               /\b(image|picture|photo|art|artwork|illustration|graphic)\b.*\b(generate|create|make|draw|design)\b/i.test(messageText);
       
-      const response = await locationAwareService.processQuery(
-        messageText,
-        isPatois,
-        newMessages
-      );
+      if (isImageGenRequest) {
+        // Handle image generation
+        const imageResponse = await supabase.functions.invoke('image-generation', {
+          body: { prompt: messageText }
+        });
+        
+        if (imageResponse.error) {
+          throw new Error(`Image generation failed: ${imageResponse.error.message}`);
+        }
+        
+        const { imageData } = imageResponse.data;
+        const aiMessage = {
+          id: (Date.now() + 1).toString(),
+          text: `Here's the image I generated for you: ![Generated Image](data:image/png;base64,${imageData})`,
+          isUser: false,
+          timestamp: new Date(),
+          isPatois: false
+        };
+        
+        const finalMessages = [...newMessages, aiMessage];
+        setMessages(finalMessages);
+        
+        // Save AI message to database
+        try {
+          const { error: aiMsgError } = await supabase
+            .from('messages')
+            .insert({
+              id: aiMessage.id,
+              content: aiMessage.text,
+              is_user: false,
+              session_id: sessionId,
+              user_id: (await supabase.auth.getUser()).data.user?.id || ''
+            });
 
-      const aiMessage = {
-        id: (Date.now() + 1).toString(),
-        text: response.message,
-        isUser: false,
-        timestamp: new Date(),
-        isPatois: response.isPatois
-      };
+          if (aiMsgError) throw aiMsgError;
+        } catch (error) {
+          console.error('Error saving AI message:', error);
+        }
+      } else {
+        // Handle regular chat
+        const isPatois = detectLanguage(messageText) === 'patois';
+        
+        const response = await locationAwareService.processQuery(
+          messageText,
+          isPatois,
+          newMessages
+        );
 
-      const finalMessages = [...newMessages, aiMessage];
-      setMessages(finalMessages);
-      
-      // Save AI message to database
+        const aiMessage = {
+          id: (Date.now() + 1).toString(),
+          text: response.message,
+          isUser: false,
+          timestamp: new Date(),
+          isPatois: response.isPatois
+        };
+
+        const finalMessages = [...newMessages, aiMessage];
+        setMessages(finalMessages);
+        
+        // Save AI message to database
+        try {
+          const { error: aiMsgError } = await supabase
+            .from('messages')
+            .insert({
+              id: aiMessage.id,
+              content: aiMessage.text,
+              is_user: false,
+              session_id: sessionId,
+              user_id: (await supabase.auth.getUser()).data.user?.id || ''
+            });
+
+          if (aiMsgError) throw aiMsgError;
+        } catch (error) {
+          console.error('Error saving AI message:', error);
+        }
+      }
+
+      // Update session message count for both cases
       try {
-        const { error: aiMsgError } = await supabase
-          .from('messages')
-          .insert({
-            id: aiMessage.id,
-            content: aiMessage.text,
-            is_user: false,
-            session_id: sessionId,
-            user_id: (await supabase.auth.getUser()).data.user?.id || ''
-          });
-
-        if (aiMsgError) throw aiMsgError;
-
-        // Update session message count
         const { error: updateError } = await supabase
           .from('chat_sessions')
           .update({
-            message_count: finalMessages.length,
+            message_count: messages.length + 2, // +2 for user and AI messages
             updated_at: new Date().toISOString()
           })
           .eq('id', sessionId);
 
         if (updateError) throw updateError;
       } catch (error) {
-        console.error('Error saving AI message:', error);
+        console.error('Error updating session:', error);
       }
 
       incrementUsageCount();
