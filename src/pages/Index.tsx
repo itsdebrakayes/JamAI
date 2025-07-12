@@ -282,8 +282,8 @@ const MainContent = ({
             <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
             <AvatarFallback>JA</AvatarFallback>
           </Avatar>
-          <div>
-            <h1 className="text-lg font-semibold bg-gradient-to-r from-yellow-500 to-green-600 bg-clip-text text-transparent">JamAI</h1>
+          <div className="cursor-pointer" onClick={startNewChat}>
+            <h1 className="text-lg font-semibold bg-gradient-to-r from-yellow-500 to-green-600 bg-clip-text text-transparent hover:from-yellow-400 hover:to-green-500 transition-all duration-200">JamAI</h1>
             <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
           </div>
         </div>
