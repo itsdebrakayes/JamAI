@@ -1,10 +1,7 @@
+
 import React, { useState, useEffect, useRef } from 'react';
-import { useCompletion } from 'ai/react';
-import { useUser } from '@auth0/nextjs-auth0/client';
-import { useRouter } from 'next/router';
 import { v4 as uuidv4 } from 'uuid';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { ModeToggle } from '@/components/ModeToggle';
 import { Button } from '@/components/ui/button';
 import { Send, Plus, X, Copy, CheckCircle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +9,6 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/hooks/use-toast"
-import { ChatBubble, ChatBubbleOutline } from '@mui/icons-material';
 import { detectLanguage } from '@/utils/languageDetection';
 import { locationAwareService } from '@/services/locationAwareService';
 import ChatInput from '@/components/ChatInput';
@@ -33,8 +29,6 @@ const Index = () => {
   const [usageCount, setUsageCount] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
   const { toast } = useToast()
-  const { user, error, isLoading: authIsLoading } = useUser();
-  const router = useRouter();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,16 +63,6 @@ const Index = () => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  useEffect(() => {
-    if (!authIsLoading && !user) {
-      router.push('/api/auth/login');
-    }
-  }, [user, authIsLoading, router]);
-
-  if (authIsLoading) return <div>Loading...</div>;
-
-  if (error) return <div>Error: {error.message}</div>;
-
   const saveMessagesToLocalStorage = (newMessages: Message[]) => {
     localStorage.setItem('chat-messages', JSON.stringify(newMessages));
   };
@@ -97,7 +81,7 @@ const Index = () => {
           title: "Copied!",
           description: "The message has been copied to your clipboard.",
         })
-        setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+        setTimeout(() => setIsCopied(false), 2000);
       })
       .catch(err => {
         console.error("Failed to copy text: ", err);
@@ -217,12 +201,11 @@ const Index = () => {
       <header className="flex items-center justify-between p-4 border-b glass-effect modern-shadow">
         <div className="flex items-center gap-4">
           <Avatar>
-            <AvatarImage src={user?.picture || ""} />
-            <AvatarFallback>CN</AvatarFallback>
+            <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
+            <AvatarFallback>JA</AvatarFallback>
           </Avatar>
-          <h1 className="text-lg font-semibold">{user?.name}</h1>
+          <h1 className="text-lg font-semibold">JamAI Assistant</h1>
         </div>
-        <ModeToggle />
       </header>
 
       {/* Chat Messages */}
@@ -231,41 +214,59 @@ const Index = () => {
           <div className="space-y-4">
             {messages.map((message) => (
               <div key={message.id} className={`flex flex-col ${message.isUser ? 'items-end' : 'items-start'}`}>
-                <div className="flex items-center gap-2">
+                <div className="flex items-start gap-2 max-w-[80%]">
                   {!message.isUser && (
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src="/jamai_logo.png" />
+                    <Avatar className="w-8 h-8 flex-shrink-0 mt-1">
+                      <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
                   )}
-                  <Card className="w-fit max-w-[80%]">
-                    <CardContent className="p-3">
-                      <p className="text-sm break-words">{message.text}</p>
-                      {message.files && message.files.length > 0 && (
-                        <div className="mt-2">
-                          {message.files.map((file, index) => (
-                            <Badge key={index} variant="secondary" className="mr-1">{file.name}</Badge>
-                          ))}
-                        </div>
-                      )}
-                    </CardContent>
-                    <CardFooter className="text-xs text-muted-foreground justify-between items-center p-3">
-                      <span>{message.timestamp.toLocaleTimeString()}</span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-secondary/50"
-                        onClick={() => copyToClipboard(message.text)}
-                        disabled={isCopied}
-                      >
-                        {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                      </Button>
-                    </CardFooter>
-                  </Card>
+                  <div className="flex flex-col gap-2 w-full">
+                    <Card className="w-fit">
+                      <CardContent className="p-3">
+                        <p className="text-sm break-words whitespace-pre-wrap">{message.text}</p>
+                      </CardContent>
+                      <CardFooter className="text-xs text-muted-foreground justify-between items-center p-3 pt-0">
+                        <span>{message.timestamp.toLocaleTimeString()}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-secondary/50 h-6 w-6"
+                          onClick={() => copyToClipboard(message.text)}
+                          disabled={isCopied}
+                        >
+                          {isCopied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                    
+                    {/* File attachments display */}
+                    {message.files && message.files.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {message.files.map((file, index) => (
+                          <Badge 
+                            key={index} 
+                            variant="secondary" 
+                            className="flex items-center gap-1 p-2"
+                          >
+                            {file.type === 'image' ? '🖼️' : '📄'} {file.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {message.isUser && (
+                    <Avatar className="w-8 h-8 flex-shrink-0 mt-1">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        YOU
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
               </div>
             ))}
-            <div ref={bottomRef} /> {/* Bottom div for scrolling */}
+            <div ref={bottomRef} />
           </div>
         </ScrollArea>
       </div>
