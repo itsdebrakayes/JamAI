@@ -16,7 +16,9 @@ import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import ChatSuggestions from '@/components/ChatSuggestions';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
 import ThemeToggle from '@/components/ThemeToggle';
+import UserProfileSettings from '@/components/UserProfileSettings';
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { FileText } from 'lucide-react';
 
 interface Message {
   id: string;
@@ -59,6 +61,7 @@ const MainContent = ({
   const [isConfigured, setIsConfigured] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const { toast } = useToast()
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -202,10 +205,19 @@ const MainContent = ({
         </div>
         
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="hidden sm:flex">
-            📋 Summary
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-400 hover:from-green-600 hover:to-green-500 text-white border-0 rounded-full px-4 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            <FileText className="w-4 h-4" />
+            Summary
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={() => setShowSettings(true)}
+          >
             <Settings className="w-4 h-4" />
           </Button>
           <ThemeToggle />
@@ -303,6 +315,12 @@ const MainContent = ({
       <div className="p-4 border-t">
         <ChatInput onSendMessage={sendMessage} disabled={isLoading} />
       </div>
+
+      {/* Settings Modal */}
+      <UserProfileSettings 
+        open={showSettings} 
+        onOpenChange={setShowSettings} 
+      />
     </div>
   );
 };

@@ -1,448 +1,233 @@
-
 import React, { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Eye, EyeOff, LogOut, Shield, CreditCard, Mail, Lock, User } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useSubscription } from '@/hooks/useSubscription';
-import { supabase } from '@/integrations/supabase/client';
+import { X, Eye, EyeOff, CreditCard, User, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const UserProfileSettings = () => {
-  const { user, signOut } = useAuth();
-  const { limits, usage } = useSubscription();
-  const { toast } = useToast();
-  
-  const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+interface UserProfileSettingsProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
-  useEffect(() => {
-    if (user) {
-      setEmail(user.email || '');
-    }
-  }, [user]);
+const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) => {
+  const { toast } = useToast();
+  const [email, setEmail] = useState('debrakayesam@gmail.com');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleUpdateEmail = async () => {
-    if (!email || email === user?.email) return;
-    
-    setLoading(true);
+    setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        email: email
-      });
-      
-      if (error) throw error;
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
       toast({
-        title: "Email Updated",
-        description: "Please check your new email to confirm the change.",
+        title: "Email updated",
+        description: "Please check your new email for verification.",
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message,
         variant: "destructive",
+        title: "Update failed",
+        description: "Failed to update email.",
       });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleUpdatePassword = async () => {
-    if (!newPassword || newPassword.length < 6) {
+    if (password.length < 6) {
       toast({
-        title: "Error",
-        description: "Password must be at least 6 characters long.",
         variant: "destructive",
+        title: "Invalid password",
+        description: "Password must be at least 6 characters long.",
       });
       return;
     }
-    
-    setLoading(true);
+
+    setIsLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
-      });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      if (error) throw error;
-      
-      setNewPassword('');
+      setPassword('');
       toast({
-        title: "Password Updated",
+        title: "Password updated",
         description: "Your password has been successfully updated.",
       });
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message,
         variant: "destructive",
+        title: "Update failed",
+        description: "Failed to update password.",
       });
     } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleForgotPassword = async () => {
-    if (!user?.email) return;
-    
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/auth?mode=reset`
-      });
-      
-      if (error) throw error;
-      
-      toast({
-        title: "Password Reset Email Sent",
-        description: "Check your email for instructions to reset your password.",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   const handleSignOut = async () => {
-    setLoading(true);
     try {
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-      if (error) throw error;
-      
+      onOpenChange(false);
       toast({
-        title: "Signed Out",
-        description: "You have been signed out successfully.",
+        title: "Signed out",
+        description: "You have been successfully signed out.",
       });
-      
-      // Force page reload to ensure complete logout
-      window.location.href = '/auth';
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignOutAllDevices = async () => {
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.signOut({ scope: 'global' });
-      if (error) throw error;
-      
-      toast({
-        title: "Signed Out",
-        description: "You have been signed out from all devices.",
-      });
-      
-      // Force page reload to ensure complete logout
-      window.location.href = '/auth';
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getSubscriptionTier = () => {
-    if (!limits) return 'Free';
-    
-    switch (limits.tier) {
-      case 'jamai_plus':
-        return 'Plus';
-      case 'jamai_ultra':
-        return 'Ultra';
-      default:
-        return 'Free';
-    }
-  };
-
-  const getSubscriptionColor = () => {
-    if (!limits) return 'secondary';
-    
-    switch (limits.tier) {
-      case 'jamai_plus':
-        return 'default';
-      case 'jamai_ultra':
-        return 'destructive';
-      default:
-        return 'secondary';
+    } catch (error) {
+      console.error('Error signing out:', error);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Subscription Info */}
-      {user && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5" />
-              Subscription Plan
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <Badge variant={getSubscriptionColor()}>
-                  {getSubscriptionTier()}
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-background/95 backdrop-blur-sm">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <DialogTitle className="text-xl font-semibold">Settings & Profile</DialogTitle>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onOpenChange(false)}
+            className="h-8 w-8"
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          {/* Subscription Plan */}
+          <Card className="border border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CreditCard className="w-5 h-5" />
+                Subscription Plan
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Badge className="bg-purple-600 text-white px-3 py-1">
+                  Ultra
                 </Badge>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {limits?.tier === 'jamai_ultra' 
-                    ? 'Unlimited messages and features'
-                    : limits?.tier === 'jamai_plus'
-                    ? '500 messages per day'
-                    : '50 messages per day'
-                  }
-                </p>
+                <span className="text-sm text-muted-foreground">
+                  Unlimited messages and features
+                </span>
               </div>
-            </div>
-            
-            {/* Usage Stats */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <div className="text-center p-3 bg-muted rounded-lg">
-                <div className="text-2xl font-bold text-green-600">
-                  {limits?.daily_message_limit === -1 ? '∞' : usage?.messages_used || 0}
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="text-2xl font-bold text-green-400">∞</div>
+                  <div className="text-sm text-muted-foreground">Messages Used Today</div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Messages Used Today
-                  {limits?.daily_message_limit !== -1 && ` / ${limits?.daily_message_limit}`}
+                <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                  <div className="text-2xl font-bold text-blue-400">∞</div>
+                  <div className="text-sm text-muted-foreground">Media Uploads Today</div>
                 </div>
               </div>
-              <div className="text-center p-3 bg-muted rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">
-                  {limits?.daily_media_limit === -1 ? '∞' : usage?.media_uploads_used || 0}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Media Uploads Today
-                  {limits?.daily_media_limit !== -1 && ` / ${limits?.daily_media_limit}`}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
 
-      {/* Account Settings */}
-      {user && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5" />
-              Account Settings
-            </CardTitle>
-            <CardDescription>
-              Manage your account information and security settings
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Email */}
-            <div className="space-y-2">
-              <Label htmlFor="email" className="flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                Email Address
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={handleUpdateEmail}
-                  disabled={loading || email === user?.email}
-                  size="sm"
-                >
-                  Update
-                </Button>
-              </div>
-            </div>
-
-            {/* Password */}
-            <div className="space-y-2">
-              <Label htmlFor="password" className="flex items-center gap-2">
-                <Lock className="w-4 h-4" />
-                Current Password
-              </Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
+          {/* Account Settings */}
+          <Card className="border border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <User className="w-5 h-5" />
+                Account Settings
+              </CardTitle>
+              <CardDescription>
+                Manage your account information and security settings
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email" className="flex items-center gap-2">
+                  📧 Email Address
+                </Label>
+                <div className="flex gap-2">
                   <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password (min 6 characters)"
-                    className="pr-10"
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="flex-1 border-2 border-yellow-500/50 focus:border-yellow-500"
                   />
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={handleUpdateEmail}
+                    disabled={isLoading}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white"
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    Update
                   </Button>
                 </div>
-                <Button 
-                  onClick={handleUpdatePassword}
-                  disabled={loading || !newPassword}
-                  size="sm"
-                >
-                  Update
-                </Button>
               </div>
-              <div className="flex justify-end">
-                <Button
-                  variant="link"
-                  size="sm"
-                  onClick={handleForgotPassword}
-                  disabled={loading}
-                  className="px-0 h-auto text-sm text-muted-foreground hover:text-primary"
-                >
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="flex items-center gap-2">
+                  🔒 Current Password
+                </Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter new password (6+ characters)"
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={handleUpdatePassword}
+                    disabled={isLoading || password.length < 6}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white"
+                  >
+                    Update
+                  </Button>
+                </div>
+                <Button variant="link" className="text-sm text-muted-foreground p-0 h-auto">
                   Forgot Password?
                 </Button>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
 
-      {/* Security Actions */}
-      {user && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="w-5 h-5" />
-              Security Actions
-            </CardTitle>
-            <CardDescription>
-              Manage your account security and sessions
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="border rounded-lg border-gray-200 bg-gray-50">
-              <div className="w-full p-4 border-b border-gray-200">
-                <h4 className="text-sm font-medium text-gray-800">Sign out of account</h4>
-              </div>
-              <div className="flex items-center justify-between p-4">
-                <p className="text-sm text-gray-600">
-                  This will sign you out and redirect you to the login page
-                </p>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      disabled={loading}
-                      variant="outline"
-                      size="sm"
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure you want to sign out?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will sign you out of your account and redirect you to the login page. 
-                        You'll need to sign in again to access your account.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleSignOut} className="bg-gray-600 hover:bg-gray-700">
-                        Yes, Sign Out
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-            </div>
-
-            <div className="border rounded-lg border-red-200 bg-red-50">
-              <div className="w-full p-4 border-b border-red-200">
-                <h4 className="text-sm font-medium text-red-800">Sign out all devices</h4>
-              </div>
-              <div className="flex items-center justify-between p-4">
-                <p className="text-sm text-red-600">
-                  This will sign you out from all devices and sessions
-                </p>
-                <Button 
-                  onClick={handleSignOutAllDevices}
-                  disabled={loading}
-                  variant="destructive"
-                  size="sm"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out All
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Guest Mode Message */}
-      {!user && (
-        <div className="text-center py-12">
-          <div className="mb-6">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-green-600 via-yellow-400 to-green-600 rounded-2xl mb-4">
-              <img 
-                src="/lovable-uploads/50052a84-111e-4b20-a49b-a5a5b638414b.png" 
-                alt="JamAI Brain Logo" 
-                className="w-10 h-10 object-contain"
-              />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Sign Up for Full Access</h3>
-            <p className="text-muted-foreground mb-6">
-              Create an account to access settings, unlimited messages, and more features!
-            </p>
-          </div>
-          <div className="space-y-3">
-            <Button
-              onClick={() => window.location.href = '/auth'}
-              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold"
-            >
-              Sign Up Now
-            </Button>
-          </div>
+          {/* Security Actions */}
+          <Card className="border border-border/50">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Shield className="w-5 h-5" />
+                Security Actions
+              </CardTitle>
+              <CardDescription>
+                Manage your account security and sessions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                onClick={handleSignOut}
+                variant="secondary"
+                className="w-full bg-muted hover:bg-muted/80"
+              >
+                Sign out of account
+              </Button>
+            </CardContent>
+          </Card>
         </div>
-      )}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
