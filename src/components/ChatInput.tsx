@@ -1,10 +1,10 @@
 
 import React, { useState } from 'react';
-import { Send } from 'lucide-react';
+import { Send, Plus, Upload, Image, FileText, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import VoiceControls from './VoiceControls';
-import ChatInputActions from './ChatInputActions';
 import UploadedFilePreview from './UploadedFilePreview';
 
 interface ChatInputProps {
@@ -27,18 +27,10 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     e.preventDefault();
     const trimmedMessage = message.trim();
     
-    console.log('ChatInput: Attempting to send message:', trimmedMessage);
-    console.log('ChatInput: Disabled state:', disabled);
-    console.log('ChatInput: Uploaded files:', uploadedFiles.length);
-    
     if ((trimmedMessage || uploadedFiles.length > 0) && !disabled) {
-      console.log('ChatInput: Calling onSendMessage');
       onSendMessage(trimmedMessage, uploadedFiles);
       setMessage('');
       setUploadedFiles([]);
-      console.log('ChatInput: Message sent and input cleared');
-    } else {
-      console.log('ChatInput: Message not sent - empty or disabled');
     }
   };
 
@@ -70,7 +62,6 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     
     try {
       if (type === 'image') {
-        // Create preview for images
         const reader = new FileReader();
         reader.onload = (e) => {
           newFile.preview = e.target?.result as string;
@@ -78,14 +69,12 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
         };
         reader.readAsDataURL(file);
       } else {
-        // Read text content for files
         const content = await readFileContent(file);
         newFile.content = content;
         setUploadedFiles(prev => [...prev, newFile]);
       }
     } catch (error) {
       console.error('Error reading file:', error);
-      // Still add the file even if we can't read its content
       setUploadedFiles(prev => [...prev, newFile]);
     }
   };
@@ -95,7 +84,6 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
   };
 
   const handleImageGeneration = (prompt: string) => {
-    // Send image generation request as a message
     onSendMessage(`Generate an image: ${prompt}`, [], prompt);
   };
 
@@ -107,12 +95,67 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
           onRemoveFile={handleRemoveFile} 
         />
         
-        <div className="flex items-end gap-3 glass-effect rounded-3xl p-4 modern-shadow-lg transition-all duration-300 hover:shadow-xl">
-          <ChatInputActions
-            onFileUpload={handleFileUpload}
-            onImageGeneration={handleImageGeneration}
-            disabled={disabled}
-          />
+        <div className="flex items-end gap-3 glass-effect rounded-3xl p-4 modern-shadow-lg">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                disabled={disabled}
+                className="h-10 w-10 rounded-2xl hover:bg-muted/50"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            
+            <DropdownMenuContent side="top" align="start" className="w-48">
+              <DropdownMenuItem
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = '.txt,.pdf,.doc,.docx,.json';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) handleFileUpload(file, 'file');
+                  };
+                  input.click();
+                }}
+                className="cursor-pointer"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Upload File
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = (e) => {
+                    const file = (e.target as HTMLInputElement).files?.[0];
+                    if (file) handleFileUpload(file, 'image');
+                  };
+                  input.click();
+                }}
+                className="cursor-pointer"
+              >
+                <Image className="w-4 h-4 mr-2" />
+                Upload Image
+              </DropdownMenuItem>
+              
+              <DropdownMenuItem
+                onClick={() => {
+                  const prompt = window.prompt('Describe the image you want to generate:');
+                  if (prompt) handleImageGeneration(prompt);
+                }}
+                className="cursor-pointer"
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                Generate Image
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           
           <Textarea
             value={message}
