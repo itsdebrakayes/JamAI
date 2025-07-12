@@ -1,830 +1,280 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useCompletion } from 'ai/react';
+import { useUser } from '@auth0/nextjs-auth0/client';
+import { useRouter } from 'next/router';
 import { v4 as uuidv4 } from 'uuid';
-import ChatMessage from '@/components/ChatMessage';
-import ChatInput from '@/components/ChatInput';
-import TypingIndicator from '@/components/TypingIndicator';
-import ChatHistorySidebar from '@/components/ChatHistorySidebar';
-import ChatSummary from '@/components/ChatSummary';
-import TranslationMode from '@/components/TranslationMode';
-import OnboardingTutorial from '@/components/OnboardingTutorial';
-import ThemeToggle from '@/components/ThemeToggle';
-import SubscriptionBadge from '@/components/SubscriptionBadge';
-import UserProfileSettings from '@/components/UserProfileSettings';
-import TranslationModeToggle from '@/components/TranslationModeToggle';
-import TranslatedResponse from '@/components/TranslatedResponse';
-import SummaryResponse from '@/components/SummaryResponse';
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from "@/hooks/use-toast"
-import { MessageSquare, Plus, Settings, FileText, Languages } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ModeToggle } from '@/components/ModeToggle';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import chatSuggestionsData from '@/data/chatSuggestions.json';
-import { getChatSessions, getMessagesForSession, generateIntelligentTitle } from '@/utils/chatHistory';
-import { locationAwareService } from '@/services/locationAwareService';
+import { Send, Plus, X, Copy, CheckCircle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useToast } from "@/hooks/use-toast"
+import { ChatBubble, ChatBubbleOutline } from '@mui/icons-material';
 import { detectLanguage } from '@/utils/languageDetection';
-import { formatStructuredPrompt, determinePromptMode, type PromptMode } from '@/utils/promptFormatter';
+import { locationAwareService } from '@/services/locationAwareService';
+import ChatInput from '@/components/ChatInput';
 
-// Define the structure for chat messages
-type ChatMessageData = {
+interface Message {
   id: string;
-  content: string;
-  role: 'user' | 'assistant';
+  text: string;
+  isUser: boolean;
   timestamp: Date;
-};
-
-// Define the structure for chat history items
-type ChatHistory = {
-  id: string;
-  title: string;
-  messages: ChatMessageData[];
-  createdAt: Date;
-  autoTitle?: string;
-  keywords?: string[];
-  summary?: string;
-};
-
-// Chat suggestions from the JSON data
-const CHAT_SUGGESTIONS = chatSuggestionsData.suggestions.slice(0, 6);
+  isPatois?: boolean;
+  files?: { name: string; type: 'file' | 'image' }[];
+}
 
 const Index = () => {
-  // Initialize state variables
-  const [messages, setMessages] = useState<ChatMessageData[]>([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  const [showSummary, setShowSummary] = useState(false);
-  const [showTranslation, setShowTranslation] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [hasSeenTutorial, setHasSeenTutorial] = useState(false);
-  const [isTranslationEnabled, setIsTranslationEnabled] = useState(false);
-  const [translationDirection, setTranslationDirection] = useState<'auto' | 'to-english' | 'to-patois'>('auto');
-  const [isSummaryEnabled, setIsSummaryEnabled] = useState(false);
-  const [showLanguageSettings, setShowLanguageSettings] = useState(false);
-  const [hasCompletedTutorial, setHasCompletedTutorial] = useState(false);
-  const [messageFeedback, setMessageFeedback] = useState<Record<string, 'positive' | 'negative'>>({});
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { toast } = useToast();
-  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isConfigured, setIsConfigured] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
+  const [isCopied, setIsCopied] = useState(false);
+  const { toast } = useToast()
+  const { user, error, isLoading: authIsLoading } = useUser();
+  const router = useRouter();
+  const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom on new message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+    // Load messages from local storage on initial load
+    const storedMessages = localStorage.getItem('chat-messages');
+    if (storedMessages) {
+      setMessages(JSON.parse(storedMessages));
+    }
+
+    // Load usage count from local storage
+    const storedUsageCount = localStorage.getItem('usage-count');
+    if (storedUsageCount) {
+      setUsageCount(parseInt(storedUsageCount, 10));
+    }
+
+    // Check if the service is configured
+    setIsConfigured(true);
+  }, []);
+
+  useEffect(() => {
+    // Save messages to local storage whenever messages change
+    localStorage.setItem('chat-messages', JSON.stringify(messages));
   }, [messages]);
 
-  // Load chat history - separate logic for authenticated vs guest users
   useEffect(() => {
-    const loadChatHistory = async () => {
-      console.log('🔍 Loading chat history...');
-      let loadedHistory: ChatHistory[] = [];
+    // Save usage count to local storage whenever it changes
+    localStorage.setItem('usage-count', usageCount.toString());
+  }, [usageCount]);
 
-      if (user) {
-        // For authenticated users: Load from database only
-        try {
-          console.log('🔍 Loading chat sessions from database for authenticated user...');
-          const sessions = await getChatSessions();
-          console.log('📊 Database sessions:', sessions.length);
-
-          // Convert database sessions to ChatHistory format
-          const dbHistory: ChatHistory[] = await Promise.all(
-            sessions.map(async (session) => {
-              const messages = await getMessagesForSession(session.id);
-              return {
-                id: session.id,
-                title: session.title,
-                autoTitle: session.auto_title || undefined,
-                messages: messages.map(msg => ({
-                  id: msg.id,
-                  content: msg.text,
-                  role: msg.isUser ? 'user' : 'assistant',
-                  timestamp: msg.timestamp
-                })),
-                createdAt: new Date(session.created_at),
-                keywords: session.keywords || undefined,
-                summary: session.summary || undefined
-              };
-            })
-          );
-
-          loadedHistory = dbHistory;
-          console.log('✅ Loaded authenticated user history:', loadedHistory.length, 'chats');
-        } catch (error) {
-          console.error('❌ Failed to load database history:', error);
-        }
-      } else {
-        // For guest users: Load from localStorage with session-specific key
-        try {
-          const sessionId = sessionStorage.getItem('guest_session_id') || Date.now().toString();
-          sessionStorage.setItem('guest_session_id', sessionId);
-          
-          const guestKey = `jamai_guest_chat_history_${sessionId}`;
-          const storedHistory = localStorage.getItem(guestKey);
-          console.log('📦 Raw guest history for session:', sessionId, storedHistory);
-          
-          if (storedHistory) {
-            const parsedHistory = JSON.parse(storedHistory).map((chat: any) => ({
-              ...chat,
-              createdAt: new Date(chat.createdAt),
-              messages: chat.messages.map((msg: any) => ({
-                ...msg,
-                timestamp: new Date(msg.timestamp)
-              }))
-            }));
-            loadedHistory = parsedHistory;
-            console.log('✅ Loaded guest history for session:', loadedHistory.length, 'chats');
-          }
-        } catch (error) {
-          console.error('❌ Failed to parse guest history:', error);
-        }
-      }
-
-      setChatHistory(loadedHistory);
-      console.log('📊 Final chat history:', loadedHistory.length, 'chats');
-    };
-
-    loadChatHistory();
-  }, [user]);
-
-  // Save chat history with proper separation for users vs guests
   useEffect(() => {
-    if (chatHistory.length > 0) {
-      if (user) {
-        // For authenticated users, history is saved in database automatically
-        console.log('💾 Authenticated user - history saved in database');
-      } else {
-        // For guest users, save to localStorage with session-specific key
-        const sessionId = sessionStorage.getItem('guest_session_id') || Date.now().toString();
-        const guestKey = `jamai_guest_chat_history_${sessionId}`;
-        localStorage.setItem(guestKey, JSON.stringify(chatHistory));
-        console.log('💾 Saved guest chat history for session:', sessionId, chatHistory.length, 'chats');
-      }
-    }
-  }, [chatHistory, user]);
+    // Scroll to the bottom when messages update
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  // Enhanced tutorial status check - improved logic
   useEffect(() => {
-    const checkTutorialStatus = async () => {
-      let tutorialCompleted = false;
-
-      if (user) {
-        // For authenticated users, check database
-        try {
-          const { data } = await supabase
-            .from('profiles')
-            .select('onboarding_completed')
-            .eq('id', user.id)
-            .single();
-          
-          tutorialCompleted = data?.onboarding_completed === true;
-          console.log('🎓 Database tutorial status for user:', user.id, tutorialCompleted);
-        } catch (error) {
-          console.error('Error checking onboarding status:', error);
-          // If profile doesn't exist, tutorial hasn't been completed
-          tutorialCompleted = false;
-        }
-      } else {
-        // For guest users, check session-specific completion
-        tutorialCompleted = localStorage.getItem('guest_onboarding_completed_session') === 'true';
-        console.log('🎓 Guest user tutorial status for session:', tutorialCompleted);
-      }
-
-      setHasCompletedTutorial(tutorialCompleted);
-
-      // Only show tutorial if:
-      // 1. User has never completed it before
-      // 2. No existing chat activity
-      // 3. Component has finished loading
-      if (!tutorialCompleted && messages.length === 0 && chatHistory.length === 0) {
-        setTimeout(() => {
-          setShowOnboarding(true);
-          console.log('🎓 Showing tutorial for first-time user/session');
-        }, 500);
-      } else {
-        console.log('🎓 Not showing tutorial - completed:', tutorialCompleted, 'messages:', messages.length, 'history:', chatHistory.length);
-      }
-    };
-
-    // Only check after chat history loading is complete
-    checkTutorialStatus();
-  }, [user, messages.length, chatHistory.length]);
-
-  // Function to start a new chat
-  const startNewChat = () => {
-    const newChatId = uuidv4();
-    setCurrentChatId(newChatId);
-    setMessages([]);
-    console.log('🆕 Started new chat:', newChatId);
-  };
-
-  // Function to load a specific chat from history
-  const loadChat = (chatId: string) => {
-    const chatToLoad = chatHistory.find((chat) => chat.id === chatId);
-    if (chatToLoad) {
-      setMessages(chatToLoad.messages);
-      setCurrentChatId(chatId);
-      console.log('📂 Loaded chat:', chatId, 'with', chatToLoad.messages.length, 'messages');
+    if (!authIsLoading && !user) {
+      router.push('/api/auth/login');
     }
+  }, [user, authIsLoading, router]);
+
+  if (authIsLoading) return <div>Loading...</div>;
+
+  if (error) return <div>Error: {error.message}</div>;
+
+  const saveMessagesToLocalStorage = (newMessages: Message[]) => {
+    localStorage.setItem('chat-messages', JSON.stringify(newMessages));
   };
 
-  // Function to delete specific chats from history
-  const deleteChats = (chatIds: string[]) => {
-    const updatedHistory = chatHistory.filter((chat) => !chatIds.includes(chat.id));
-    setChatHistory(updatedHistory);
-    if (chatIds.includes(currentChatId || '')) {
-      startNewChat(); // Start a new chat if the current chat is deleted
-    }
-    console.log('🗑️ Deleted chats:', chatIds);
+  const incrementUsageCount = () => {
+    const newCount = usageCount + 1;
+    setUsageCount(newCount);
+    localStorage.setItem('usage-count', newCount.toString());
   };
 
-  // Function to clear all chat history
-  const clearAllHistory = () => {
-    setChatHistory([]);
-    if (user) {
-      // For authenticated users, this would need to clear database entries
-      console.log('🧹 Cleared authenticated user chat history from state');
-    } else {
-      // For guest users, clear session-specific localStorage
-      const sessionId = sessionStorage.getItem('guest_session_id') || Date.now().toString();
-      const guestKey = `jamai_guest_chat_history_${sessionId}`;
-      localStorage.removeItem(guestKey);
-      console.log('🧹 Cleared guest chat history for session:', sessionId);
-    }
-    startNewChat();
-  };
-
-  // Function to rename a chat
-  const renameChat = (chatId: string, newTitle: string) => {
-    const updatedHistory = chatHistory.map(chat => {
-      if (chat.id === chatId) {
-        return { ...chat, title: newTitle };
-      }
-      return chat;
-    });
-    setChatHistory(updatedHistory);
-    console.log('✏️ Renamed chat:', chatId, 'to:', newTitle);
-  };
-
-  // Handle message feedback
-  const handleMessageFeedback = (messageId: string, isPositive: boolean) => {
-    const feedbackType = isPositive ? 'positive' : 'negative';
-    setMessageFeedback(prev => ({
-      ...prev,
-      [messageId]: feedbackType
-    }));
-    console.log(`📝 Message feedback: ${messageId} - ${feedbackType}`);
-  };
-
-  // Enhanced handleSendMessage to include file uploads and image generation
-  const handleSendMessage = async (messageContent: string, files?: Array<{file: File, type: 'file' | 'image'}>, imagePrompt?: string) => {
-    if (!messageContent.trim() && (!files || files.length === 0)) return;
-
-    // Handle image generation request
-    if (imagePrompt) {
-      const userMessage: ChatMessageData = {
-        id: uuidv4(),
-        content: messageContent,
-        role: 'user',
-        timestamp: new Date(),
-      };
-      setMessages((prevMessages) => [...prevMessages, userMessage]);
-      setIsTyping(true);
-
-      try {
-        const { data, error } = await supabase.functions.invoke('openai-image-generation', {
-          body: { prompt: imagePrompt }
-        });
-
-        if (error) throw error;
-
-        const aiMessage: ChatMessageData = {
-          id: uuidv4(),
-          content: `Here's the image I generated for "${imagePrompt}":\n\n![Generated Image](${data.imageUrl})`,
-          role: 'assistant',
-          timestamp: new Date(),
-        };
-        setMessages((prevMessages) => [...prevMessages, aiMessage]);
-        updateChatHistory(userMessage, aiMessage);
-      } catch (error: any) {
-        console.error('Image generation error:', error);
-        const errorMessage: ChatMessageData = {
-          id: uuidv4(),
-          content: "Sorry, I couldn't generate that image right now. Please try again later.",
-          role: 'assistant',
-          timestamp: new Date(),
-        };
-        setMessages((prevMessages) => [...prevMessages, errorMessage]);
-      } finally {
-        setIsTyping(false);
-      }
-      return;
-    }
-
-    // Process file uploads
-    let fileContext = '';
-    if (files && files.length > 0) {
-      const fileDescriptions = await Promise.all(
-        files.map(async ({ file, type }) => {
-          if (type === 'image') {
-            return `[Image uploaded: ${file.name}, ${(file.size / 1024).toFixed(1)}KB]`;
-          } else {
-            // For text files, try to read content
-            try {
-              const text = await file.text();
-              return `[File: ${file.name}]\n${text.substring(0, 1000)}${text.length > 1000 ? '...' : ''}`;
-            } catch {
-              return `[File uploaded: ${file.name}, ${(file.size / 1024).toFixed(1)}KB]`;
-            }
-          }
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        setIsCopied(true);
+        toast({
+          title: "Copied!",
+          description: "The message has been copied to your clipboard.",
         })
-      );
-      fileContext = fileDescriptions.join('\n\n');
+        setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+      })
+      .catch(err => {
+        console.error("Failed to copy text: ", err);
+        toast({
+          variant: "destructive",
+          title: "Uh oh! Something went wrong.",
+          description: "Failed to copy the message to your clipboard.",
+        })
+      });
+  };
+
+  const sendMessage = async (
+    messageText: string, 
+    attachedFiles?: Array<{file: File, type: 'file' | 'image', content?: string}>, 
+    imagePrompt?: string
+  ) => {
+    console.log('Index: sendMessage called with:', messageText, attachedFiles?.length || 0, 'files');
+    
+    if ((!messageText.trim() && (!attachedFiles || attachedFiles.length === 0)) || isLoading) return;
+
+    console.log('Index: Proceeding with message send');
+    
+    setIsLoading(true);
+    
+    // Build the complete message including file contents
+    let completeMessage = messageText;
+    
+    if (attachedFiles && attachedFiles.length > 0) {
+      const fileContents = attachedFiles.map(file => {
+        if (file.type === 'file' && file.content) {
+          return `\n\n[File: ${file.file.name}]\n${file.content}`;
+        } else if (file.type === 'image') {
+          return `\n\n[Image uploaded: ${file.file.name}]`;
+        }
+        return `\n\n[File uploaded: ${file.file.name}]`;
+      }).join('');
+      
+      completeMessage = messageText + fileContents;
     }
 
-    // Combine message content with file context
-    const fullMessageContent = fileContext 
-      ? `${messageContent}\n\n${fileContext}`
-      : messageContent;
-
-    // Add user message to the chat
-    const userMessage: ChatMessageData = {
-      id: uuidv4(),
-      content: messageContent, // Display original message without file context
-      role: 'user',
+    const userMessage = {
+      id: Date.now().toString(),
+      text: messageText,
+      isUser: true,
       timestamp: new Date(),
+      files: attachedFiles?.map(f => ({ name: f.file.name, type: f.type }))
     };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
 
-    // Set typing indicator to true
-    setIsTyping(true);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+
+    saveMessagesToLocalStorage(newMessages);
 
     try {
-      // Detect if user message is in Patois
-      const detectedLanguage = detectLanguage(fullMessageContent);
-      const isPatois = detectedLanguage === 'patois';
-      console.log('🗣️ Detected language - Patois:', isPatois);
+      console.log('Index: Calling AI service with complete message');
+      let response;
+      
+      if (imagePrompt) {
+        // Handle image generation
+        console.log('Index: Processing image generation request');
+        response = await locationAwareService.processQuery(
+          `Generate an image with this description: ${imagePrompt}`,
+          detectLanguage(completeMessage) === 'patois',
+          newMessages
+        );
+      } else {
+        // Regular message processing with file contents
+        const isPatois = detectLanguage(completeMessage) === 'patois';
+        console.log('Index: Detected language is patois:', isPatois);
+        
+        response = await locationAwareService.processQuery(
+          completeMessage,
+          isPatois,
+          newMessages
+        );
+      }
 
-      // Convert current messages to the format expected by AI service
-      const conversationHistory = messages.map(msg => ({
-        id: msg.id,
-        text: msg.content,
-        isUser: msg.role === 'user',
-        timestamp: msg.timestamp
-      }));
+      console.log('Index: AI response received:', response.message.substring(0, 100) + '...');
 
-      // Get recent feedback for context
-      const recentFeedback = Object.entries(messageFeedback)
-        .filter(([msgId, feedback]) => {
-          const message = messages.find(m => m.id === msgId);
-          return message && message.role === 'assistant';
-        })
-        .map(([msgId, feedback]) => {
-          const message = messages.find(m => m.id === msgId);
-          return {
-            messageContent: message?.content || '',
-            feedback: feedback,
-            timestamp: message?.timestamp || new Date()
-          };
-        })
-        .slice(-3);
-
-      // Use the location-aware service with full content including files
-      const aiResponse = await locationAwareService.processQuery(
-        fullMessageContent,
-        isPatois,
-        conversationHistory
-      );
-
-      // Add AI message to the chat
-      const aiMessage: ChatMessageData = {
-        id: uuidv4(),
-        content: aiResponse.message,
-        role: 'assistant',
+      const aiMessage = {
+        id: (Date.now() + 1).toString(),
+        text: response.message,
+        isUser: false,
         timestamp: new Date(),
+        isPatois: response.isPatois
       };
-      setMessages((prevMessages) => [...prevMessages, aiMessage]);
 
-      // Update chat history
-      updateChatHistory(userMessage, aiMessage);
-    } catch (error: any) {
-      console.error('Error processing message:', error);
+      const finalMessages = [...newMessages, aiMessage];
+      setMessages(finalMessages);
+
+      saveMessagesToLocalStorage(finalMessages);
+      incrementUsageCount();
       
-      // Detect language for error message
-      const detectedLanguage = detectLanguage(fullMessageContent);
-      const isPatoisForError = detectedLanguage === 'patois';
+    } catch (error) {
+      console.error('Index: Error in sendMessage:', error);
       
-      // Add fallback error message
-      const errorMessage: ChatMessageData = {
-        id: uuidv4(),
-        content: isPatoisForError 
-          ? "Mi sorry, mi having some trouble right now. Try again later, nuh?"
-          : "I'm sorry, I'm having some technical difficulties right now. Please try again later.",
-        role: 'assistant',
+      const errorMessage = {
+        id: (Date.now() + 1).toString(),
+        text: "Mi sorry, but mi run inna some trouble right now. Try again inna likkle bit.",
+        isUser: false,
         timestamp: new Date(),
+        isPatois: true
       };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+
+      const finalMessages = [...newMessages, errorMessage];
+      setMessages(finalMessages);
       
-      toast({
-        title: "Uh oh! Something went wrong.",
-        description: error.message || "There was a problem processing your request.",
-        variant: "destructive",
-      })
+      saveMessagesToLocalStorage(finalMessages);
     } finally {
-      // Always set typing indicator to false, even if there's an error
-      setIsTyping(false);
+      setIsLoading(false);
     }
   };
 
-  const updateChatHistory = (userMessage: ChatMessageData, aiMessage: ChatMessageData) => {
-    setChatHistory((prevHistory) => {
-      // Check if there's an existing chat
-      const existingChatIndex = prevHistory.findIndex((chat) => chat.id === currentChatId);
-
-      if (existingChatIndex !== -1) {
-        // Update existing chat
-        const updatedMessages = [...prevHistory[existingChatIndex].messages, userMessage, aiMessage];
-        
-        // Generate intelligent title if this is the first exchange
-        let updatedChat = {
-          ...prevHistory[existingChatIndex],
-          messages: updatedMessages,
-        };
-
-        // If no auto title exists and we have enough messages, generate one
-        if (!updatedChat.autoTitle && updatedMessages.length >= 2) {
-          const intelligentTitle = generateIntelligentTitle(updatedMessages.map(msg => ({
-            id: msg.id,
-            text: msg.content,
-            isUser: msg.role === 'user',
-            timestamp: msg.timestamp
-          })));
-          updatedChat.autoTitle = intelligentTitle;
-          updatedChat.title = intelligentTitle;
-        }
-
-        const newHistory = [...prevHistory];
-        newHistory[existingChatIndex] = updatedChat;
-        return newHistory;
-      } else {
-        // Create new chat with intelligent title
-        const newMessages = [userMessage, aiMessage];
-        const intelligentTitle = generateIntelligentTitle(newMessages.map(msg => ({
-          id: msg.id,
-          text: msg.content,
-          isUser: msg.role === 'user',
-          timestamp: msg.timestamp
-        })));
-
-        const newChat: ChatHistory = {
-          id: currentChatId || uuidv4(),
-          title: intelligentTitle,
-          autoTitle: intelligentTitle,
-          messages: newMessages,
-          createdAt: new Date(),
-        };
-        return [...prevHistory, newChat];
-      }
-    });
-  };
-
-  // Handle suggestion click
-  const handleSuggestionClick = (suggestionText: string) => {
-    handleSendMessage(suggestionText);
-  };
-
-  // Convert ChatMessageData to Message format for ChatSummary and TranslationMode
-  const convertToMessages = (chatMessages: ChatMessageData[]) => {
-    return chatMessages.map(msg => ({
-      id: msg.id,
-      text: msg.content,
-      isUser: msg.role === 'user',
-      timestamp: msg.timestamp
-    }));
-  };
-
-  const hasExistingChats = chatHistory.length > 0 || messages.length > 0;
-
-  console.log('🎯 Current state debug:', {
-    messagesLength: messages.length,
-    chatHistoryLength: chatHistory.length,
-    showSummaryButton: messages.length > 0, // Show when current chat has messages
-    hasExistingChats,
-    currentChatId
-  });
-
   return (
-    <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-background">
-        {/* Fixed Sidebar */}
-        <div className="flex-shrink-0">
-          <ChatHistorySidebar 
-            chatHistory={chatHistory} 
-            currentChatId={currentChatId || ''}
-            onNewChat={startNewChat}
-            onLoadChat={loadChat}
-            onDeleteChats={deleteChats}
-            onClearAllHistory={clearAllHistory}
-            onRenameChat={renameChat}
-          />
+    <div className="flex flex-col h-screen">
+      {/* Header */}
+      <header className="flex items-center justify-between p-4 border-b glass-effect modern-shadow">
+        <div className="flex items-center gap-4">
+          <Avatar>
+            <AvatarImage src={user?.picture || ""} />
+            <AvatarFallback>CN</AvatarFallback>
+          </Avatar>
+          <h1 className="text-lg font-semibold">{user?.name}</h1>
         </div>
-        
-        <div className="flex-1 flex flex-col relative min-w-0 h-screen">
-          {/* Fixed Header */}
-          <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0 sticky top-0 z-10">
-            <div className="flex items-center justify-between w-full">
-              <div className="flex items-center gap-0.5 flex-1 min-w-0">
-                <button 
-                  onClick={startNewChat}
-                  className="flex items-center gap-0.5 hover:opacity-80 transition-opacity cursor-pointer min-w-0"
-                  aria-label="Start new chat"
-                >
-                  <img 
-                    src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-                    alt="JamAI Logo" 
-                    className="w-14 h-14 object-contain flex-shrink-0"
-                  />
-                  <div className="text-left min-w-0 hidden sm:block">
-                    <h1 className="text-lg font-bold jamaican-text-gradient truncate">JamAI</h1>
-                    <p className="text-xs text-muted-foreground truncate">Jamaican AI Assistant</p>
-                  </div>
-                </button>
-              </div>
-              
-              <div className="flex items-center gap-2 flex-shrink-0">
-                {/* Summary button */}
-                <Button
-                  onClick={() => setShowSummary(true)}
-                  className="h-9 px-3 rounded-lg font-medium text-sm border-0 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden"
-                  style={{
-                    background: 'linear-gradient(90deg, #16a34a 0%, #ffffff 50%, #16a34a 100%)',
-                    backgroundSize: '200% 100%',
-                    color: '#000000'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(90deg, #15803d 0%, #f0f0f0 50%, #15803d 100%)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(90deg, #16a34a 0%, #ffffff 50%, #16a34a 100%)';
-                  }}
-                >
-                  <FileText className="w-4 h-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Summary</span>
-                </Button>
+        <ModeToggle />
+      </header>
 
-                {/* Translation split-screen button */}
-                {messages.length > 0 && (
-                  <Button
-                    onClick={() => setShowTranslation(true)}
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-9 p-0"
-                    title="Split-screen translation"
-                  >
-                    <Languages className="w-4 h-4" />
-                  </Button>
-                )}
-
-                <Sheet>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                    >
-                      <Settings className="w-3 h-3" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-[400px] sm:w-[400px]">
-                    <SheetHeader>
-                      <SheetTitle className="flex items-center gap-3">
-                        <Settings className="w-6 h-6" />
-                        Settings & Profile
-                      </SheetTitle>
-                    </SheetHeader>
-                    <ScrollArea className="h-[calc(100vh-100px)] mt-6">
-                      <div className="pr-6 space-y-6">
-                        {/* Translation Mode Settings */}
-                        <div className="border rounded-lg p-4">
-                          <h3 className="font-semibold mb-3 flex items-center gap-2">
-                            <Languages className="w-4 h-4" />
-                            Translation Mode
-                          </h3>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm font-medium">Auto-translate AI responses</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Automatically translate AI responses between English and Patois
-                                </p>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  id="translation-mode"
-                                  checked={isTranslationEnabled}
-                                  onChange={(e) => setIsTranslationEnabled(e.target.checked)}
-                                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                                />
-                              </div>
-                            </div>
-                            
-                            {isTranslationEnabled && (
-                              <div className="ml-4 pt-2 border-t border-border">
-                                <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                                  Translation Direction:
-                                </label>
-                                <select
-                                  value={translationDirection}
-                                  onChange={(e) => setTranslationDirection(e.target.value as 'auto' | 'to-english' | 'to-patois')}
-                                  className="w-full text-xs p-2 border border-border rounded bg-background"
-                                >
-                                  <option value="auto">🔄 Auto Detect & Flip</option>
-                                  <option value="to-english">🇬🇧 Always to English</option>
-                                  <option value="to-patois">🇯🇲 Always to Patois</option>
-                                </select>
-                              </div>
-                            )}
-                          </div>
+      {/* Chat Messages */}
+      <div className="flex-1 p-4 overflow-y-auto">
+        <ScrollArea className="h-full">
+          <div className="space-y-4">
+            {messages.map((message) => (
+              <div key={message.id} className={`flex flex-col ${message.isUser ? 'items-end' : 'items-start'}`}>
+                <div className="flex items-center gap-2">
+                  {!message.isUser && (
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src="/jamai_logo.png" />
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <Card className="w-fit max-w-[80%]">
+                    <CardContent className="p-3">
+                      <p className="text-sm break-words">{message.text}</p>
+                      {message.files && message.files.length > 0 && (
+                        <div className="mt-2">
+                          {message.files.map((file, index) => (
+                            <Badge key={index} variant="secondary" className="mr-1">{file.name}</Badge>
+                          ))}
                         </div>
-
-                        {/* Summary Mode Settings */}
-                        <div className="border rounded-lg p-4">
-                          <h3 className="font-semibold mb-3 flex items-center gap-2">
-                            <FileText className="w-4 h-4" />
-                            Summary Mode
-                          </h3>
-                          <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm font-medium">Auto-summarize long messages</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Automatically summarize user messages that are longer than usual
-                                </p>
-                              </div>
-                              <div className="flex items-center space-x-2">
-                                <input
-                                  type="checkbox"
-                                  id="summary-mode"
-                                  checked={isSummaryEnabled}
-                                  onChange={(e) => setIsSummaryEnabled(e.target.checked)}
-                                  className="rounded border-gray-300 text-green-600 focus:ring-green-500"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <UserProfileSettings />
-                      </div>
-                    </ScrollArea>
-                  </SheetContent>
-                </Sheet>
-
-                <ThemeToggle />
-                
-                <SubscriptionBadge />
-              </div>
-            </div>
-          </header>
-
-          {/* Main content area with proper scrolling */}
-          <div className="flex-1 flex flex-col overflow-hidden h-full">
-            {messages.length === 0 ? (
-              // Empty state with welcome message - scrollable if needed
-              <div className="flex-1 overflow-y-auto">
-                <div className="flex items-center justify-center min-h-full p-4">
-                  <div className="max-w-3xl w-full space-y-6 text-center">
-                    {/* Welcome header */}
-                    <div className="space-y-4">
-                      <div className="flex justify-center items-center gap-3 mb-4">
-                        <img 
-                          src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-                          alt="JamAI Logo" 
-                          className="w-48 h-48 object-contain"
-                        />
-                      </div>
-                      <h1 className="text-3xl font-bold jamaican-text-gradient mb-4 text-center">
-                        Welcome to JamAI
-                      </h1>
-                      <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed text-center">
-                        Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
-                      </p>
-                    </div>
-
-                    {/* Conditional banner based on existing chats - smaller and centered */}
-                    {hasExistingChats ? (
-                      <div className="max-w-sm mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
-                        <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
-                          <span className="text-sm">🌟</span>
-                          <span className="font-semibold text-sm">Ready for another chat?</span>
-                        </div>
-                        <p className="text-green-700 dark:text-green-300 text-xs text-center">
-                          Welcome back! Ask me more about Jamaica or start fresh.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="max-w-sm mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
-                        <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
-                          <span className="text-sm">👋</span>
-                          <span className="font-semibold text-sm">Start a new chat</span>
-                        </div>
-                        <p className="text-green-700 dark:text-green-300 text-xs text-center">
-                          Get started by asking me anything about Jamaica!
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Chat suggestions */}
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
-                        {CHAT_SUGGESTIONS.map((suggestion) => (
-                          <button
-                            key={suggestion.id}
-                            onClick={() => handleSuggestionClick(suggestion.text)}
-                            className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group border-secondary/30 bg-transparent dark:hover:shadow-[0_0_20px_hsl(var(--secondary)/0.3)] dark:hover:border-secondary/80 hover:border-secondary"
-                          >
-                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
-                              {suggestion.text}
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+                      )}
+                    </CardContent>
+                    <CardFooter className="text-xs text-muted-foreground justify-between items-center p-3">
+                      <span>{message.timestamp.toLocaleTimeString()}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:bg-secondary/50"
+                        onClick={() => copyToClipboard(message.text)}
+                        disabled={isCopied}
+                      >
+                        {isCopied ? <CheckCircle className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                      </Button>
+                    </CardFooter>
+                  </Card>
                 </div>
               </div>
-            ) : (
-              // Chat interface with independent scrolling
-              <div className="flex-1 flex flex-col h-full">
-                {/* Messages area - independent scrollable container */}
-                <div className="flex-1 overflow-y-auto">
-                  <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-                    {messages.map((message, index) => (
-                      <div key={message.id}>
-                        <ChatMessage
-                          message={message.content}
-                          isUser={message.role === 'user'}
-                          timestamp={message.timestamp}
-                          messageId={message.id}
-                          onFeedback={handleMessageFeedback}
-                        />
-                        
-                        {/* Show translation for AI responses */}
-                        {message.role === 'assistant' && isTranslationEnabled && (
-                          <TranslatedResponse
-                            originalText={message.content}
-                            translationDirection={translationDirection}
-                          />
-                        )}
-                        
-                        {/* Show summary for user messages */}
-                        {message.role === 'user' && isSummaryEnabled && (
-                          <SummaryResponse
-                            originalText={message.content}
-                          />
-                        )}
-                      </div>
-                    ))}
-                    {isTyping && <TypingIndicator />}
-                    <div ref={messagesEndRef} />
-                  </div>
-                </div>
-              </div>
-            )}
+            ))}
+            <div ref={bottomRef} /> {/* Bottom div for scrolling */}
           </div>
-
-          {/* Fixed Input area - Always show at bottom */}
-          <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0 sticky bottom-0">
-            <div className="max-w-4xl mx-auto">
-              <ChatInput 
-                onSendMessage={handleSendMessage}
-                disabled={isTyping}
-              />
-            </div>
-          </div>
-
-          {/* Translation Mode */}
-          {showTranslation && (
-            <TranslationMode
-              messages={convertToMessages(messages)}
-              onClose={() => setShowTranslation(false)}
-            />
-          )}
-
-          {/* Onboarding Tutorial - properly scoped per user/session */}
-          <OnboardingTutorial
-            isOpen={showOnboarding}
-            onComplete={() => {
-              setShowOnboarding(false);
-              setHasCompletedTutorial(true);
-            }}
-          />
-        </div>
+        </ScrollArea>
       </div>
-    </SidebarProvider>
+
+      {/* Chat Input */}
+      <div className="p-4 border-t">
+        <ChatInput onSendMessage={sendMessage} disabled={isLoading} />
+      </div>
+    </div>
   );
 };
 

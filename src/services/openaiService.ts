@@ -218,7 +218,7 @@ export class OpenAIService {
   // ============================
   
   /**
-   * Enhanced response generation with intelligent memory context
+   * Enhanced response generation with file content processing
    */
   async generateResponse(userMessage: string, isUserMessagePatois: boolean, conversationHistory: Message[] = []): Promise<AIResponse> {
     try {
@@ -226,13 +226,28 @@ export class OpenAIService {
       const memoryContext = await memoryService.getRelevantMemories(userMessage, 5);
       console.log(`🤖 OpenAI: Generated response with ${memoryContext.length} chars of memory context`);
       
+      // Enhanced system prompt for file processing
+      const enhancedSystemPrompt = `You are JamAI, a helpful AI assistant that can communicate in both English and Jamaican Patois. You are designed to understand and respond to users in their preferred language.
+
+When users upload files (documents, text files, etc.), you can read and analyze their contents. Use the file contents to provide accurate, helpful responses.
+
+Key capabilities:
+- Read and analyze uploaded document contents
+- Translate between English and Jamaican Patois
+- Provide detailed analysis of uploaded files
+- Answer questions based on file contents
+- Maintain cultural authenticity when using Patois
+
+If a file is uploaded but you cannot access its contents, politely explain the limitation and ask the user to paste the text directly.`;
+      
       // Call edge function with enhanced context
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           userMessage,
           isUserMessagePatois,
           conversationHistory: conversationHistory.slice(-8),
-          storedKnowledge: memoryContext
+          storedKnowledge: memoryContext,
+          systemPrompt: enhancedSystemPrompt
         }
       });
 

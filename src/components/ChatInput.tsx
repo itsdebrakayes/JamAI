@@ -8,7 +8,7 @@ import ChatInputActions from './ChatInputActions';
 import UploadedFilePreview from './UploadedFilePreview';
 
 interface ChatInputProps {
-  onSendMessage: (message: string, files?: Array<{file: File, type: 'file' | 'image'}>, imagePrompt?: string) => void;
+  onSendMessage: (message: string, files?: Array<{file: File, type: 'file' | 'image', content?: string}>, imagePrompt?: string) => void;
   disabled?: boolean;
 }
 
@@ -16,6 +16,7 @@ interface UploadedFile {
   file: File;
   type: 'file' | 'image';
   preview?: string;
+  content?: string;
 }
 
 const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
@@ -52,18 +53,39 @@ const ChatInput = ({ onSendMessage, disabled }: ChatInputProps) => {
     setMessage(transcript);
   };
 
-  const handleFileUpload = (file: File, type: 'file' | 'image') => {
-    const newFile: UploadedFile = { file, type };
-    
-    // Create preview for images
-    if (type === 'image') {
+  const readFileContent = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        newFile.preview = e.target?.result as string;
-        setUploadedFiles(prev => [...prev, newFile]);
+        const result = e.target?.result as string;
+        resolve(result);
       };
-      reader.readAsDataURL(file);
-    } else {
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsText(file);
+    });
+  };
+
+  const handleFileUpload = async (file: File, type: 'file' | 'image') => {
+    const newFile: UploadedFile = { file, type };
+    
+    try {
+      if (type === 'image') {
+        // Create preview for images
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newFile.preview = e.target?.result as string;
+          setUploadedFiles(prev => [...prev, newFile]);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Read text content for files
+        const content = await readFileContent(file);
+        newFile.content = content;
+        setUploadedFiles(prev => [...prev, newFile]);
+      }
+    } catch (error) {
+      console.error('Error reading file:', error);
+      // Still add the file even if we can't read its content
       setUploadedFiles(prev => [...prev, newFile]);
     }
   };
