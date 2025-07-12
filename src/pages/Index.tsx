@@ -414,7 +414,7 @@ const MainContent = ({
                           <p className="text-sm break-words whitespace-pre-wrap">{message.text}</p>
                         </CardContent>
                         <CardFooter className="text-xs text-muted-foreground justify-between items-center p-3 pt-0">
-                          <span>{message.timestamp.toLocaleTimeString()}</span>
+                          <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
                           <Button
                             variant="ghost"
                             size="icon"
