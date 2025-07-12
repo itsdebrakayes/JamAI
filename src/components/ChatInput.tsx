@@ -7,16 +7,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import VoiceControls from './VoiceControls';
 import ToolsDropdown from './ToolsDropdown';
 import SuggestionDropdown from './SuggestionDropdown';
+import FileUploadStage from './FileUploadStage';
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
+  onFileUpload: (files: any[], prompt: string) => void;
   disabled?: boolean;
   value?: string;
   onValueChange?: (value: string) => void;
 }
 
-const ChatInput = ({ onSendMessage, disabled, value, onValueChange }: ChatInputProps) => {
+const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange }: ChatInputProps) => {
   const [message, setMessage] = useState(value || '');
+  const [showFileUpload, setShowFileUpload] = useState(false);
 
   React.useEffect(() => {
     if (value !== undefined) {
@@ -83,29 +86,12 @@ const ChatInput = ({ onSendMessage, disabled, value, onValueChange }: ChatInputP
   };
 
   const handleFileUpload = (type: 'file' | 'image') => {
-    if (type === 'file') {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = '.txt,.pdf,.doc,.docx,.json';
-      input.onchange = (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (file) {
-          onSendMessage(`I've uploaded a file: ${file.name}. Please help me analyze it.`);
-        }
-      };
-      input.click();
-    } else if (type === 'image') {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.accept = 'image/*';
-      input.onchange = (e) => {
-        const file = (e.target as HTMLInputElement).files?.[0];
-        if (file) {
-          onSendMessage(`I've uploaded an image: ${file.name}. Please help me analyze it.`);
-        }
-      };
-      input.click();
-    }
+    setShowFileUpload(true);
+  };
+
+  const handleFileSubmit = async (files: any[], prompt: string) => {
+    setShowFileUpload(false);
+    await onFileUpload(files, prompt);
   };
 
   return (
@@ -190,6 +176,17 @@ const ChatInput = ({ onSendMessage, disabled, value, onValueChange }: ChatInputP
           </div>
         )}
       </form>
+
+      {/* File Upload Stage */}
+      {showFileUpload && (
+        <div className="mt-4">
+          <FileUploadStage
+            onSubmit={handleFileSubmit}
+            onCancel={() => setShowFileUpload(false)}
+            disabled={disabled}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from '@/components/ui/button';
 import { Send, Plus, X, Copy, CheckCircle, Menu, Settings, Sun, Moon } from 'lucide-react';
+import { useAuth } from "@/contexts/AuthContext";
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -58,6 +59,7 @@ const MainContent = ({
   saveChatHistory, 
   startNewChat 
 }: MainContentProps) => {
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isConfigured, setIsConfigured] = useState(false);
   const [usageCount, setUsageCount] = useState(0);
@@ -317,6 +319,113 @@ const MainContent = ({
     }
   };
 
+  const handleFileUpload = async (files: any[], prompt: string) => {
+    if (!files.length || !prompt.trim() || isLoading) return;
+
+    setIsLoading(true);
+
+    try {
+      // Create or get current session ID
+      let sessionId = currentChatId;
+      if (!sessionId) {
+        sessionId = uuidv4();
+        setCurrentChatId(sessionId);
+        
+        // Create new session in database
+        const { error: sessionError } = await supabase
+          .from('chat_sessions')
+          .insert({
+            id: sessionId,
+            title: `File Upload: ${files.map(f => f.file.name).join(', ')}`,
+            user_id: user?.id || '',
+            message_count: 0
+          });
+
+        if (sessionError) throw sessionError;
+      }
+
+      // Upload files to storage
+      const uploadedFiles = [];
+      for (const fileObj of files) {
+        const fileName = `${user?.id}/${Date.now()}-${fileObj.file.name}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('user-uploads')
+          .upload(fileName, fileObj.file);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          continue;
+        }
+
+        uploadedFiles.push({
+          name: fileObj.file.name,
+          path: fileName,
+          type: fileObj.file.type,
+          size: fileObj.file.size
+        });
+      }
+
+      if (uploadedFiles.length === 0) {
+        throw new Error('No files were uploaded successfully');
+      }
+
+      // Process files with AI
+      const response = await supabase.functions.invoke('file-processor', {
+        body: {
+          files: uploadedFiles,
+          prompt: prompt,
+          sessionId: sessionId,
+          userId: user?.id
+        }
+      });
+
+      if (response.error) {
+        throw new Error(`File processing failed: ${response.error.message}`);
+      }
+
+      // Refresh messages to show the new conversation
+      const { data: sessionMessages, error: loadError } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('created_at', { ascending: true });
+
+      if (!loadError && sessionMessages) {
+        const loadedMessages: Message[] = sessionMessages.map(msg => ({
+          id: msg.id,
+          text: msg.content,
+          isUser: msg.is_user,
+          timestamp: new Date(msg.created_at)
+        }));
+        
+        setMessages(loadedMessages);
+      }
+
+    } catch (error) {
+      console.error('Error in file upload:', error);
+      
+      const errorMessage = {
+        id: Date.now().toString(),
+        text: "Mi sorry, but mi cyaan process di files right now. Try again later.",
+        isUser: false,
+        timestamp: new Date(),
+        isPatois: true
+      };
+
+      const finalMessages = [...messages, errorMessage];
+      setMessages(finalMessages);
+      
+      toast({
+        title: "Upload failed",
+        description: "Failed to process files. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSuggestionClick = (suggestion: string) => {
     sendMessage(suggestion);
   };
@@ -437,7 +546,11 @@ const MainContent = ({
 
       {/* Chat Input */}
       <div className="p-4 border-t">
-        <ChatInput onSendMessage={sendMessage} disabled={isLoading} />
+        <ChatInput 
+          onSendMessage={sendMessage} 
+          onFileUpload={handleFileUpload}
+          disabled={isLoading} 
+        />
       </div>
 
       {/* Settings Modal */}
