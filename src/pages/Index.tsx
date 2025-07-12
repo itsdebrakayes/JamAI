@@ -116,10 +116,14 @@ const Index = () => {
           console.error('❌ Failed to load database history:', error);
         }
       } else {
-        // For guest users: Load from localStorage only (session-specific)
+        // For guest users: Load from localStorage with session-specific key
         try {
-          const storedHistory = localStorage.getItem('jamai_guest_chat_history');
-          console.log('📦 Raw guest history:', storedHistory);
+          const sessionId = sessionStorage.getItem('guest_session_id') || Date.now().toString();
+          sessionStorage.setItem('guest_session_id', sessionId);
+          
+          const guestKey = `jamai_guest_chat_history_${sessionId}`;
+          const storedHistory = localStorage.getItem(guestKey);
+          console.log('📦 Raw guest history for session:', sessionId, storedHistory);
           
           if (storedHistory) {
             const parsedHistory = JSON.parse(storedHistory).map((chat: any) => ({
@@ -131,7 +135,7 @@ const Index = () => {
               }))
             }));
             loadedHistory = parsedHistory;
-            console.log('✅ Loaded guest history:', loadedHistory.length, 'chats');
+            console.log('✅ Loaded guest history for session:', loadedHistory.length, 'chats');
           }
         } catch (error) {
           console.error('❌ Failed to parse guest history:', error);
@@ -152,14 +156,16 @@ const Index = () => {
         // For authenticated users, history is saved in database automatically
         console.log('💾 Authenticated user - history saved in database');
       } else {
-        // For guest users, save to localStorage with guest-specific key
-        localStorage.setItem('jamai_guest_chat_history', JSON.stringify(chatHistory));
-        console.log('💾 Saved guest chat history:', chatHistory.length, 'chats');
+        // For guest users, save to localStorage with session-specific key
+        const sessionId = sessionStorage.getItem('guest_session_id') || Date.now().toString();
+        const guestKey = `jamai_guest_chat_history_${sessionId}`;
+        localStorage.setItem(guestKey, JSON.stringify(chatHistory));
+        console.log('💾 Saved guest chat history for session:', sessionId, chatHistory.length, 'chats');
       }
     }
   }, [chatHistory, user]);
 
-  // Enhanced tutorial status check - fixed logic
+  // Enhanced tutorial status check - improved logic
   useEffect(() => {
     const checkTutorialStatus = async () => {
       let tutorialCompleted = false;
@@ -174,36 +180,36 @@ const Index = () => {
             .single();
           
           tutorialCompleted = data?.onboarding_completed === true;
-          console.log('🎓 Database tutorial status:', tutorialCompleted);
+          console.log('🎓 Database tutorial status for user:', user.id, tutorialCompleted);
         } catch (error) {
           console.error('Error checking onboarding status:', error);
+          // If profile doesn't exist, tutorial hasn't been completed
+          tutorialCompleted = false;
         }
       } else {
-        // For guest users, always show tutorial (don't check localStorage)
-        tutorialCompleted = false;
-        console.log('🎓 Guest user - tutorial will be shown every session');
+        // For guest users, check session-specific completion
+        tutorialCompleted = localStorage.getItem('guest_onboarding_completed_session') === 'true';
+        console.log('🎓 Guest user tutorial status for session:', tutorialCompleted);
       }
 
       setHasCompletedTutorial(tutorialCompleted);
 
       // Only show tutorial if:
-      // 1. User has never seen it before (tutorialCompleted is false)
+      // 1. User has never completed it before
       // 2. No existing chat activity
-      // 3. Chat history has finished loading
+      // 3. Component has finished loading
       if (!tutorialCompleted && messages.length === 0 && chatHistory.length === 0) {
         setTimeout(() => {
           setShowOnboarding(true);
-          console.log('🎓 Showing tutorial for first-time user');
-        }, 500); // Small delay to ensure everything is loaded
+          console.log('🎓 Showing tutorial for first-time user/session');
+        }, 500);
       } else {
         console.log('🎓 Not showing tutorial - completed:', tutorialCompleted, 'messages:', messages.length, 'history:', chatHistory.length);
       }
     };
 
     // Only check after chat history loading is complete
-    if (chatHistory.length >= 0) {
-      checkTutorialStatus();
-    }
+    checkTutorialStatus();
   }, [user, messages.length, chatHistory.length]);
 
   // Function to start a new chat
@@ -239,12 +245,13 @@ const Index = () => {
     setChatHistory([]);
     if (user) {
       // For authenticated users, this would need to clear database entries
-      // For now, just clear the local state - database entries should be handled separately
       console.log('🧹 Cleared authenticated user chat history from state');
     } else {
-      // For guest users, clear localStorage
-      localStorage.removeItem('jamai_guest_chat_history');
-      console.log('🧹 Cleared guest chat history from localStorage');
+      // For guest users, clear session-specific localStorage
+      const sessionId = sessionStorage.getItem('guest_session_id') || Date.now().toString();
+      const guestKey = `jamai_guest_chat_history_${sessionId}`;
+      localStorage.removeItem(guestKey);
+      console.log('🧹 Cleared guest chat history for session:', sessionId);
     }
     startNewChat();
   };
@@ -741,7 +748,7 @@ const Index = () => {
             />
           )}
 
-          {/* Onboarding Tutorial - only for first-time users */}
+          {/* Onboarding Tutorial - properly scoped per user/session */}
           <OnboardingTutorial
             isOpen={showOnboarding}
             onComplete={() => {

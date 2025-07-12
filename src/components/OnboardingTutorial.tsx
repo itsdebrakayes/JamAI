@@ -82,8 +82,15 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
         console.log('👤 Marking onboarding completed for authenticated user:', user.id);
         const { error } = await supabase
           .from('profiles')
-          .update({ onboarding_completed: true })
-          .eq('id', user.id);
+          .upsert({ 
+            id: user.id,
+            email: user.email || '',
+            first_name: user.user_metadata?.first_name || '',
+            last_name: user.user_metadata?.last_name || '',
+            onboarding_completed: true 
+          }, { 
+            onConflict: 'id' 
+          });
         
         if (error) {
           console.error('❌ Error updating onboarding status:', error);
@@ -94,9 +101,9 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
         console.error('❌ Error updating onboarding status:', error);
       }
     } else {
-      // For guests, don't store completion - show tutorial every time
-      console.log('👤 Guest user completed tutorial - no persistence needed');
-      console.log('✅ Tutorial completed for guest session');
+      // For guests, store in localStorage temporarily but don't persist
+      localStorage.setItem('guest_onboarding_completed_session', 'true');
+      console.log('👤 Guest user completed tutorial - stored for current session only');
     }
     
     onComplete();
@@ -110,8 +117,15 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
         console.log('👤 Marking onboarding skipped for authenticated user:', user.id);
         const { error } = await supabase
           .from('profiles')
-          .update({ onboarding_completed: true }) // Mark as completed even if skipped
-          .eq('id', user.id);
+          .upsert({ 
+            id: user.id,
+            email: user.email || '',
+            first_name: user.user_metadata?.first_name || '',
+            last_name: user.user_metadata?.last_name || '',
+            onboarding_completed: true 
+          }, { 
+            onConflict: 'id' 
+          });
         
         if (error) {
           console.error('❌ Error updating onboarding status:', error);
@@ -122,9 +136,9 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({ isOpen, onCompl
         console.error('❌ Error updating onboarding status:', error);
       }
     } else {
-      // For guests, don't store skip status - show tutorial every time
-      console.log('👤 Guest user skipped tutorial - no persistence needed');
-      console.log('✅ Tutorial skipped for guest session');
+      // For guests, store in localStorage temporarily
+      localStorage.setItem('guest_onboarding_completed_session', 'true');
+      console.log('👤 Guest user skipped tutorial - stored for current session only');
     }
     
     onComplete();
