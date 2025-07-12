@@ -104,16 +104,16 @@ const ChatInputActions = ({ onFileUpload, onImageGeneration, disabled }: ChatInp
             size="icon"
             variant="ghost"
             disabled={disabled}
-            className="h-10 w-10 rounded-2xl hover:bg-muted transition-all duration-200"
+            className="h-10 w-10 rounded-2xl hover:bg-muted/50 transition-all duration-200"
           >
             <Plus className="w-5 h-5" />
           </Button>
         </DropdownMenuTrigger>
         
-        <DropdownMenuContent side="top" align="start" className="w-48">
+        <DropdownMenuContent side="top" align="start" className="w-48 bg-background border shadow-lg">
           <DropdownMenuItem
             onClick={() => fileInputRef.current?.click()}
-            className="cursor-pointer"
+            className="cursor-pointer hover:bg-muted/50"
           >
             <FileText className="w-4 h-4 mr-2" />
             Upload File
@@ -121,7 +121,7 @@ const ChatInputActions = ({ onFileUpload, onImageGeneration, disabled }: ChatInp
           
           <DropdownMenuItem
             onClick={() => imageInputRef.current?.click()}
-            className="cursor-pointer"
+            className="cursor-pointer hover:bg-muted/50"
           >
             <Image className="w-4 h-4 mr-2" />
             Upload Image
@@ -129,7 +129,7 @@ const ChatInputActions = ({ onFileUpload, onImageGeneration, disabled }: ChatInp
           
           <DropdownMenuItem
             onClick={() => setShowImageGenDialog(true)}
-            className="cursor-pointer"
+            className="cursor-pointer hover:bg-muted/50"
           >
             <Wand2 className="w-4 h-4 mr-2" />
             Generate Image
