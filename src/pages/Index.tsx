@@ -74,37 +74,16 @@ const Index = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages]);
 
-  // Load chat history from both localStorage and database
+  // Load chat history - separate logic for authenticated vs guest users
   useEffect(() => {
     const loadChatHistory = async () => {
       console.log('🔍 Loading chat history...');
       let loadedHistory: ChatHistory[] = [];
 
-      // First, try localStorage
-      try {
-        const storedHistory = localStorage.getItem('chatHistory') || localStorage.getItem('jamai_chat_list');
-        console.log('📦 Raw stored history:', storedHistory);
-        
-        if (storedHistory) {
-          const parsedHistory = JSON.parse(storedHistory).map((chat: any) => ({
-            ...chat,
-            createdAt: new Date(chat.createdAt),
-            messages: chat.messages.map((msg: any) => ({
-              ...msg,
-              timestamp: new Date(msg.timestamp)
-            }))
-          }));
-          loadedHistory = parsedHistory;
-          console.log('✅ Loaded from localStorage:', loadedHistory.length, 'chats');
-        }
-      } catch (error) {
-        console.error('❌ Failed to parse localStorage history:', error);
-      }
-
-      // If user is logged in, also load from database
       if (user) {
+        // For authenticated users: Load from database only
         try {
-          console.log('🔍 Loading chat sessions from database...');
+          console.log('🔍 Loading chat sessions from database for authenticated user...');
           const sessions = await getChatSessions();
           console.log('📊 Database sessions:', sessions.length);
 
@@ -129,21 +108,31 @@ const Index = () => {
             })
           );
 
-          // Merge localStorage and database history (database takes precedence)
-          const mergedHistory = [...loadedHistory];
-          dbHistory.forEach(dbChat => {
-            const existingIndex = mergedHistory.findIndex(chat => chat.id === dbChat.id);
-            if (existingIndex >= 0) {
-              mergedHistory[existingIndex] = dbChat; // Database version takes precedence
-            } else {
-              mergedHistory.push(dbChat);
-            }
-          });
-
-          loadedHistory = mergedHistory;
-          console.log('✅ Merged history:', loadedHistory.length, 'total chats');
+          loadedHistory = dbHistory;
+          console.log('✅ Loaded authenticated user history:', loadedHistory.length, 'chats');
         } catch (error) {
           console.error('❌ Failed to load database history:', error);
+        }
+      } else {
+        // For guest users: Load from localStorage only (session-specific)
+        try {
+          const storedHistory = localStorage.getItem('jamai_guest_chat_history');
+          console.log('📦 Raw guest history:', storedHistory);
+          
+          if (storedHistory) {
+            const parsedHistory = JSON.parse(storedHistory).map((chat: any) => ({
+              ...chat,
+              createdAt: new Date(chat.createdAt),
+              messages: chat.messages.map((msg: any) => ({
+                ...msg,
+                timestamp: new Date(msg.timestamp)
+              }))
+            }));
+            loadedHistory = parsedHistory;
+            console.log('✅ Loaded guest history:', loadedHistory.length, 'chats');
+          }
+        } catch (error) {
+          console.error('❌ Failed to parse guest history:', error);
         }
       }
 
@@ -154,13 +143,19 @@ const Index = () => {
     loadChatHistory();
   }, [user]);
 
-  // Save chat history to local storage whenever it changes
+  // Save chat history with proper separation for users vs guests
   useEffect(() => {
     if (chatHistory.length > 0) {
-      localStorage.setItem('chatHistory', JSON.stringify(chatHistory));
-      console.log('💾 Saved chat history:', chatHistory.length, 'chats');
+      if (user) {
+        // For authenticated users, history is saved in database automatically
+        console.log('💾 Authenticated user - history saved in database');
+      } else {
+        // For guest users, save to localStorage with guest-specific key
+        localStorage.setItem('jamai_guest_chat_history', JSON.stringify(chatHistory));
+        console.log('💾 Saved guest chat history:', chatHistory.length, 'chats');
+      }
     }
-  }, [chatHistory]);
+  }, [chatHistory, user]);
 
   // Enhanced tutorial status check - fixed logic
   useEffect(() => {
@@ -240,9 +235,16 @@ const Index = () => {
   // Function to clear all chat history
   const clearAllHistory = () => {
     setChatHistory([]);
-    localStorage.removeItem('chatHistory');
+    if (user) {
+      // For authenticated users, this would need to clear database entries
+      // For now, just clear the local state - database entries should be handled separately
+      console.log('🧹 Cleared authenticated user chat history from state');
+    } else {
+      // For guest users, clear localStorage
+      localStorage.removeItem('jamai_guest_chat_history');
+      console.log('🧹 Cleared guest chat history from localStorage');
+    }
     startNewChat();
-    console.log('🧹 Cleared all chat history');
   };
 
   // Function to rename a chat
@@ -428,19 +430,22 @@ const Index = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-background">
-        <ChatHistorySidebar 
-          chatHistory={chatHistory} 
-          currentChatId={currentChatId || ''}
-          onNewChat={startNewChat}
-          onLoadChat={loadChat}
-          onDeleteChats={deleteChats}
-          onClearAllHistory={clearAllHistory}
-          onRenameChat={renameChat}
-        />
+        {/* Fixed Sidebar */}
+        <div className="flex-shrink-0">
+          <ChatHistorySidebar 
+            chatHistory={chatHistory} 
+            currentChatId={currentChatId || ''}
+            onNewChat={startNewChat}
+            onLoadChat={loadChat}
+            onDeleteChats={deleteChats}
+            onClearAllHistory={clearAllHistory}
+            onRenameChat={renameChat}
+          />
+        </div>
         
-        <div className="flex-1 flex flex-col relative min-w-0">
-          {/* Header */}
-          <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0">
+        <div className="flex-1 flex flex-col relative min-w-0 h-screen">
+          {/* Fixed Header */}
+          <header className="border-b border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0 sticky top-0 z-10">
             <div className="flex items-center justify-between w-full">
               <div className="flex items-center gap-0.5 flex-1 min-w-0">
                 <button 
@@ -597,74 +602,76 @@ const Index = () => {
             </div>
           </header>
 
-          {/* Main content area */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Main content area with proper scrolling */}
+          <div className="flex-1 flex flex-col overflow-hidden h-full">
             {messages.length === 0 ? (
-              // Empty state with welcome message
-              <div className="flex-1 flex items-center justify-center p-4">
-                <div className="max-w-3xl w-full space-y-6 text-center">
-                  {/* Welcome header */}
-                  <div className="space-y-4">
-                    <div className="flex justify-center items-center gap-3 mb-4">
-                      <img 
-                        src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
-                        alt="JamAI Logo" 
-                        className="w-48 h-48 object-contain"
-                      />
-                    </div>
-                    <h1 className="text-3xl font-bold jamaican-text-gradient mb-4 text-center">
-                      Welcome to JamAI
-                    </h1>
-                    <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed text-center">
-                      Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
-                    </p>
-                  </div>
-
-                  {/* Conditional banner based on existing chats - smaller and centered */}
-                  {hasExistingChats ? (
-                    <div className="max-w-sm mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
-                      <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
-                        <span className="text-sm">🌟</span>
-                        <span className="font-semibold text-sm">Ready for another chat?</span>
+              // Empty state with welcome message - scrollable if needed
+              <div className="flex-1 overflow-y-auto">
+                <div className="flex items-center justify-center min-h-full p-4">
+                  <div className="max-w-3xl w-full space-y-6 text-center">
+                    {/* Welcome header */}
+                    <div className="space-y-4">
+                      <div className="flex justify-center items-center gap-3 mb-4">
+                        <img 
+                          src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+                          alt="JamAI Logo" 
+                          className="w-48 h-48 object-contain"
+                        />
                       </div>
-                      <p className="text-green-700 dark:text-green-300 text-xs text-center">
-                        Welcome back! Ask me more about Jamaica or start fresh.
+                      <h1 className="text-3xl font-bold jamaican-text-gradient mb-4 text-center">
+                        Welcome to JamAI
+                      </h1>
+                      <p className="text-base text-muted-foreground max-w-xl mx-auto leading-relaxed text-center">
+                        Your friendly Jamaican AI assistant with location awareness. Ask me anything in English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
                       </p>
                     </div>
-                  ) : (
-                    <div className="max-w-sm mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
-                      <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
-                        <span className="text-sm">👋</span>
-                        <span className="font-semibold text-sm">Start a new chat</span>
-                      </div>
-                      <p className="text-green-700 dark:text-green-300 text-xs text-center">
-                        Get started by asking me anything about Jamaica!
-                      </p>
-                    </div>
-                  )}
 
-                  {/* Chat suggestions */}
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
-                      {CHAT_SUGGESTIONS.map((suggestion) => (
-                        <button
-                          key={suggestion.id}
-                          onClick={() => handleSuggestionClick(suggestion.text)}
-                          className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group border-secondary/30 bg-transparent dark:hover:shadow-[0_0_20px_hsl(var(--secondary)/0.3)] dark:hover:border-secondary/80 hover:border-secondary"
-                        >
-                          <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
-                            {suggestion.text}
-                          </div>
-                        </button>
-                      ))}
+                    {/* Conditional banner based on existing chats - smaller and centered */}
+                    {hasExistingChats ? (
+                      <div className="max-w-sm mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
+                        <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
+                          <span className="text-sm">🌟</span>
+                          <span className="font-semibold text-sm">Ready for another chat?</span>
+                        </div>
+                        <p className="text-green-700 dark:text-green-300 text-xs text-center">
+                          Welcome back! Ask me more about Jamaica or start fresh.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="max-w-sm mx-auto bg-gradient-to-r from-green-100 to-yellow-100 dark:from-green-950/30 dark:to-yellow-900/30 border border-green-300 dark:border-green-700 rounded-lg p-3 mb-6">
+                        <div className="flex items-center justify-center gap-2 text-green-800 dark:text-green-200 mb-1">
+                          <span className="text-sm">👋</span>
+                          <span className="font-semibold text-sm">Start a new chat</span>
+                        </div>
+                        <p className="text-green-700 dark:text-green-300 text-xs text-center">
+                          Get started by asking me anything about Jamaica!
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Chat suggestions */}
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl mx-auto">
+                        {CHAT_SUGGESTIONS.map((suggestion) => (
+                          <button
+                            key={suggestion.id}
+                            onClick={() => handleSuggestionClick(suggestion.text)}
+                            className="p-3 text-center border-2 hover:shadow-md rounded-lg transition-all duration-200 group border-secondary/30 bg-transparent dark:hover:shadow-[0_0_20px_hsl(var(--secondary)/0.3)] dark:hover:border-secondary/80 hover:border-secondary"
+                          >
+                            <div className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-800 dark:group-hover:text-green-200 transition-colors">
+                              {suggestion.text}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             ) : (
-              // Chat interface
-              <div className="flex-1 flex flex-col">
-                {/* Messages area */}
+              // Chat interface with independent scrolling
+              <div className="flex-1 flex flex-col h-full">
+                {/* Messages area - independent scrollable container */}
                 <div className="flex-1 overflow-y-auto">
                   <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
                     {messages.map((message, index) => (
@@ -699,8 +706,8 @@ const Index = () => {
             )}
           </div>
 
-          {/* Input area - Always show at bottom */}
-          <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0">
+          {/* Fixed Input area - Always show at bottom */}
+          <div className="border-t border-border/50 bg-background/95 backdrop-blur-md p-4 flex-shrink-0 sticky bottom-0">
             <div className="max-w-4xl mx-auto">
               <ChatInput 
                 onSendMessage={handleSendMessage}
