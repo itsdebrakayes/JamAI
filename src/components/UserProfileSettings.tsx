@@ -99,9 +99,9 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto">
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto bg-gradient-to-br from-yellow-50 to-green-50 dark:from-yellow-900/20 dark:to-green-900/20">
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-xl font-semibold">Settings & Profile</SheetTitle>
+          <SheetTitle className="text-xl font-semibold bg-gradient-to-r from-yellow-600 to-green-600 bg-clip-text text-transparent">Settings & Profile</SheetTitle>
         </SheetHeader>
 
         <div className="space-y-6">
@@ -252,8 +252,8 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
             <CardContent className="space-y-3">
               <Button
                 onClick={handleSignOut}
-                variant="secondary"
-                className="w-full bg-muted hover:bg-muted/80 flex items-center gap-2"
+                variant="outline"
+                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border-gray-300 flex items-center gap-2"
               >
                 <LogOut className="w-4 h-4" />
                 Sign out of account

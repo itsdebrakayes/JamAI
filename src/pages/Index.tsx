@@ -19,6 +19,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import UserProfileSettings from '@/components/UserProfileSettings';
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { FileText } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -132,6 +133,29 @@ const MainContent = ({
 
     setIsLoading(true);
     
+    // Create or get current session ID
+    let sessionId = currentChatId;
+    if (!sessionId) {
+      sessionId = uuidv4();
+      setCurrentChatId(sessionId);
+      
+      // Create new session in database
+      try {
+        const { error: sessionError } = await supabase
+          .from('chat_sessions')
+          .insert({
+            id: sessionId,
+            title: messageText.substring(0, 50) + '...',
+            user_id: (await supabase.auth.getUser()).data.user?.id || '',
+            message_count: 0
+          });
+
+        if (sessionError) throw sessionError;
+      } catch (error) {
+        console.error('Error creating chat session:', error);
+      }
+    }
+    
     const userMessage = {
       id: Date.now().toString(),
       text: messageText,
@@ -141,7 +165,23 @@ const MainContent = ({
 
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
-    saveMessagesToLocalStorage(newMessages);
+
+    // Save user message to database
+    try {
+      const { error: userMsgError } = await supabase
+        .from('messages')
+        .insert({
+          id: userMessage.id,
+          content: userMessage.text,
+          is_user: true,
+          session_id: sessionId,
+          user_id: (await supabase.auth.getUser()).data.user?.id || ''
+        });
+
+      if (userMsgError) throw userMsgError;
+    } catch (error) {
+      console.error('Error saving user message:', error);
+    }
 
     try {
       const isPatois = detectLanguage(messageText) === 'patois';
@@ -162,7 +202,35 @@ const MainContent = ({
 
       const finalMessages = [...newMessages, aiMessage];
       setMessages(finalMessages);
-      saveMessagesToLocalStorage(finalMessages);
+      
+      // Save AI message to database
+      try {
+        const { error: aiMsgError } = await supabase
+          .from('messages')
+          .insert({
+            id: aiMessage.id,
+            content: aiMessage.text,
+            is_user: false,
+            session_id: sessionId,
+            user_id: (await supabase.auth.getUser()).data.user?.id || ''
+          });
+
+        if (aiMsgError) throw aiMsgError;
+
+        // Update session message count
+        const { error: updateError } = await supabase
+          .from('chat_sessions')
+          .update({
+            message_count: finalMessages.length,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', sessionId);
+
+        if (updateError) throw updateError;
+      } catch (error) {
+        console.error('Error saving AI message:', error);
+      }
+
       incrementUsageCount();
       
     } catch (error) {
@@ -178,7 +246,23 @@ const MainContent = ({
 
       const finalMessages = [...newMessages, errorMessage];
       setMessages(finalMessages);
-      saveMessagesToLocalStorage(finalMessages);
+      
+      // Save error message to database
+      try {
+        const { error: errorMsgError } = await supabase
+          .from('messages')
+          .insert({
+            id: errorMessage.id,
+            content: errorMessage.text,
+            is_user: false,
+            session_id: sessionId,
+            user_id: (await supabase.auth.getUser()).data.user?.id || ''
+          });
+
+        if (errorMsgError) throw errorMsgError;
+      } catch (error) {
+        console.error('Error saving error message:', error);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -208,7 +292,7 @@ const MainContent = ({
           <Button 
             variant="outline" 
             size="sm" 
-            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-green-700 via-white to-green-700 hover:from-green-800 hover:via-gray-100 hover:to-green-800 text-green-800 border-0 rounded-full px-4 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-green-800 via-white to-green-800 hover:from-green-900 hover:via-gray-100 hover:to-green-900 text-black border-0 rounded-full px-4 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <FileText className="w-4 h-4" />
             Summary
@@ -330,30 +414,77 @@ const Index = () => {
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
 
-  useEffect(() => {
-    // Load chat history
-    const storedHistory = localStorage.getItem('chat-history');
-    if (storedHistory) {
-      setChatHistory(JSON.parse(storedHistory));
+  // Load chat history from Supabase
+  const loadChatHistoryFromDB = async () => {
+    try {
+      const { data: sessions, error } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (sessions) {
+        const historyData: ChatHistory[] = await Promise.all(
+          sessions.map(async (session) => {
+            const { data: sessionMessages, error: messagesError } = await supabase
+              .from('messages')
+              .select('*')
+              .eq('session_id', session.id)
+              .order('created_at', { ascending: true });
+
+            if (messagesError) throw messagesError;
+
+            return {
+              id: session.id,
+              title: session.title,
+              messages: sessionMessages?.map(msg => ({
+                id: msg.id,
+                text: msg.content,
+                isUser: msg.is_user,
+                timestamp: new Date(msg.created_at)
+              })) || [],
+              createdAt: new Date(session.created_at),
+              autoTitle: session.auto_title,
+              keywords: session.keywords,
+              summary: session.summary
+            };
+          })
+        );
+
+        setChatHistory(historyData);
+      }
+    } catch (error) {
+      console.error('Error loading chat history:', error);
     }
+  };
+
+  useEffect(() => {
+    loadChatHistoryFromDB();
   }, []);
 
-  const saveChatHistory = (history: ChatHistory[]) => {
-    localStorage.setItem('chat-history', JSON.stringify(history));
+  const saveChatHistory = async (history: ChatHistory[]) => {
+    // Update local state
     setChatHistory(history);
   };
 
-  const startNewChat = () => {
-    if (messages.length > 0) {
-      // Save current chat to history
-      const newChatHistory: ChatHistory = {
-        id: currentChatId || uuidv4(),
-        title: messages.find(m => m.isUser)?.text?.substring(0, 50) + '...' || 'New Chat',
-        messages: messages,
-        createdAt: new Date()
-      };
-      const updatedHistory = [newChatHistory, ...chatHistory];
-      saveChatHistory(updatedHistory);
+  const startNewChat = async () => {
+    if (messages.length > 0 && currentChatId) {
+      // Save current chat to database
+      try {
+        const { error: sessionError } = await supabase
+          .from('chat_sessions')
+          .update({
+            title: messages.find(m => m.isUser)?.text?.substring(0, 50) + '...' || 'New Chat',
+            message_count: messages.length,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentChatId);
+
+        if (sessionError) throw sessionError;
+      } catch (error) {
+        console.error('Error updating chat session:', error);
+      }
     }
     
     // Clear current messages and start fresh
@@ -361,23 +492,66 @@ const Index = () => {
     setCurrentChatId(uuidv4());
   };
 
-  const loadChat = (chatId: string) => {
-    const chat = chatHistory.find(c => c.id === chatId);
-    if (chat) {
-      setMessages(chat.messages);
-      setCurrentChatId(chatId);
+  const loadChat = async (chatId: string) => {
+    try {
+      const { data: sessionMessages, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('session_id', chatId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      if (sessionMessages) {
+        const loadedMessages: Message[] = sessionMessages.map(msg => ({
+          id: msg.id,
+          text: msg.content,
+          isUser: msg.is_user,
+          timestamp: new Date(msg.created_at)
+        }));
+        
+        setMessages(loadedMessages);
+        setCurrentChatId(chatId);
+      }
+    } catch (error) {
+      console.error('Error loading chat:', error);
     }
   };
 
-  const deleteChats = (chatIds: string[]) => {
-    const updatedHistory = chatHistory.filter(chat => !chatIds.includes(chat.id));
-    saveChatHistory(updatedHistory);
+  const deleteChats = async (chatIds: string[]) => {
+    try {
+      // Delete from database
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .in('id', chatIds);
+
+      if (error) throw error;
+
+      // Refresh chat history
+      await loadChatHistoryFromDB();
+    } catch (error) {
+      console.error('Error deleting chats:', error);
+    }
   };
 
-  const clearAllHistory = () => {
-    saveChatHistory([]);
-    setMessages([]);
-    setCurrentChatId(uuidv4());
+  const clearAllHistory = async () => {
+    try {
+      // Delete all chat sessions for the user
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (error) throw error;
+
+      // Clear local state
+      setChatHistory([]);
+      setMessages([]);
+      setCurrentChatId(uuidv4());
+    } catch (error) {
+      console.error('Error clearing all history:', error);
+    }
   };
 
   return (
