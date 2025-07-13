@@ -176,10 +176,32 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
 
       <form onSubmit={handleSubmit}>
         <div className="flex items-end gap-3 glass-effect rounded-3xl p-4 modern-shadow-lg">
-          <ToolsDropdown 
-            onToolSelect={handleToolSelect}
-            disabled={disabled}
-          />
+          <div className="flex gap-1">
+            <ToolsDropdown 
+              onToolSelect={handleToolSelect}
+              disabled={disabled}
+            />
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  disabled={disabled}
+                  className="h-10 w-10 rounded-2xl hover:bg-muted/50 transition-all duration-200"
+                >
+                  <Plus className="w-5 h-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48 bg-background border shadow-lg">
+                <DropdownMenuItem onClick={handleFileUpload} className="cursor-pointer">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Upload File
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           
           <Textarea
             value={message}
