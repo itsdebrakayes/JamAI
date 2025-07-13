@@ -204,7 +204,6 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
                   <DropdownMenuSubTrigger className="cursor-pointer">
                     <Plus className="w-4 h-4 mr-2" />
                     Add from other app
-                    <ChevronRight className="w-4 h-4 ml-auto" />
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className="bg-background border shadow-lg z-50">
                     <DropdownMenuItem className="cursor-pointer">
