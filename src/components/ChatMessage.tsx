@@ -16,6 +16,9 @@ const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: Chat
     ? formatMessageWithBold(message)
     : message;
 
+  // Ensure timestamp is a Date object
+  const dateTimestamp = timestamp instanceof Date ? timestamp : new Date(timestamp);
+
   return (
     <div className={`flex gap-4 p-4 group ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
@@ -41,7 +44,7 @@ const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: Chat
         <div className={`text-xs text-muted-foreground mt-1 ${
           isUser ? 'text-right' : 'text-left'
         }`}>
-          {timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          {dateTimestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </div>
         
         {/* Add action buttons for AI messages */}
