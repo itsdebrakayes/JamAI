@@ -1,17 +1,22 @@
 
-import React, { useState } from 'react';
-import { Send, Plus, FileText, Image } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Send, Plus, FileText, Image, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import VoiceControls from './VoiceControls';
 import ToolsDropdown from './ToolsDropdown';
 import SuggestionDropdown from './SuggestionDropdown';
-import FileUploadStage from './FileUploadStage';
+
+interface UploadedFile {
+  file: File;
+  preview?: string;
+  id: string;
+}
 
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
-  onFileUpload: (files: any[], prompt: string) => void;
+  onFileUpload: (files: UploadedFile[], prompt: string) => void;
   disabled?: boolean;
   value?: string;
   onValueChange?: (value: string) => void;
@@ -19,7 +24,8 @@ interface ChatInputProps {
 
 const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange }: ChatInputProps) => {
   const [message, setMessage] = useState(value || '');
-  const [showFileUpload, setShowFileUpload] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
     if (value !== undefined) {
@@ -65,13 +71,7 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
   };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedMessage = message.trim();
-    
-    if (trimmedMessage && !disabled) {
-      onSendMessage(trimmedMessage);
-      handleMessageChange('');
-    }
+    handleSubmitWithFiles(e);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -85,17 +85,95 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
     handleMessageChange(transcript);
   };
 
-  const handleFileUpload = (type: 'file' | 'image') => {
-    setShowFileUpload(true);
+  const handleFileSelect = (selectedFiles: FileList) => {
+    const newFiles: UploadedFile[] = [];
+    
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const file = selectedFiles[i];
+      const id = `${Date.now()}-${i}`;
+      
+      let preview: string | undefined;
+      if (file.type.startsWith('image/')) {
+        preview = URL.createObjectURL(file);
+      }
+      
+      newFiles.push({ file, preview, id });
+    }
+    
+    setUploadedFiles(prev => [...prev, ...newFiles]);
   };
 
-  const handleFileSubmit = async (files: any[], prompt: string) => {
-    setShowFileUpload(false);
-    await onFileUpload(files, prompt);
+  const removeFile = (id: string) => {
+    setUploadedFiles(prev => {
+      const fileToRemove = prev.find(f => f.id === id);
+      if (fileToRemove?.preview) {
+        URL.revokeObjectURL(fileToRemove.preview);
+      }
+      return prev.filter(f => f.id !== id);
+    });
+  };
+
+  const handleFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleSubmitWithFiles = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedMessage = message.trim();
+    
+    if (uploadedFiles.length > 0 && trimmedMessage) {
+      await onFileUpload(uploadedFiles, trimmedMessage);
+      setUploadedFiles([]);
+      handleMessageChange('');
+    } else if (trimmedMessage && !disabled) {
+      onSendMessage(trimmedMessage);
+      handleMessageChange('');
+    }
+  };
+
+  const getFileIcon = (file: File) => {
+    if (file.type.startsWith('image/')) return <Image className="w-4 h-4" />;
+    return <FileText className="w-4 h-4" />;
   };
 
   return (
     <div className="relative">
+      {/* Uploaded Files Display */}
+      {uploadedFiles.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {uploadedFiles.map((uploadedFile) => (
+            <div key={uploadedFile.id} className="relative group">
+              <div className="flex items-center gap-2 bg-muted/30 rounded-lg p-2 pr-8">
+                {uploadedFile.preview ? (
+                  <img 
+                    src={uploadedFile.preview} 
+                    alt={uploadedFile.file.name}
+                    className="w-8 h-8 object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
+                    {getFileIcon(uploadedFile.file)}
+                  </div>
+                )}
+                <span className="text-sm font-medium truncate max-w-32">
+                  {uploadedFile.file.name}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => removeFile(uploadedFile.id)}
+                className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="flex items-end gap-3 glass-effect rounded-3xl p-4 modern-shadow-lg">
           <div className="flex gap-1">
@@ -104,38 +182,16 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
               disabled={disabled}
             />
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  disabled={disabled}
-                  className="h-10 w-10 rounded-2xl hover:bg-muted/50 transition-all duration-200"
-                >
-                  <Plus className="w-5 h-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              
-              <DropdownMenuContent side="top" align="start" className="w-48 bg-background border shadow-lg">
-                <DropdownMenuItem
-                  onClick={() => handleFileUpload('file')}
-                  className="cursor-pointer hover:bg-muted/50"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Upload File
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem
-                  onClick={() => handleFileUpload('image')}
-                  className="cursor-pointer hover:bg-muted/50"
-                >
-                  <Image className="w-4 h-4 mr-2" />
-                  Upload Image
-                </DropdownMenuItem>
-                
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              disabled={disabled}
+              onClick={handleFileUpload}
+              className="h-10 w-10 rounded-2xl hover:bg-muted/50 transition-all duration-200"
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
           </div>
           
           <Textarea
@@ -156,7 +212,7 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
             
             <Button 
               type="submit" 
-              disabled={!message.trim() || disabled}
+              disabled={(!message.trim() && uploadedFiles.length === 0) || disabled}
               size="icon"
               className="h-10 w-10 rounded-2xl bg-gradient-to-r from-secondary to-accent hover:from-secondary/90 hover:to-accent/90 text-secondary-foreground disabled:from-muted disabled:to-muted disabled:text-muted-foreground modern-shadow transition-all duration-200 hover:scale-105"
             >
@@ -177,16 +233,18 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
         )}
       </form>
 
-      {/* File Upload Stage */}
-      {showFileUpload && (
-        <div className="mt-4">
-          <FileUploadStage
-            onSubmit={handleFileSubmit}
-            onCancel={() => setShowFileUpload(false)}
-            disabled={disabled}
-          />
-        </div>
-      )}
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,.pdf,.txt,.doc,.docx,.json,.csv"
+        onChange={(e) => {
+          const files = e.target.files;
+          if (files) handleFileSelect(files);
+        }}
+        className="hidden"
+      />
     </div>
   );
 };
