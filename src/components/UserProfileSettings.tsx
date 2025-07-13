@@ -6,9 +6,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { X, Eye, EyeOff, CreditCard, User, Shield, FileText, Languages, LogOut } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { X, Eye, EyeOff, CreditCard, User, Shield, FileText, Languages, LogOut, LogIn, Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -19,18 +21,36 @@ interface UserProfileSettingsProps {
 
 const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) => {
   const { toast } = useToast();
-  const { signOut } = useAuth();
+  const { user, signOut, isGuest, guestMessagesRemaining } = useAuth();
+  const { limits, usage, loading: subscriptionLoading } = useSubscription();
   const navigate = useNavigate();
-  const [email, setEmail] = useState('debrakayesam@gmail.com');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [autoSummary, setAutoSummary] = useState(false);
+  const [translationMode, setTranslationMode] = useState(false);
+
+  // Load user data and preferences
+  useEffect(() => {
+    if (user?.email) {
+      setEmail(user.email);
+    }
+    
+    // Load preferences from localStorage for both users and guests
+    const savedAutoSummary = localStorage.getItem('autoSummary') === 'true';
+    const savedTranslationMode = localStorage.getItem('translationMode') === 'true';
+    setAutoSummary(savedAutoSummary);
+    setTranslationMode(savedTranslationMode);
+  }, [user]);
 
   const handleUpdateEmail = async () => {
+    if (!user) return;
+    
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.updateUser({ email });
+      if (error) throw error;
       
       toast({
         title: "Email updated",
@@ -40,7 +60,7 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
       toast({
         variant: "destructive",
         title: "Update failed",
-        description: "Failed to update email.",
+        description: error.message || "Failed to update email.",
       });
     } finally {
       setIsLoading(false);
@@ -48,6 +68,8 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
   };
 
   const handleUpdatePassword = async () => {
+    if (!user) return;
+    
     if (password.length < 6) {
       toast({
         variant: "destructive",
@@ -59,8 +81,8 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
 
     setIsLoading(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
       
       setPassword('');
       toast({
@@ -71,7 +93,7 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
       toast({
         variant: "destructive",
         title: "Update failed",
-        description: "Failed to update password.",
+        description: error.message || "Failed to update password.",
       });
     } finally {
       setIsLoading(false);
@@ -116,6 +138,141 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
     }
   };
 
+  const handlePreferenceChange = (key: string, value: boolean) => {
+    if (key === 'autoSummary') {
+      setAutoSummary(value);
+    } else if (key === 'translationMode') {
+      setTranslationMode(value);
+    }
+    
+    // Save to localStorage for both users and guests
+    localStorage.setItem(key, value.toString());
+    
+    // TODO: For authenticated users, also save to Supabase profiles table
+    if (user) {
+      // This would be implemented to sync with the database
+    }
+  };
+
+  const getTierInfo = () => {
+    if (isGuest) {
+      return {
+        name: 'Guest',
+        badgeColor: 'bg-gray-500',
+        description: 'Limited access - Sign in for full features'
+      };
+    }
+    
+    if (!limits) return { name: 'Loading...', badgeColor: 'bg-gray-500', description: '' };
+    
+    switch (limits.tier) {
+      case 'jamai_ultra':
+        return { name: 'Ultra', badgeColor: 'bg-purple-600', description: 'Unlimited messages and features' };
+      case 'jamai_plus':
+        return { name: 'Plus', badgeColor: 'bg-blue-600', description: 'Enhanced features with higher limits' };
+      default:
+        return { name: 'Free', badgeColor: 'bg-green-600', description: 'Basic features with daily limits' };
+    }
+  };
+
+  const getUsageDisplay = (used: number, limit: number) => {
+    if (limit === -1) return '∞';
+    return `${used}/${limit}`;
+  };
+
+  const getUsagePercentage = (used: number, limit: number) => {
+    if (limit === -1) return 0;
+    return (used / limit) * 100;
+  };
+
+  if (isGuest) {
+    return (
+      <Sheet open={open} onOpenChange={onOpenChange}>
+        <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto bg-gradient-to-br from-yellow-50 to-green-50 dark:from-yellow-900/20 dark:to-green-900/20">
+          <SheetHeader className="pb-4">
+            <SheetTitle className="text-xl font-semibold bg-gradient-to-r from-yellow-600 to-green-600 bg-clip-text text-transparent">Guest Settings</SheetTitle>
+          </SheetHeader>
+
+          <div className="space-y-6">
+            {/* Guest Status */}
+            <Card className="border border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Users className="w-5 h-5" />
+                  Guest Access
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Badge className="bg-gray-500 text-white px-3 py-1">
+                    Guest User
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    {guestMessagesRemaining} messages remaining
+                  </span>
+                </div>
+                
+                <div className="text-center p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                  <div className="text-2xl font-bold text-yellow-600 mb-2">{guestMessagesRemaining}</div>
+                  <div className="text-sm text-muted-foreground mb-3">Guest messages remaining</div>
+                  <Button 
+                    onClick={() => {
+                      onOpenChange(false);
+                      navigate('/auth');
+                    }}
+                    className="w-full bg-gradient-to-r from-yellow-600 to-green-600 hover:from-yellow-700 hover:to-green-700 text-white"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Sign In for More
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Summary & Translation Settings for Guests */}
+            <Card className="border border-border/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <FileText className="w-5 h-5" />
+                  Preferences
+                </CardTitle>
+                <CardDescription>
+                  Basic AI response settings
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="auto-summary" className="flex items-center gap-2">
+                    📝 Auto Summary
+                  </Label>
+                  <Switch 
+                    id="auto-summary" 
+                    checked={autoSummary}
+                    onCheckedChange={(value) => handlePreferenceChange('autoSummary', value)}
+                  />
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="translation-mode" className="flex items-center gap-2">
+                    <Languages className="w-4 h-4" />
+                    Translation Mode
+                  </Label>
+                  <Switch 
+                    id="translation-mode" 
+                    checked={translationMode}
+                    onCheckedChange={(value) => handlePreferenceChange('translationMode', value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
+  const tierInfo = getTierInfo();
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:w-[540px] overflow-y-auto bg-gradient-to-br from-yellow-50 to-green-50 dark:from-yellow-900/20 dark:to-green-900/20">
@@ -134,24 +291,42 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
-                <Badge className="bg-purple-600 text-white px-3 py-1">
-                  Ultra
+                <Badge className={`${tierInfo.badgeColor} text-white px-3 py-1`}>
+                  {tierInfo.name}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
-                  Unlimited messages and features
+                  {tierInfo.description}
                 </span>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                  <div className="text-2xl font-bold text-green-400">∞</div>
-                  <div className="text-sm text-muted-foreground">Messages Used Today</div>
+              {!subscriptionLoading && limits && usage && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <div className="text-2xl font-bold text-green-400">
+                      {getUsageDisplay(usage.messages_used || 0, limits.daily_message_limit)}
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-2">Messages Today</div>
+                    {limits.daily_message_limit !== -1 && (
+                      <Progress 
+                        value={getUsagePercentage(usage.messages_used || 0, limits.daily_message_limit)} 
+                        className="h-2"
+                      />
+                    )}
+                  </div>
+                  <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <div className="text-2xl font-bold text-blue-400">
+                      {getUsageDisplay(usage.media_uploads_used || 0, limits.daily_media_limit)}
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-2">Media Uploads Today</div>
+                    {limits.daily_media_limit !== -1 && (
+                      <Progress 
+                        value={getUsagePercentage(usage.media_uploads_used || 0, limits.daily_media_limit)} 
+                        className="h-2"
+                      />
+                    )}
+                  </div>
                 </div>
-                <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                  <div className="text-2xl font-bold text-blue-400">∞</div>
-                  <div className="text-sm text-muted-foreground">Media Uploads Today</div>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
 
@@ -181,7 +356,7 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
                   />
                   <Button
                     onClick={handleUpdateEmail}
-                    disabled={isLoading}
+                    disabled={isLoading || email === user?.email}
                     className="bg-yellow-600 hover:bg-yellow-700 text-white"
                   >
                     Update
@@ -191,7 +366,7 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="flex items-center gap-2">
-                  🔒 Current Password
+                  🔒 New Password
                 </Label>
                 <div className="flex gap-2">
                   <div className="relative flex-1">
@@ -221,9 +396,6 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
                     Update
                   </Button>
                 </div>
-                <Button variant="link" className="text-sm text-muted-foreground p-0 h-auto">
-                  Forgot Password?
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -244,7 +416,11 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
                 <Label htmlFor="auto-summary" className="flex items-center gap-2">
                   📝 Auto Summary
                 </Label>
-                <Switch id="auto-summary" defaultChecked />
+                <Switch 
+                  id="auto-summary" 
+                  checked={autoSummary}
+                  onCheckedChange={(value) => handlePreferenceChange('autoSummary', value)}
+                />
               </div>
               
               <div className="flex items-center justify-between">
@@ -252,7 +428,11 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
                   <Languages className="w-4 h-4" />
                   Translation Mode
                 </Label>
-                <Switch id="translation-mode" defaultChecked />
+                <Switch 
+                  id="translation-mode" 
+                  checked={translationMode}
+                  onCheckedChange={(value) => handlePreferenceChange('translationMode', value)}
+                />
               </div>
             </CardContent>
           </Card>
