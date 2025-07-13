@@ -21,6 +21,7 @@ import UserProfileSettings from '@/components/UserProfileSettings';
 import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import ChatMessage from '@/components/ChatMessage';
 
 interface Message {
   id: string;
@@ -319,6 +320,11 @@ const MainContent = ({
     }
   };
 
+  const handleFeedback = async (messageId: string, isPositive: boolean) => {
+    // Here you could save feedback to database or analytics
+    console.log(`Feedback for message ${messageId}: ${isPositive ? 'positive' : 'negative'}`);
+  };
+
   const handleFileUpload = async (files: any[], prompt: string) => {
     if (!files.length || !prompt.trim() || isLoading) return;
 
@@ -508,35 +514,14 @@ const MainContent = ({
           ) : (
             <div className="space-y-4">
               {messages.map((message) => (
-                <div key={message.id} className={`flex flex-col ${message.isUser ? 'items-end' : 'items-start'}`}>
-                  <div className="flex items-start gap-2 max-w-[80%]">
-                    {!message.isUser && (
-                      <Avatar className="w-8 h-8 flex-shrink-0 mt-1">
-                        <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
-                        <AvatarFallback>AI</AvatarFallback>
-                      </Avatar>
-                    )}
-                    <div className="flex flex-col gap-2 w-full">
-                      <Card className="w-fit">
-                        <CardContent className="p-3">
-                          <p className="text-sm break-words whitespace-pre-wrap">{message.text}</p>
-                        </CardContent>
-                        <CardFooter className="text-xs text-muted-foreground justify-between items-center p-3 pt-0">
-                          <span>{new Date(message.timestamp).toLocaleTimeString()}</span>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="hover:bg-secondary/50 h-6 w-6"
-                            onClick={() => copyToClipboard(message.text)}
-                            disabled={isCopied}
-                          >
-                            {isCopied ? <CheckCircle className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    </div>
-                  </div>
-                </div>
+                <ChatMessage
+                  key={message.id}
+                  message={message.text}
+                  isUser={message.isUser}
+                  timestamp={message.timestamp}
+                  messageId={message.id}
+                  onFeedback={handleFeedback}
+                />
               ))}
               <div ref={bottomRef} />
             </div>
