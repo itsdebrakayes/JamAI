@@ -301,27 +301,27 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
               
               {!subscriptionLoading && limits && usage && (
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 rounded-lg bg-green-500/10 border border-green-500/20">
-                    <div className="text-2xl font-bold text-green-400">
+                  <div className="text-center p-4 rounded-lg bg-muted/30">
+                    <div className="text-3xl font-bold text-primary mb-1">
                       {getUsageDisplay(usage.messages_used || 0, limits.daily_message_limit)}
                     </div>
-                    <div className="text-sm text-muted-foreground mb-2">Messages Today</div>
+                    <div className="text-sm text-muted-foreground">Messages Used Today</div>
                     {limits.daily_message_limit !== -1 && (
                       <Progress 
                         value={getUsagePercentage(usage.messages_used || 0, limits.daily_message_limit)} 
-                        className="h-2"
+                        className="h-1 mt-2"
                       />
                     )}
                   </div>
-                  <div className="text-center p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                    <div className="text-2xl font-bold text-blue-400">
+                  <div className="text-center p-4 rounded-lg bg-muted/30">
+                    <div className="text-3xl font-bold text-primary mb-1">
                       {getUsageDisplay(usage.media_uploads_used || 0, limits.daily_media_limit)}
                     </div>
-                    <div className="text-sm text-muted-foreground mb-2">Media Uploads Today</div>
+                    <div className="text-sm text-muted-foreground">Media Uploads Today</div>
                     {limits.daily_media_limit !== -1 && (
                       <Progress 
                         value={getUsagePercentage(usage.media_uploads_used || 0, limits.daily_media_limit)} 
-                        className="h-2"
+                        className="h-1 mt-2"
                       />
                     )}
                   </div>
