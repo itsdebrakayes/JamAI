@@ -1,9 +1,9 @@
 
 import React, { useState, useRef } from 'react';
-import { Send, Plus, FileText, Image, X } from 'lucide-react';
+import { Send, Plus, FileText, Image, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger } from '@/components/ui/dropdown-menu';
 import VoiceControls from './VoiceControls';
 import ToolsDropdown from './ToolsDropdown';
 import SuggestionDropdown from './SuggestionDropdown';
@@ -194,11 +194,33 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
                   <Plus className="w-5 h-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-48 bg-background border shadow-lg">
+              <DropdownMenuContent align="start" className="w-56 bg-background border shadow-lg z-50">
                 <DropdownMenuItem onClick={handleFileUpload} className="cursor-pointer">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Upload File
+                  <Image className="w-4 h-4 mr-2" />
+                  Upload photos or files
                 </DropdownMenuItem>
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger className="cursor-pointer">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add from other app
+                    <ChevronRight className="w-4 h-4 ml-auto" />
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="bg-background border shadow-lg z-50">
+                    <DropdownMenuItem className="cursor-pointer">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Google Docs
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <FileText className="w-4 h-4 mr-2" />
+                      Google Drive
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
+                      <FileText className="w-4 h-4 mr-2" />
+                      OneDrive
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
