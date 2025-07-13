@@ -632,15 +632,22 @@ const Index = () => {
 
   const loadChat = async (chatId: string) => {
     try {
+      console.log('Loading chat with ID:', chatId);
+      
       const { data: sessionMessages, error } = await supabase
         .from('messages')
         .select('*')
         .eq('session_id', chatId)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error loading messages:', error);
+        throw error;
+      }
 
-      if (sessionMessages) {
+      console.log('Raw session messages:', sessionMessages);
+
+      if (sessionMessages && sessionMessages.length > 0) {
         const loadedMessages: Message[] = sessionMessages.map(msg => ({
           id: msg.id,
           text: msg.content,
@@ -648,7 +655,12 @@ const Index = () => {
           timestamp: new Date(msg.created_at)
         }));
         
+        console.log('Mapped messages:', loadedMessages);
         setMessages(loadedMessages);
+        setCurrentChatId(chatId);
+      } else {
+        console.log('No messages found for chat ID:', chatId);
+        setMessages([]);
         setCurrentChatId(chatId);
       }
     } catch (error) {
