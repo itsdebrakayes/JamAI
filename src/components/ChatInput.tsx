@@ -1,4 +1,22 @@
 
+/**
+ * ChatInput Component
+ * 
+ * This component provides the chat input interface where users can:
+ * - Type messages
+ * - Upload files (images, documents)
+ * - Use voice input
+ * - Select from AI tools and suggestions
+ * - Submit messages to the chat
+ * 
+ * Features:
+ * - File upload with preview
+ * - Voice recognition
+ * - Dynamic suggestions
+ * - Tool integration
+ * - Keyboard shortcuts (Enter to send)
+ */
+
 import React, { useState, useRef } from 'react';
 import { Send, Plus, FileText, Image, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,45 +26,73 @@ import VoiceControls from './VoiceControls';
 import ToolsDropdown from './ToolsDropdown';
 import SuggestionDropdown from './SuggestionDropdown';
 
+// Define the structure of an uploaded file with its metadata
 interface UploadedFile {
-  file: File;
-  preview?: string;
-  id: string;
+  file: File;        // The actual File object from the browser
+  preview?: string;  // Optional preview URL for images
+  id: string;        // Unique identifier for the file
 }
 
+// Define what props this component expects from its parent
 interface ChatInputProps {
-  onSendMessage: (message: string) => void;
-  onFileUpload: (files: UploadedFile[], prompt: string) => void;
-  disabled?: boolean;
-  value?: string;
-  onValueChange?: (value: string) => void;
+  onSendMessage: (message: string) => void;                           // Callback when user sends a text message
+  onFileUpload: (files: UploadedFile[], prompt: string) => void;     // Callback when user uploads files with a prompt
+  disabled?: boolean;                                                 // Whether the input should be disabled
+  value?: string;                                                     // Controlled value for the input
+  onValueChange?: (value: string) => void;                           // Callback when input value changes
 }
 
+/**
+ * ChatInput Component
+ * 
+ * Main chat input interface that handles user interactions and message submission.
+ */
 const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange }: ChatInputProps) => {
+  // State for the current message being typed
   const [message, setMessage] = useState(value || '');
+  
+  // State for files that have been uploaded but not yet sent
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  
+  // Reference to the hidden file input element for programmatic file selection
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Update local state when controlled value changes from parent
   React.useEffect(() => {
     if (value !== undefined) {
       setMessage(value);
     }
   }, [value]);
 
+  /**
+   * Handles changes to the message input
+   * @param newMessage - The new message text
+   */
   const handleMessageChange = (newMessage: string) => {
     setMessage(newMessage);
-    onValueChange?.(newMessage);
+    onValueChange?.(newMessage); // Notify parent of the change if callback provided
   };
 
+  /**
+   * Adds a tool prompt to the current message
+   * @param toolPrompt - The prompt text from the selected tool
+   */
   const handleToolSelect = (toolPrompt: string) => {
     const newMessage = message + toolPrompt;
     handleMessageChange(newMessage);
   };
 
+  /**
+   * Provides contextual suggestions based on the current message content
+   * @returns Array of suggestion strings relevant to the current message
+   */
   const getSuggestions = () => {
+    // If user mentions image generation, suggest image-related prompts
     if (message.toLowerCase().includes('generate an image')) {
       return ['a sunset over the Blue Mountains', 'Jamaican flag colors', 'traditional Jamaican food', 'reggae music scene'];
     }
+    
+    // If user mentions web search, suggest search topics
     if (message.toLowerCase().includes('search the web')) {
       return ['latest news about Jamaica', 'Jamaican music festivals 2025', 'best beaches in Jamaica', 'Jamaican culture facts'];
     }
@@ -65,79 +111,130 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
     return [];
   };
 
+  /**
+   * Handles selection of a suggestion from the dropdown
+   * @param suggestion - The selected suggestion text
+   */
   const handleSuggestionSelect = (suggestion: string) => {
     const newMessage = message + suggestion;
     handleMessageChange(newMessage);
   };
 
+  /**
+   * Handles form submission
+   * @param e - Form submission event
+   */
   const handleSubmit = (e: React.FormEvent) => {
     handleSubmitWithFiles(e);
   };
 
+  /**
+   * Handles keyboard events in the textarea
+   * @param e - Keyboard event
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Send message when Enter is pressed (without Shift)
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
+    // Allow Shift+Enter for new lines
   };
 
+  /**
+   * Handles voice transcription results
+   * @param transcript - The transcribed text from voice input
+   */
   const handleVoiceTranscript = (transcript: string) => {
     handleMessageChange(transcript);
   };
 
+  /**
+   * Processes selected files and creates preview URLs for images
+   * @param selectedFiles - FileList object from file input
+   */
   const handleFileSelect = (selectedFiles: FileList) => {
     const newFiles: UploadedFile[] = [];
     
+    // Process each selected file
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
-      const id = `${Date.now()}-${i}`;
+      const id = `${Date.now()}-${i}`; // Create unique ID using timestamp and index
       
       let preview: string | undefined;
+      // Create preview URL only for image files
       if (file.type.startsWith('image/')) {
-        preview = URL.createObjectURL(file);
+        preview = URL.createObjectURL(file); // Creates a temporary URL for the file
       }
       
       newFiles.push({ file, preview, id });
     }
     
+    // Add new files to existing uploaded files
     setUploadedFiles(prev => [...prev, ...newFiles]);
   };
 
+  /**
+   * Removes a file from the uploaded files list and cleans up its preview URL
+   * @param id - The unique identifier of the file to remove
+   */
   const removeFile = (id: string) => {
     setUploadedFiles(prev => {
+      // Find the file to remove and clean up its preview URL
       const fileToRemove = prev.find(f => f.id === id);
       if (fileToRemove?.preview) {
-        URL.revokeObjectURL(fileToRemove.preview);
+        URL.revokeObjectURL(fileToRemove.preview); // Important: prevents memory leaks
       }
+      // Return new array without the removed file
       return prev.filter(f => f.id !== id);
     });
   };
 
+  /**
+   * Triggers the hidden file input element to open file selection dialog
+   */
   const handleFileUpload = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
 
+  /**
+   * Handles form submission with files or text messages
+   * @param e - Form submission event
+   */
   const handleSubmitWithFiles = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedMessage = message.trim();
     
+    // If there are files and a message, upload files with the message as prompt
     if (uploadedFiles.length > 0 && trimmedMessage) {
       await onFileUpload(uploadedFiles, trimmedMessage);
-      setUploadedFiles([]);
-      handleMessageChange('');
-    } else if (trimmedMessage && !disabled) {
+      setUploadedFiles([]); // Clear uploaded files after sending
+      handleMessageChange(''); // Clear message input
+    } 
+    // If there's only a text message (no files), send as regular message
+    else if (trimmedMessage && !disabled) {
       onSendMessage(trimmedMessage);
-      handleMessageChange('');
+      handleMessageChange(''); // Clear message input
     }
   };
 
+  /**
+   * Returns the appropriate icon for a file based on its type
+   * @param file - The File object
+   * @returns The corresponding Lucide icon component
+   */
   const getFileIcon = (file: File) => {
     if (file.type.startsWith('image/')) return <Image className="w-4 h-4" />;
     return <FileText className="w-4 h-4" />;
   };
 
+  /**
+   * Extracts and formats the file extension for display
+   * @param file - The File object
+   * @returns The file extension in uppercase
+   */
   const getFileTypeLabel = (file: File) => {
     const extension = file.name.split('.').pop()?.toUpperCase();
     return extension || 'FILE';

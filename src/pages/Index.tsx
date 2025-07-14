@@ -1,4 +1,27 @@
 
+/**
+ * Index Page - Main Chat Interface
+ * 
+ * This is the main page component that provides the complete chat application interface.
+ * It manages the entire chat experience including message handling, file uploads, 
+ * chat history, and integration with AI services.
+ * 
+ * Key Features:
+ * - Real-time chat with AI assistants
+ * - File upload and processing
+ * - Chat history management
+ * - User authentication integration
+ * - Responsive design with sidebar
+ * - Message persistence in Supabase
+ * - Voice input support
+ * - Translation capabilities
+ * 
+ * Architecture:
+ * - MainContent: Handles the core chat functionality
+ * - ChatHistorySidebar: Manages chat sessions and history
+ * - Layout uses SidebarProvider for responsive behavior
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -26,28 +49,31 @@ import TypingIndicator from '@/components/TypingIndicator';
 import TypingMessage from '@/components/TypingMessage';
 import chatSuggestionsData from '@/data/chatSuggestions.json';
 
+// Define the structure of a chat message
 interface Message {
-  id: string;
-  text: string;
-  isUser: boolean;
-  timestamp: Date;
-  isPatois?: boolean;
+  id: string;           // Unique identifier for the message
+  text: string;         // The message content
+  isUser: boolean;      // Whether this message is from the user (true) or AI (false)
+  timestamp: Date;      // When the message was created
+  isPatois?: boolean;   // Whether the message contains Jamaican Patois
 }
 
+// Define the structure of a chat session/history
 interface ChatHistory {
-  id: string;
-  title: string;
-  messages: Message[];
-  createdAt: Date;
-  autoTitle?: string;
-  keywords?: string[];
-  summary?: string;
+  id: string;           // Unique identifier for the chat session
+  title: string;        // Display title for the chat
+  messages: Message[];  // All messages in this chat session
+  createdAt: Date;      // When the chat session was created
+  autoTitle?: string;   // AI-generated title based on conversation
+  keywords?: string[];  // Keywords extracted from the conversation
+  summary?: string;     // AI-generated summary of the conversation
 }
 
+// Props for the MainContent component
 interface MainContentProps {
-  messages: Message[];
-  setMessages: (messages: Message[]) => void;
-  currentChatId: string;
+  messages: Message[];                                      // Current messages to display
+  setMessages: (messages: Message[]) => void;              // Function to update messages
+  currentChatId: string;                                    // ID of the current active chat
   setCurrentChatId: (id: string) => void;
   chatHistory: ChatHistory[];
   saveChatHistory: (history: ChatHistory[]) => void;

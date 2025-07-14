@@ -1,4 +1,18 @@
 
+/**
+ * ChatMessage Component
+ * 
+ * This component displays individual chat messages in the conversation.
+ * It handles both user messages and AI responses with different styling.
+ * 
+ * Features:
+ * - Markdown rendering for AI responses
+ * - File display parsing and rendering
+ * - Timestamp display
+ * - Message actions (copy, feedback)
+ * - Different styling for user vs AI messages
+ */
+
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -6,40 +20,56 @@ import { formatMessageWithBold, hasMarkdownFormatting } from '@/utils/messageFor
 import MessageActions from './MessageActions';
 import FileDisplay from './FileDisplay';
 
+// Define the props this component expects
 interface ChatMessageProps {
-  message: string;
-  isUser: boolean;
-  timestamp: Date;
-  messageId?: string;
-  onFeedback?: (messageId: string, isPositive: boolean) => void;
+  message: string;                                                      // The message content
+  isUser: boolean;                                                      // Whether this is a user message or AI response
+  timestamp: Date;                                                      // When the message was sent
+  messageId?: string;                                                   // Unique identifier for the message
+  onFeedback?: (messageId: string, isPositive: boolean) => void;       // Callback for user feedback on AI messages
 }
 
+/**
+ * ChatMessage Component
+ * 
+ * Renders a single message in the chat conversation with appropriate styling and features.
+ */
 const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: ChatMessageProps) => {
-  // Check if the message contains markdown formatting
+  // Check if the AI message contains markdown formatting for proper rendering
   const hasMarkdown = !isUser && hasMarkdownFormatting(message);
   
-  // Ensure timestamp is a Date object
+  // Ensure timestamp is a proper Date object (defensive programming)
   const dateTimestamp = timestamp instanceof Date ? timestamp : new Date(timestamp);
 
-  // Parse file upload messages
+  /**
+   * Parses file upload messages to extract file information and actual message content
+   * @param msg - The raw message string
+   * @returns Object containing files array and the actual message content
+   */
   const parseFileMessage = (msg: string) => {
+    // Regular expression to match file upload format: "📎 Uploaded X file(s): filename1, filename2\n\nActual message"
     const fileUploadRegex = /📎 Uploaded (\d+) file\(s\): (.+?)\n\n(.+)/s;
     const match = msg.match(fileUploadRegex);
     
     if (match) {
       const [, count, fileNames, actualMessage] = match;
+      
+      // Convert file names string into structured file objects
       const files = fileNames.split(', ').map(name => ({
         name: name.trim(),
         type: name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 
               name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? 'image/' + name.split('.').pop() :
-              'application/octet-stream'
+              'application/octet-stream' // Default for unknown file types
       }));
+      
       return { files, message: actualMessage };
     }
     
+    // If no file upload pattern found, return empty files array and original message
     return { files: [], message: msg };
   };
 
+  // Parse the message to extract any file information
   const { files, message: displayMessage } = parseFileMessage(message);
 
   return (

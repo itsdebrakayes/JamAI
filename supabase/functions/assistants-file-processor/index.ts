@@ -1,22 +1,50 @@
+/**
+ * Assistants File Processor Edge Function
+ * 
+ * This Supabase Edge Function processes file uploads and integrates with OpenAI's Assistant API.
+ * It handles file uploads, creates vector stores, and manages AI conversations with file context.
+ * 
+ * Key Features:
+ * - File upload to OpenAI for analysis
+ * - Integration with existing OpenAI Assistant (asst_w0jwx4pIWZto4yw1ozet5Mrb)
+ * - Thread management for conversation continuity
+ * - File storage in Supabase Storage
+ * - Function calling support for custom file search
+ * 
+ * Flow:
+ * 1. Receive files and prompt from client
+ * 2. Upload files to OpenAI and Supabase Storage
+ * 3. Create/update vector store with files
+ * 4. Create or use existing conversation thread
+ * 5. Send message to Assistant and stream response
+ * 6. Handle any function calls from the Assistant
+ */
+
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
+// CORS headers to allow requests from web browsers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Define the structure of incoming requests
 interface AssistantRequest {
-  files: File[];
-  prompt: string;
-  sessionId?: string;
-  userId: string;
-  threadId?: string;
+  files: File[];           // Array of files to process
+  prompt: string;          // User's message/question about the files
+  sessionId?: string;      // Optional chat session ID for context
+  userId: string;          // User identifier for authentication
+  threadId?: string;       // Optional OpenAI thread ID for conversation continuity
 }
 
+/**
+ * Main request handler for the edge function
+ * Processes file uploads and manages AI assistant interactions
+ */
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight requests (required for browser compatibility)
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,12 +52,14 @@ serve(async (req) => {
   try {
     console.log('Assistants file processor called');
     
+    // Parse multipart form data containing files and metadata
     const formData = await req.formData();
-    const prompt = formData.get('prompt') as string;
-    const sessionId = formData.get('sessionId') as string;
-    const userId = formData.get('userId') as string;
-    const threadId = formData.get('threadId') as string;
+    const prompt = formData.get('prompt') as string;           // User's question/prompt
+    const sessionId = formData.get('sessionId') as string;     // Chat session ID
+    const userId = formData.get('userId') as string;           // User ID for authentication
+    const threadId = formData.get('threadId') as string;       // OpenAI thread ID
     
+    // Extract all uploaded files from form data
     const files: File[] = [];
     for (const [key, value] of formData.entries()) {
       if (key.startsWith('file_') && value instanceof File) {
@@ -39,6 +69,7 @@ serve(async (req) => {
 
     console.log(`Processing ${files.length} files for user ${userId}`);
 
+    // Validate required fields
     if (!prompt || !userId) {
       console.error('Missing required fields:', { prompt: !!prompt, userId: !!userId });
       return new Response(
@@ -47,7 +78,7 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
+    // Initialize Supabase client for database and storage operations
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
