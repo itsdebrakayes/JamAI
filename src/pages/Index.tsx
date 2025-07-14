@@ -373,101 +373,116 @@ const MainContent = ({
 
     setIsLoading(true);
 
+    // Create user message outside try block so it's available in catch
+    const userMessage: Message = {
+      id: uuidv4(),
+      text: `📎 Uploaded ${files.length} file(s): ${files.map(f => f.file.name).join(', ')}\n\n${prompt}`,
+      isUser: true,
+      timestamp: new Date()
+    };
+
     try {
+      console.log('Starting file upload with assistant API...');
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      
       // Create or get current session ID
       let sessionId = currentChatId;
       if (!sessionId) {
         sessionId = uuidv4();
         setCurrentChatId(sessionId);
         
-        // Create new session in database
-        const { error: sessionError } = await supabase
-          .from('chat_sessions')
-          .insert({
-            id: sessionId,
-            title: `File Upload: ${files.map(f => f.file.name).join(', ')}`,
-            user_id: user?.id || '',
-            message_count: 0
-          });
+        // Create new session in database for authenticated users
+        if (user) {
+          const { error: sessionError } = await supabase
+            .from('chat_sessions')
+            .insert({
+              id: sessionId,
+              title: `File Upload: ${files.map(f => f.file.name).join(', ')}`,
+              user_id: user.id,
+              message_count: 0
+            });
 
-        if (sessionError) throw sessionError;
-      }
-
-      // Upload files to storage
-      const uploadedFiles = [];
-      for (const fileObj of files) {
-        const fileName = `${user?.id}/${Date.now()}-${fileObj.file.name}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('user-uploads')
-          .upload(fileName, fileObj.file);
-
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          continue;
+          if (sessionError) {
+            console.error('Session creation error:', sessionError);
+            throw sessionError;
+          }
         }
-
-        uploadedFiles.push({
-          name: fileObj.file.name,
-          path: fileName,
-          type: fileObj.file.type,
-          size: fileObj.file.size
-        });
       }
 
-      if (uploadedFiles.length === 0) {
-        throw new Error('No files were uploaded successfully');
-      }
+      // Add user message immediately to UI
+      setMessages([...messages, userMessage]);
 
-      // Process files with AI
-      const response = await supabase.functions.invoke('file-processor', {
-        body: {
-          files: uploadedFiles,
-          prompt: prompt,
-          sessionId: sessionId,
-          userId: user?.id
-        }
+      // Extract actual File objects from the uploaded files
+      const actualFiles: File[] = files.map(f => f.file);
+
+      // Process files with the new assistant API
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      formData.append('userId', user?.id || 'anonymous');
+      
+      if (sessionId) {
+        formData.append('sessionId', sessionId);
+      }
+      
+      // Add files to form data
+      actualFiles.forEach((file, index) => {
+        formData.append(`file_${index}`, file);
+      });
+
+      console.log('Calling assistants-file-processor...');
+      
+      const response = await supabase.functions.invoke('assistants-file-processor', {
+        body: formData,
       });
 
       if (response.error) {
-        throw new Error(`File processing failed: ${response.error.message}`);
+        console.error('Assistant processing error:', response.error);
+        throw new Error(`AI processing failed: ${response.error.message}`);
       }
 
-      // Refresh messages to show the new conversation
-      const { data: sessionMessages, error: loadError } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('session_id', sessionId)
-        .order('created_at', { ascending: true });
+      console.log('Assistant processing successful:', response.data);
 
-      if (!loadError && sessionMessages) {
-        const loadedMessages: Message[] = sessionMessages.map(msg => ({
-          id: msg.id,
-          text: msg.content,
-          isUser: msg.is_user,
-          timestamp: new Date(msg.created_at)
-        }));
-        
-        setMessages(loadedMessages);
+      // Add AI response to UI
+      const aiMessage: Message = {
+        id: uuidv4(),
+        text: response.data.message,
+        isUser: false,
+        timestamp: new Date(),
+        isPatois: false
+      };
+
+      setMessages([...messages, userMessage, aiMessage]);
+
+      // Store thread ID for future messages in this session
+      if (response.data.threadId) {
+        console.log('Thread ID stored:', response.data.threadId);
+        // You could store this in session state if needed for continuity
       }
+
+      toast({
+        title: "Files processed successfully",
+        description: `${files.length} file(s) analyzed by AI`,
+        variant: "default"
+      });
 
     } catch (error) {
       console.error('Error in file upload:', error);
       
-      const errorMessage = {
+      const errorMessage: Message = {
         id: uuidv4(),
-        text: "Mi sorry, but mi cyaan process di files right now. Try again later.",
+        text: "Mi sorry, but mi cyaan process di files right now. Make sure yuh files dem not too big and try again.",
         isUser: false,
         timestamp: new Date(),
         isPatois: true
       };
 
-      const finalMessages = [...messages, errorMessage];
-      setMessages(finalMessages);
+      setMessages([...messages, userMessage, errorMessage]);
       
       toast({
         title: "Upload failed",
-        description: "Failed to process files. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to process files. Please try again.",
         variant: "destructive"
       });
     } finally {

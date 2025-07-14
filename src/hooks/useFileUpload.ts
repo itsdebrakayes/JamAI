@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   const uploadFile = async (file: File, userId: string): Promise<string | null> => {
@@ -53,9 +54,73 @@ export const useFileUpload = () => {
     }
   };
 
+  const processFilesWithAI = async (
+    files: File[], 
+    prompt: string, 
+    userId: string, 
+    sessionId?: string,
+    threadId?: string
+  ): Promise<{ message: string; threadId: string; assistantId: string } | null> => {
+    setIsProcessing(true);
+    
+    try {
+      console.log('Processing files with AI assistant...');
+      
+      // Create FormData for the assistant API
+      const formData = new FormData();
+      formData.append('prompt', prompt);
+      formData.append('userId', userId);
+      
+      if (sessionId) {
+        formData.append('sessionId', sessionId);
+      }
+      
+      if (threadId) {
+        formData.append('threadId', threadId);
+      }
+      
+      // Add files to form data
+      files.forEach((file, index) => {
+        formData.append(`file_${index}`, file);
+      });
+
+      // Call the assistants API
+      const response = await supabase.functions.invoke('assistants-file-processor', {
+        body: formData,
+      });
+
+      if (response.error) {
+        console.error('Assistant processing error:', response.error);
+        throw new Error(response.error.message || 'Failed to process files with AI');
+      }
+
+      console.log('AI processing successful:', response.data);
+      
+      toast({
+        title: "Files processed successfully",
+        description: `${files.length} file(s) analyzed by AI`,
+        variant: "default"
+      });
+
+      return response.data;
+    } catch (error) {
+      console.error('AI file processing error:', error);
+      toast({
+        title: "AI processing failed",
+        description: "Failed to process files with AI. Please try again.",
+        variant: "destructive"
+      });
+      return null;
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return {
     uploadFile,
     uploadMultipleFiles,
-    isUploading
+    processFilesWithAI,
+    isUploading,
+    isProcessing
   };
 };
