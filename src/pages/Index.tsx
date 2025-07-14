@@ -441,7 +441,6 @@ const MainContent = ({
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b glass-effect modern-shadow">
         <div className="flex items-center gap-4">
-          <SidebarTrigger className="md:hidden mr-2" />
           <Avatar>
             <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
             <AvatarFallback>JA</AvatarFallback>
