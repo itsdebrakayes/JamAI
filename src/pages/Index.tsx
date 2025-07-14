@@ -22,6 +22,8 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ChatMessage from '@/components/ChatMessage';
+import TypingIndicator from '@/components/TypingIndicator';
+import TypingMessage from '@/components/TypingMessage';
 
 interface Message {
   id: string;
@@ -66,6 +68,7 @@ const MainContent = ({
   const [usageCount, setUsageCount] = useState(0);
   const [isCopied, setIsCopied] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [typingMessage, setTypingMessage] = useState<Message | null>(null);
   const { toast } = useToast()
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -97,9 +100,9 @@ const MainContent = ({
   }, [usageCount]);
 
   useEffect(() => {
-    // Scroll to the bottom when messages update
+    // Scroll to the bottom when messages update or typing message changes
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, typingMessage]);
 
   const saveMessagesToLocalStorage = (newMessages: Message[]) => {
     localStorage.setItem('chat-messages', JSON.stringify(newMessages));
@@ -225,8 +228,8 @@ const MainContent = ({
           isPatois: false
         };
         
-        const finalMessages = [...newMessages, aiMessage];
-        setMessages(finalMessages);
+        // Set typing message for animation
+        setTypingMessage(aiMessage);
         
         // Save AI message to database (only for authenticated users)
         if (user) {
@@ -247,7 +250,7 @@ const MainContent = ({
           }
         } else {
           // For guests, save to localStorage only
-          saveMessagesToLocalStorage(finalMessages);
+          saveMessagesToLocalStorage([...newMessages, aiMessage]);
         }
       } else {
         // Handle regular chat
@@ -267,8 +270,8 @@ const MainContent = ({
           isPatois: response.isPatois
         };
 
-        const finalMessages = [...newMessages, aiMessage];
-        setMessages(finalMessages);
+        // Set typing message for animation
+        setTypingMessage(aiMessage);
         
         // Save AI message to database (only for authenticated users)
         if (user) {
@@ -289,7 +292,7 @@ const MainContent = ({
           }
         } else {
           // For guests, save to localStorage only
-          saveMessagesToLocalStorage(finalMessages);
+          saveMessagesToLocalStorage([...newMessages, aiMessage]);
         }
       }
 
@@ -469,6 +472,15 @@ const MainContent = ({
     sendMessage(suggestion);
   };
 
+  const handleTypingComplete = () => {
+    if (typingMessage) {
+      // Add the completed message to the messages array
+      const finalMessages = [...messages, typingMessage];
+      setMessages(finalMessages);
+      setTypingMessage(null);
+    }
+  };
+
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
@@ -544,7 +556,7 @@ const MainContent = ({
               {/* Chat Suggestions */}
               <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
             </div>
-          ) : (
+           ) : (
             <div className="space-y-4">
               {messages.map((message) => (
                 <ChatMessage
@@ -556,6 +568,20 @@ const MainContent = ({
                   onFeedback={handleFeedback}
                 />
               ))}
+              
+              {/* Show typing indicator when loading and no typing message */}
+              {isLoading && !typingMessage && <TypingIndicator />}
+              
+              {/* Show typing message when AI response is being typed */}
+              {typingMessage && (
+                <TypingMessage
+                  fullMessage={typingMessage.text}
+                  isUser={typingMessage.isUser}
+                  timestamp={typingMessage.timestamp}
+                  onComplete={handleTypingComplete}
+                />
+              )}
+              
               <div ref={bottomRef} />
             </div>
           )}
