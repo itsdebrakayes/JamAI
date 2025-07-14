@@ -173,7 +173,7 @@ const MainContent = ({
     }
     
     const userMessage = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       text: messageText,
       isUser: true,
       timestamp: new Date()
@@ -221,7 +221,7 @@ const MainContent = ({
         
         const { imageData } = imageResponse.data;
         const aiMessage = {
-          id: (Date.now() + 1).toString(),
+          id: uuidv4(),
           text: `Here's the image I generated for you: ![Generated Image](data:image/png;base64,${imageData})`,
           isUser: false,
           timestamp: new Date(),
@@ -263,7 +263,7 @@ const MainContent = ({
         );
 
         const aiMessage = {
-          id: (Date.now() + 1).toString(),
+          id: uuidv4(),
           text: response.message,
           isUser: false,
           timestamp: new Date(),
@@ -320,7 +320,7 @@ const MainContent = ({
       console.error('Error in sendMessage:', error);
       
       const errorMessage = {
-        id: (Date.now() + 1).toString(),
+        id: uuidv4(),
         text: "Mi sorry, but mi run inna some trouble right now. Try again inna likkle bit.",
         isUser: false,
         timestamp: new Date(),
@@ -448,7 +448,7 @@ const MainContent = ({
       console.error('Error in file upload:', error);
       
       const errorMessage = {
-        id: Date.now().toString(),
+        id: uuidv4(),
         text: "Mi sorry, but mi cyaan process di files right now. Try again later.",
         isUser: false,
         timestamp: new Date(),
