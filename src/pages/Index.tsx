@@ -551,6 +551,7 @@ const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string>('');
+  const { toast } = useToast();
 
   // Load chat history from Supabase
   const loadChatHistoryFromDB = async () => {
@@ -642,7 +643,12 @@ const Index = () => {
 
       if (error) {
         console.error('Database error loading messages:', error);
-        throw error;
+        toast({
+          title: "Error loading chat",
+          description: "Failed to load chat messages. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
 
       console.log('Raw session messages:', sessionMessages);
@@ -660,11 +666,32 @@ const Index = () => {
         setCurrentChatId(chatId);
       } else {
         console.log('No messages found for chat ID:', chatId);
+        // Check if the chat session exists but has no messages - this indicates a data inconsistency
+        const { data: session } = await supabase
+          .from('chat_sessions')
+          .select('title, message_count')
+          .eq('id', chatId)
+          .single();
+        
+        if (session && session.message_count > 0) {
+          console.warn('Chat session exists with message_count > 0 but no messages found. Data inconsistency detected.');
+          toast({
+            title: "Empty chat detected",
+            description: "This chat appears to be empty or corrupted. Starting fresh.",
+            variant: "default",
+          });
+        }
+        
         setMessages([]);
         setCurrentChatId(chatId);
       }
     } catch (error) {
       console.error('Error loading chat:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load chat. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
