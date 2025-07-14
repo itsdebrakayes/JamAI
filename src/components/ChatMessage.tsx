@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { formatMessageWithBold, hasMarkdownFormatting } from '@/utils/messageFormatter';
 import MessageActions from './MessageActions';
+import FileDisplay from './FileDisplay';
 
 interface ChatMessageProps {
   message: string;
@@ -20,6 +21,27 @@ const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: Chat
   // Ensure timestamp is a Date object
   const dateTimestamp = timestamp instanceof Date ? timestamp : new Date(timestamp);
 
+  // Parse file upload messages
+  const parseFileMessage = (msg: string) => {
+    const fileUploadRegex = /📎 Uploaded (\d+) file\(s\): (.+?)\n\n(.+)/s;
+    const match = msg.match(fileUploadRegex);
+    
+    if (match) {
+      const [, count, fileNames, actualMessage] = match;
+      const files = fileNames.split(', ').map(name => ({
+        name: name.trim(),
+        type: name.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 
+              name.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/) ? 'image/' + name.split('.').pop() :
+              'application/octet-stream'
+      }));
+      return { files, message: actualMessage };
+    }
+    
+    return { files: [], message: msg };
+  };
+
+  const { files, message: displayMessage } = parseFileMessage(message);
+
   return (
     <div className={`flex gap-4 p-4 group ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
@@ -33,6 +55,13 @@ const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: Chat
       )}
       
       <div className={`max-w-[80%] ${isUser ? 'order-1' : ''}`}>
+        {/* Display files if present */}
+        {files.length > 0 && (
+          <div className="mb-3">
+            <FileDisplay files={files} />
+          </div>
+        )}
+        
         <div className={`rounded-2xl px-4 py-3 ${
           isUser 
             ? 'bg-gradient-to-r from-green-500 to-green-600 text-white ml-auto' 
@@ -82,10 +111,10 @@ const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: Chat
                   ),
                 }}
               >
-                {message}
+                {displayMessage}
               </ReactMarkdown>
             ) : (
-              <div className="whitespace-pre-wrap">{message}</div>
+              <div className="whitespace-pre-wrap">{displayMessage}</div>
             )}
           </div>
         </div>

@@ -138,6 +138,11 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
     return <FileText className="w-4 h-4" />;
   };
 
+  const getFileTypeLabel = (file: File) => {
+    const extension = file.name.split('.').pop()?.toUpperCase();
+    return extension || 'FILE';
+  };
+
   return (
     <div className="relative">
       {/* Uploaded Files Display */}
@@ -145,30 +150,49 @@ const ChatInput = ({ onSendMessage, onFileUpload, disabled, value, onValueChange
         <div className="mb-3 flex flex-wrap gap-2">
           {uploadedFiles.map((uploadedFile) => (
             <div key={uploadedFile.id} className="relative group">
-              <div className="flex items-center gap-2 bg-muted/30 rounded-lg p-2 pr-8">
-                {uploadedFile.preview ? (
+              {uploadedFile.preview ? (
+                // Image preview with remove button
+                <div className="relative">
                   <img 
                     src={uploadedFile.preview} 
                     alt={uploadedFile.file.name}
-                    className="w-8 h-8 object-cover rounded"
+                    className="w-16 h-16 object-cover rounded-lg"
                   />
-                ) : (
-                  <div className="w-8 h-8 bg-muted rounded flex items-center justify-center">
-                    {getFileIcon(uploadedFile.file)}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(uploadedFile.id)}
+                    className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-black text-white hover:bg-gray-800 shadow-md"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                // File display
+                <div className="relative">
+                  <div className="flex items-center gap-3 bg-black text-white rounded-lg p-3 pr-8 min-w-[180px]">
+                    <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center flex-shrink-0">
+                      {getFileIcon(uploadedFile.file)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">
+                        {uploadedFile.file.name}
+                      </div>
+                      <div className="text-xs text-gray-300">
+                        {getFileTypeLabel(uploadedFile.file)}
+                      </div>
+                    </div>
                   </div>
-                )}
-                <span className="text-sm font-medium truncate max-w-32">
-                  {uploadedFile.file.name}
-                </span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => removeFile(uploadedFile.id)}
-                className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground hover:bg-destructive/90 opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-3 h-3" />
-              </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeFile(uploadedFile.id)}
+                    className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-black text-white hover:bg-gray-800 shadow-md"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
             </div>
           ))}
         </div>
