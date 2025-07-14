@@ -527,11 +527,12 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
   
   return (
     <>
-      <Sidebar className="border-r border-border bg-background/95 backdrop-blur-md" collapsible="icon">
-        <SidebarHeader className="p-4">
+      <Sidebar className={`border-r border-border bg-background/95 backdrop-blur-md flex flex-col h-screen ${collapsed ? 'w-14' : 'w-80'}`} collapsible="icon">
+        {/* Sidebar header with new chat button and controls - fixed at top */}
+        <div className="p-4 bg-background/90 border-b border-border/30 flex-shrink-0">
           <Button 
             onClick={handleNewChat}
-            className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm transition-all duration-200"
+            className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-2 transition-all duration-200"
             variant="outline"
           >
             <Plus className="w-4 h-4" />
@@ -539,7 +540,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
           </Button>
           
           {!collapsed && chatHistory.length > 0 && (
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-2">
               {!isSelectionMode && (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -594,115 +595,127 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
               )}
             </div>
           )}
-        </SidebarHeader>
+        </div>
         
-        <SidebarContent className="overflow-y-auto">
+        {/* Sidebar content with chat list - scrollable middle section */}
+        <div className="flex-1 overflow-y-auto px-2 bg-background/90 min-h-0">
           {groupedChats.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
               {!collapsed && <p className="text-sm">No chat history yet</p>}
             </div>
           ) : (
-            <div className="space-y-4 px-2">
+            <div className="space-y-4">
               {groupedChats.map((group) => (
-                <SidebarGroup key={group.period}>
+                <div key={group.period} className="space-y-2">
                   {!collapsed && (
-                    <SidebarGroupLabel className="text-xs font-medium text-muted-foreground">
+                    <h3 className="text-xs font-medium text-muted-foreground px-2 py-1">
                       {group.period}
-                    </SidebarGroupLabel>
+                    </h3>
                   )}
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {group.chats.map((chat) => (
-                        <SidebarMenuItem key={chat.id}>
-                          <ContextMenu>
-                            <ContextMenuTrigger asChild>
-                              <div className="flex items-center gap-2 w-full group">
-                                {!collapsed && isSelectionMode && (
-                                  <Checkbox
-                                    checked={selectedChats.has(chat.id)}
-                                    onCheckedChange={(checked) => {
-                                      const newSelected = new Set(selectedChats);
-                                      if (checked) {
-                                        newSelected.add(chat.id);
-                                      } else {
-                                        newSelected.delete(chat.id);
-                                      }
-                                      setSelectedChats(newSelected);
-                                    }}
-                                  />
-                                )}
-                                
-                                <SidebarMenuButton
-                                  isActive={currentChatId === chat.id}
-                                  onClick={() => handleChatSelect(chat.id)}
-                                  className="flex-1 justify-start"
-                                >
-                                  <MessageSquare className="w-4 h-4" />
-                                  {!collapsed && (
-                                    <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium truncate">
-                                        {getDisplayTitle(chat)}
-                                      </p>
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <Clock className="w-3 h-3 text-muted-foreground" />
-                                        <p className="text-xs text-muted-foreground">
-                                          {chat.createdAt.toLocaleDateString()}
-                                        </p>
-                                        {chat.keywords && chat.keywords.length > 0 && (
-                                          <div className="flex gap-1 ml-auto">
-                                            {chat.keywords.slice(0, 1).map((keyword, idx) => (
-                                              <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                                {keyword}
-                                              </Badge>
-                                            ))}
-                                            {chat.keywords.length > 1 && (
-                                              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                                +{chat.keywords.length - 1}
-                                              </Badge>
-                                            )}
-                                          </div>
+                  <div className="space-y-1">
+                    {group.chats.map((chat) => (
+                      <ContextMenu key={chat.id}>
+                        <ContextMenuTrigger asChild>
+                          <div className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-muted/80 cursor-pointer transition-colors group">
+                            {!collapsed && isSelectionMode && (
+                              <Checkbox
+                                checked={selectedChats.has(chat.id)}
+                                onCheckedChange={(checked) => {
+                                  const newSelected = new Set(selectedChats);
+                                  if (checked) {
+                                    newSelected.add(chat.id);
+                                  } else {
+                                    newSelected.delete(chat.id);
+                                  }
+                                  setSelectedChats(newSelected);
+                                }}
+                              />
+                            )}
+                            
+                            <div 
+                              className="flex-1 min-w-0 cursor-pointer flex items-center gap-2"
+                              onClick={() => handleChatSelect(chat.id)}
+                            >
+                              <MessageSquare className="w-4 h-4 flex-shrink-0" />
+                              {!collapsed && (
+                                <div className="flex-1 min-w-0">
+                                  <p className={`text-sm font-medium truncate transition-colors duration-200 ${
+                                    currentChatId === chat.id 
+                                      ? 'text-primary font-semibold' 
+                                      : 'text-foreground hover:text-primary'
+                                  }`}>
+                                    {getDisplayTitle(chat)}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <Clock className="w-3 h-3 text-muted-foreground" />
+                                    <p className="text-xs text-muted-foreground">
+                                      {chat.createdAt.toLocaleDateString()}
+                                    </p>
+                                    {chat.keywords && chat.keywords.length > 0 && (
+                                      <div className="flex gap-1 ml-auto">
+                                        {chat.keywords.slice(0, 2).map((keyword, idx) => (
+                                          <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                            {keyword}
+                                          </Badge>
+                                        ))}
+                                        {chat.keywords.length > 2 && (
+                                          <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                            +{chat.keywords.length - 2}
+                                          </Badge>
                                         )}
                                       </div>
-                                    </div>
-                                  )}
-                                </SidebarMenuButton>
-                                
-                                {!collapsed && !isSelectionMode && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0 hover:bg-red-50 dark:hover:bg-red-950/30 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e) => handleDeleteSingle(chat.id, e)}
-                                  >
-                                    <Trash2 className="w-3 h-3 text-red-600 dark:text-red-400" />
-                                  </Button>
-                                )}
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            {!collapsed && !isSelectionMode && (
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0 hover:bg-red-50 dark:hover:bg-red-950/30"
+                                  onClick={(e) => handleDeleteSingle(chat.id, e)}
+                                >
+                                  <Trash2 className="w-3 h-3 text-red-600 dark:text-red-400" />
+                                </Button>
                               </div>
-                            </ContextMenuTrigger>
-                            <ContextMenuContent>
-                              <ContextMenuItem onClick={() => handleRenameChat(chat.id)}>
-                                <Edit2 className="w-4 h-4 mr-2" />
-                                Rename
-                              </ContextMenuItem>
-                              <ContextMenuItem 
-                                onClick={() => handleDeleteSingle(chat.id, {} as React.MouseEvent)}
-                                className="text-red-600 dark:text-red-400"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </ContextMenuItem>
-                            </ContextMenuContent>
-                          </ContextMenu>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
+                            )}
+                          </div>
+                        </ContextMenuTrigger>
+                        <ContextMenuContent>
+                          <ContextMenuItem onClick={() => handleRenameChat(chat.id)}>
+                            <Edit2 className="w-4 h-4 mr-2" />
+                            Rename
+                          </ContextMenuItem>
+                          <ContextMenuItem 
+                            onClick={() => handleDeleteSingle(chat.id, {} as React.MouseEvent)}
+                            className="text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete
+                          </ContextMenuItem>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}
-        </SidebarContent>
+        </div>
+
+        {/* Fixed footer at bottom - separate from scrollable content */}
+        {!collapsed && (
+          <div className="p-4 bg-background/90 border-t border-border/30 flex-shrink-0">
+            <div className="flex items-center gap-3 px-3 py-2 text-sm">
+              <span className="text-lg font-bold">🇯🇲</span>
+              <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
+            </div>
+          </div>
+        )}
       </Sidebar>
 
       {/* Delete confirmation dialog */}
