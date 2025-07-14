@@ -62,51 +62,9 @@ serve(async (req) => {
       );
     }
 
-    // Step 1: Create or get assistant
-    let assistantId = 'asst_jamaican_ai'; // We'll store this or make it dynamic
-    
-    try {
-      // Try to retrieve existing assistant or create new one
-      const assistantResponse = await fetch('https://api.openai.com/v1/assistants', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-          'OpenAI-Beta': 'assistants=v2'
-        },
-        body: JSON.stringify({
-          name: "JamAI Assistant",
-          instructions: `You are JamAI, a helpful Jamaican AI assistant. You can read and analyze user-uploaded files including PDFs, text files, images, and documents. When responding:
-          
-          1. Be warm and friendly with a Jamaican personality
-          2. Analyze uploaded files thoroughly 
-          3. Provide detailed insights about file contents
-          4. Use Jamaican expressions naturally when appropriate
-          5. Be helpful and informative
-          
-          If files are uploaded, make sure to reference and analyze their content in your response.`,
-          tools: [{ type: "file_search" }],
-          model: "gpt-4-1106-preview",
-          temperature: 0.7
-        })
-      });
-
-      if (!assistantResponse.ok) {
-        const errorText = await assistantResponse.text();
-        console.error('Failed to create assistant:', errorText);
-        throw new Error(`Assistant creation failed: ${errorText}`);
-      }
-
-      const assistant = await assistantResponse.json();
-      assistantId = assistant.id;
-      console.log('Assistant created/retrieved:', assistantId);
-    } catch (error) {
-      console.error('Assistant setup error:', error);
-      return new Response(
-        JSON.stringify({ error: 'Failed to set up AI assistant' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // Step 1: Use existing assistant
+    const assistantId = 'asst_w0jwx4pIWZto4yw1ozet5Mrb';
+    console.log('Using existing assistant:', assistantId);
 
     // Step 2: Upload files to OpenAI if any
     const uploadedFileIds: string[] = [];
@@ -221,12 +179,12 @@ serve(async (req) => {
     const run = await runResponse.json();
     console.log('Assistant run started:', run.id);
 
-    // Step 6: Poll for completion
+    // Step 6: Poll for completion and handle function calls
     let runStatus = run.status;
     let attempts = 0;
-    const maxAttempts = 30; // 30 seconds timeout
+    const maxAttempts = 60; // 60 seconds timeout
 
-    while (runStatus === 'queued' || runStatus === 'in_progress') {
+    while (runStatus === 'queued' || runStatus === 'in_progress' || runStatus === 'requires_action') {
       if (attempts >= maxAttempts) {
         throw new Error('Assistant run timeout');
       }
@@ -248,6 +206,96 @@ serve(async (req) => {
       runStatus = statusData.status;
       attempts++;
       console.log(`Run status: ${runStatus} (attempt ${attempts})`);
+
+      // Handle function calls if required
+      if (runStatus === 'requires_action') {
+        console.log('Assistant requires action - handling function calls...');
+        
+        const toolCalls = statusData.required_action?.submit_tool_outputs?.tool_calls || [];
+        const toolOutputs = [];
+        
+        for (const toolCall of toolCalls) {
+          if (toolCall.function.name === 'search_and_process_uploaded_files') {
+            const args = JSON.parse(toolCall.function.arguments);
+            console.log('Function call arguments:', args);
+            
+            try {
+              // Search for user files in Supabase storage
+              const { data: files, error: filesError } = await supabase.storage
+                .from('user-uploads')
+                .list(userId, {
+                  limit: args.limit || 10,
+                  sortBy: { column: 'created_at', order: 'desc' }
+                });
+              
+              if (filesError) {
+                console.error('Error fetching files:', filesError);
+                toolOutputs.push({
+                  tool_call_id: toolCall.id,
+                  output: JSON.stringify({ error: 'Failed to fetch files from storage' })
+                });
+                continue;
+              }
+              
+              // Filter by file types if specified
+              let filteredFiles = files || [];
+              if (args.file_types && args.file_types.length > 0) {
+                filteredFiles = filteredFiles.filter(file => {
+                  const extension = file.name.split('.').pop()?.toUpperCase();
+                  return args.file_types.some((type: string) => type.toUpperCase() === extension);
+                });
+              }
+              
+              // Return file information
+              const fileInfo = filteredFiles.map(file => ({
+                name: file.name,
+                size: file.metadata?.size,
+                created_at: file.created_at,
+                updated_at: file.updated_at
+              }));
+              
+              toolOutputs.push({
+                tool_call_id: toolCall.id,
+                output: JSON.stringify({
+                  files: fileInfo,
+                  count: fileInfo.length,
+                  message: `Found ${fileInfo.length} files matching your criteria.`,
+                  prompt: args.prompt
+                })
+              });
+              
+            } catch (error) {
+              console.error('Error in function call:', error);
+              toolOutputs.push({
+                tool_call_id: toolCall.id,
+                output: JSON.stringify({ error: 'Failed to process function call' })
+              });
+            }
+          }
+        }
+        
+        // Submit tool outputs if any
+        if (toolOutputs.length > 0) {
+          const toolResponse = await fetch(`https://api.openai.com/v1/threads/${currentThreadId}/runs/${run.id}/submit_tool_outputs`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${openaiApiKey}`,
+              'Content-Type': 'application/json',
+              'OpenAI-Beta': 'assistants=v2'
+            },
+            body: JSON.stringify({
+              tool_outputs: toolOutputs
+            })
+          });
+          
+          if (!toolResponse.ok) {
+            const errorText = await toolResponse.text();
+            console.error('Failed to submit tool outputs:', errorText);
+          } else {
+            console.log('Tool outputs submitted successfully');
+          }
+        }
+      }
     }
 
     if (runStatus !== 'completed') {
