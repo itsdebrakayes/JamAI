@@ -322,18 +322,35 @@ export const createChatSession = async (title: string): Promise<string | null> =
       return generateUUID();
     }
 
+    // For authenticated users, use user.id as the session ID
+    const sessionId = user.id;
+    
+    // Check if session already exists
+    const { data: existingSession } = await supabase
+      .from('chat_sessions')
+      .select('id')
+      .eq('id', sessionId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (existingSession) {
+      console.log(`✅ Using existing chat session: ${sessionId}`);
+      return sessionId;
+    }
+
+    // Create new session with user.id as the ID
     const { data, error } = await supabase
       .from('chat_sessions')
-      .insert([{ title, user_id: user.id }])
+      .insert([{ id: sessionId, title, user_id: user.id }])
       .select('id')
       .single();
 
     if (error) {
       console.error('❌ Error creating chat session:', error);
-      return generateUUID();
+      return sessionId; // Return user.id anyway for consistency
     }
     
-    console.log(`✅ Created chat session: ${data.id}`);
+    console.log(`✅ Created new chat session: ${data.id}`);
     return data.id;
   } catch (error) {
     console.error('❌ Error creating chat session:', error);

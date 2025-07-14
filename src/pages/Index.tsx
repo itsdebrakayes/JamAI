@@ -136,26 +136,45 @@ const MainContent = ({
 
     setIsLoading(true);
     
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
     // Create or get current session ID
     let sessionId = currentChatId;
     if (!sessionId) {
-      sessionId = uuidv4();
-      setCurrentChatId(sessionId);
-      
-      // Create new session in database
-      try {
-        const { error: sessionError } = await supabase
-          .from('chat_sessions')
-          .insert({
-            id: sessionId,
-            title: messageText.substring(0, 50) + '...',
-            user_id: (await supabase.auth.getUser()).data.user?.id || '',
-            message_count: 0
-          });
+      if (user) {
+        // For authenticated users: use user.id as sessionId
+        sessionId = user.id;
+        setCurrentChatId(sessionId);
+        
+        // Create or get existing session in database
+        try {
+          const { data: existingSession } = await supabase
+            .from('chat_sessions')
+            .select('id')
+            .eq('id', sessionId)
+            .eq('user_id', user.id)
+            .single();
 
-        if (sessionError) throw sessionError;
-      } catch (error) {
-        console.error('Error creating chat session:', error);
+          if (!existingSession) {
+            const { error: sessionError } = await supabase
+              .from('chat_sessions')
+              .insert({
+                id: sessionId,
+                title: messageText.substring(0, 50) + '...',
+                user_id: user.id,
+                message_count: 0
+              });
+
+            if (sessionError) throw sessionError;
+          }
+        } catch (error) {
+          console.error('Error creating chat session:', error);
+        }
+      } else {
+        // For guests: use a temporary UUID and save only to localStorage
+        sessionId = uuidv4();
+        setCurrentChatId(sessionId);
       }
     }
     
@@ -169,21 +188,26 @@ const MainContent = ({
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
 
-    // Save user message to database
-    try {
-      const { error: userMsgError } = await supabase
-        .from('messages')
-        .insert({
-          id: userMessage.id,
-          content: userMessage.text,
-          is_user: true,
-          session_id: sessionId,
-          user_id: (await supabase.auth.getUser()).data.user?.id || ''
-        });
+    // Save user message to database (only for authenticated users)
+    if (user) {
+      try {
+        const { error: userMsgError } = await supabase
+          .from('messages')
+          .insert({
+            id: userMessage.id,
+            content: userMessage.text,
+            is_user: true,
+            session_id: sessionId,
+            user_id: user.id
+          });
 
-      if (userMsgError) throw userMsgError;
-    } catch (error) {
-      console.error('Error saving user message:', error);
+        if (userMsgError) throw userMsgError;
+      } catch (error) {
+        console.error('Error saving user message:', error);
+      }
+    } else {
+      // For guests, save to localStorage only
+      saveMessagesToLocalStorage(newMessages);
     }
 
     try {
@@ -213,21 +237,26 @@ const MainContent = ({
         const finalMessages = [...newMessages, aiMessage];
         setMessages(finalMessages);
         
-        // Save AI message to database
-        try {
-          const { error: aiMsgError } = await supabase
-            .from('messages')
-            .insert({
-              id: aiMessage.id,
-              content: aiMessage.text,
-              is_user: false,
-              session_id: sessionId,
-              user_id: (await supabase.auth.getUser()).data.user?.id || ''
-            });
+        // Save AI message to database (only for authenticated users)
+        if (user) {
+          try {
+            const { error: aiMsgError } = await supabase
+              .from('messages')
+              .insert({
+                id: aiMessage.id,
+                content: aiMessage.text,
+                is_user: false,
+                session_id: sessionId,
+                user_id: user.id
+              });
 
-          if (aiMsgError) throw aiMsgError;
-        } catch (error) {
-          console.error('Error saving AI message:', error);
+            if (aiMsgError) throw aiMsgError;
+          } catch (error) {
+            console.error('Error saving AI message:', error);
+          }
+        } else {
+          // For guests, save to localStorage only
+          saveMessagesToLocalStorage(finalMessages);
         }
       } else {
         // Handle regular chat
@@ -250,37 +279,45 @@ const MainContent = ({
         const finalMessages = [...newMessages, aiMessage];
         setMessages(finalMessages);
         
-        // Save AI message to database
-        try {
-          const { error: aiMsgError } = await supabase
-            .from('messages')
-            .insert({
-              id: aiMessage.id,
-              content: aiMessage.text,
-              is_user: false,
-              session_id: sessionId,
-              user_id: (await supabase.auth.getUser()).data.user?.id || ''
-            });
+        // Save AI message to database (only for authenticated users)
+        if (user) {
+          try {
+            const { error: aiMsgError } = await supabase
+              .from('messages')
+              .insert({
+                id: aiMessage.id,
+                content: aiMessage.text,
+                is_user: false,
+                session_id: sessionId,
+                user_id: user.id
+              });
 
-          if (aiMsgError) throw aiMsgError;
-        } catch (error) {
-          console.error('Error saving AI message:', error);
+            if (aiMsgError) throw aiMsgError;
+          } catch (error) {
+            console.error('Error saving AI message:', error);
+          }
+        } else {
+          // For guests, save to localStorage only
+          saveMessagesToLocalStorage(finalMessages);
         }
       }
 
-      // Update session message count for both cases
-      try {
-        const { error: updateError } = await supabase
-          .from('chat_sessions')
-          .update({
-            message_count: messages.length + 2, // +2 for user and AI messages
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', sessionId);
+      // Update session message count for both cases (only for authenticated users)
+      if (user) {
+        try {
+          const { error: updateError } = await supabase
+            .from('chat_sessions')
+            .update({
+              message_count: messages.length + 2, // +2 for user and AI messages
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', sessionId)
+            .eq('user_id', user.id);
 
-        if (updateError) throw updateError;
-      } catch (error) {
-        console.error('Error updating session:', error);
+          if (updateError) throw updateError;
+        } catch (error) {
+          console.error('Error updating session:', error);
+        }
       }
 
       incrementUsageCount();
@@ -299,21 +336,26 @@ const MainContent = ({
       const finalMessages = [...newMessages, errorMessage];
       setMessages(finalMessages);
       
-      // Save error message to database
-      try {
-        const { error: errorMsgError } = await supabase
-          .from('messages')
-          .insert({
-            id: errorMessage.id,
-            content: errorMessage.text,
-            is_user: false,
-            session_id: sessionId,
-            user_id: (await supabase.auth.getUser()).data.user?.id || ''
-          });
+      // Save error message to database (only for authenticated users)
+      if (user) {
+        try {
+          const { error: errorMsgError } = await supabase
+            .from('messages')
+            .insert({
+              id: errorMessage.id,
+              content: errorMessage.text,
+              is_user: false,
+              session_id: sessionId,
+              user_id: user.id
+            });
 
-        if (errorMsgError) throw errorMsgError;
-      } catch (error) {
-        console.error('Error saving error message:', error);
+          if (errorMsgError) throw errorMsgError;
+        } catch (error) {
+          console.error('Error saving error message:', error);
+        }
+      } else {
+        // For guests, save to localStorage only
+        saveMessagesToLocalStorage(finalMessages);
       }
     } finally {
       setIsLoading(false);
@@ -629,27 +671,9 @@ const Index = () => {
   };
 
   const startNewChat = async () => {
-    if (messages.length > 0 && currentChatId) {
-      // Save current chat to database
-      try {
-        const { error: sessionError } = await supabase
-          .from('chat_sessions')
-          .update({
-            title: messages.find(m => m.isUser)?.text?.substring(0, 50) + '...' || 'New Chat',
-            message_count: messages.length,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', currentChatId);
-
-        if (sessionError) throw sessionError;
-      } catch (error) {
-        console.error('Error updating chat session:', error);
-      }
-    }
-    
     // Clear current messages and start fresh
     setMessages([]);
-    setCurrentChatId(uuidv4());
+    setCurrentChatId(''); // Reset to empty, will be set based on user authentication in sendMessage
   };
 
   const loadChat = async (chatId: string) => {
@@ -760,7 +784,7 @@ const Index = () => {
       // Clear local state
       setChatHistory([]);
       setMessages([]);
-      setCurrentChatId(uuidv4());
+      setCurrentChatId(''); // Reset to empty
     } catch (error) {
       console.error('Error clearing all history:', error);
     }
