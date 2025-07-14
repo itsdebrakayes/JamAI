@@ -161,9 +161,15 @@ const MainContent = ({
               message_count: 0
             });
 
-          if (sessionError) throw sessionError;
+          if (sessionError) {
+            console.error('Error creating chat session:', sessionError);
+            setIsLoading(false);
+            return; // Don't proceed if session creation fails
+          }
         } catch (error) {
           console.error('Error creating chat session:', error);
+          setIsLoading(false);
+          return; // Don't proceed if session creation fails
         }
       } else {
         // For guests: use a temporary UUID and save only to localStorage
