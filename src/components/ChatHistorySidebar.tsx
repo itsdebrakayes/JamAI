@@ -256,8 +256,8 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
               <DrawerClose asChild>
                 <Button 
                   onClick={handleNewChat}
-                  className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-4 transition-all duration-200 flex-shrink-0"
-                  variant="outline"
+                  className="w-4/5 bg-green-600 text-white hover:bg-green-700 mb-4"
+                  size="sm"
                 >
                   <Plus className="w-4 h-4" />
                   <span className="font-medium">New Chat</span>
@@ -511,7 +511,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
               setSelectedChats(new Set());
               setIsSelectionMode(false);
             }}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mb-3"
+            className="w-4/5 bg-green-600 text-white hover:bg-green-700 mb-3"
             size="sm"
           >
             <Plus className="w-4 h-4" />
