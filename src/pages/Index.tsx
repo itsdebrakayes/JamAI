@@ -704,6 +704,24 @@ const Index = () => {
     }
   };
 
+  const renameChat = async (chatId: string, newTitle: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_sessions')
+        .update({ title: newTitle, updated_at: new Date().toISOString() })
+        .eq('id', chatId);
+
+      if (error) throw error;
+
+      // Update local state
+      setChatHistory(prev => prev.map(chat => 
+        chat.id === chatId ? { ...chat, title: newTitle } : chat
+      ));
+    } catch (error) {
+      console.error('Error renaming chat:', error);
+    }
+  };
+
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
@@ -714,6 +732,7 @@ const Index = () => {
           onLoadChat={loadChat}
           onDeleteChats={deleteChats}
           onClearAllHistory={clearAllHistory}
+          onRenameChat={renameChat}
         />
         <main className="flex-1">
           <MainContent 
