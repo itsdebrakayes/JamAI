@@ -20,10 +20,31 @@ export const formatMessageWithBold = (text: string): React.ReactNode => {
 };
 
 /**
- * Checks if a message contains asterisk formatting
+ * Checks if a message contains markdown formatting
+ * @param text - The message text to check
+ * @returns boolean indicating if markdown formatting is present
+ */
+export const hasMarkdownFormatting = (text: string): boolean => {
+  // Check for various markdown patterns
+  const markdownPatterns = [
+    /\*\*.*?\*\*/,     // Bold **text**
+    /\*.*?\*/,         // Italic *text*
+    /`.*?`/,           // Inline code `code`
+    /```[\s\S]*?```/,  // Code blocks ```code```
+    /^#{1,6}\s/m,      // Headers # ## ###
+    /^\* /m,           // Lists * item
+    /^\d+\. /m,        // Numbered lists 1. item
+    /\[.*?\]\(.*?\)/,  // Links [text](url)
+  ];
+  
+  return markdownPatterns.some(pattern => pattern.test(text));
+};
+
+/**
+ * Legacy function for backward compatibility
  * @param text - The message text to check
  * @returns boolean indicating if asterisks are present
  */
 export const hasAsteriskFormatting = (text: string): boolean => {
-  return text.includes('*');
+  return hasMarkdownFormatting(text);
 };
