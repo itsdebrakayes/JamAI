@@ -361,33 +361,27 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                                       className="flex-1 min-w-0 cursor-pointer"
                                       onClick={() => handleChatSelect(chat.id)}
                                     >
-                                      <p className={`text-sm font-medium truncate transition-colors duration-200 ${
-                                        currentChatId === chat.id 
-                                          ? 'text-primary font-semibold' 
-                                          : 'text-foreground hover:text-primary'
-                                      }`}>
-                                        {getDisplayTitle(chat)}
-                                      </p>
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <Clock className="w-3 h-3 text-muted-foreground" />
-                                        <p className="text-xs text-muted-foreground">
-                                          {chat.createdAt.toLocaleDateString()}
-                                        </p>
-                                        {chat.keywords && chat.keywords.length > 0 && (
-                                          <div className="flex gap-1 ml-auto">
-                                            {chat.keywords.slice(0, 2).map((keyword, idx) => (
-                                              <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                                {keyword}
-                                              </Badge>
-                                            ))}
-                                            {chat.keywords.length > 2 && (
-                                              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                                +{chat.keywords.length - 2}
-                                              </Badge>
-                                            )}
-                                          </div>
-                                        )}
-                                      </div>
+                                       <p className={`text-sm font-medium truncate transition-colors duration-200 ${
+                                         currentChatId === chat.id 
+                                           ? 'text-primary font-semibold' 
+                                           : 'text-foreground hover:text-primary'
+                                       }`}>
+                                         {getDisplayTitle(chat)}
+                                       </p>
+                                       {chat.keywords && chat.keywords.length > 0 && (
+                                         <div className="flex gap-1 mt-1">
+                                           {chat.keywords.slice(0, 2).map((keyword, idx) => (
+                                             <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                               {keyword}
+                                             </Badge>
+                                           ))}
+                                           {chat.keywords.length > 2 && (
+                                             <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                               +{chat.keywords.length - 2}
+                                             </Badge>
+                                           )}
+                                         </div>
+                                       )}
                                     </div>
                                   </DrawerClose>
                                   
@@ -647,26 +641,20 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                                   }`}>
                                     {getDisplayTitle(chat)}
                                   </p>
-                                  <div className="flex items-center gap-2 mt-1">
-                                    <Clock className="w-3 h-3 text-muted-foreground" />
-                                    <p className="text-xs text-muted-foreground">
-                                      {chat.createdAt.toLocaleDateString()}
-                                    </p>
-                                    {chat.keywords && chat.keywords.length > 0 && (
-                                      <div className="flex gap-1 ml-auto">
-                                        {chat.keywords.slice(0, 2).map((keyword, idx) => (
-                                          <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                            {keyword}
-                                          </Badge>
-                                        ))}
-                                        {chat.keywords.length > 2 && (
-                                          <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                            +{chat.keywords.length - 2}
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
+                                  {chat.keywords && chat.keywords.length > 0 && (
+                                    <div className="flex gap-1 mt-1">
+                                      {chat.keywords.slice(0, 2).map((keyword, idx) => (
+                                        <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                          {keyword}
+                                        </Badge>
+                                      ))}
+                                      {chat.keywords.length > 2 && (
+                                        <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
+                                          +{chat.keywords.length - 2}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
