@@ -499,25 +499,26 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
     );
   }
 
-  // Desktop version
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
-  
+  // Desktop version - always expanded, no collapsible functionality
   return (
     <>
-      <Sidebar className={`border-r border-border bg-background/95 backdrop-blur-md flex flex-col h-screen ${collapsed ? 'w-14' : 'w-80'}`} collapsible="icon">
-        {/* Sidebar header with new chat button and controls - fixed at top */}
-        <div className="p-4 bg-background/90 border-b border-border/30 flex-shrink-0">
+      <div className="w-80 h-screen bg-background border-r border-border flex flex-col">
+        {/* Header with new chat button and actions */}
+        <div className="p-4 border-b border-border/30 bg-background/90 flex-shrink-0">
           <Button 
-            onClick={handleNewChat}
-            className="w-full justify-start gap-3 h-12 bg-background hover:jamaican-gradient hover:text-white text-foreground border border-border shadow-sm mb-2 transition-all duration-200"
-            variant="outline"
+            onClick={() => {
+              onNewChat();
+              setSelectedChats(new Set());
+              setIsSelectionMode(false);
+            }}
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 mb-3"
+            size="sm"
           >
             <Plus className="w-4 h-4" />
-            {!collapsed && <span className="font-medium">New Chat</span>}
+            <span className="font-medium">New Chat</span>
           </Button>
           
-          {!collapsed && chatHistory.length > 0 && (
+          {chatHistory.length > 0 && (
             <div className="flex gap-2">
               {!isSelectionMode && (
                 <Popover>
@@ -580,23 +581,21 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
           {groupedChats.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              {!collapsed && <p className="text-sm">No chat history yet</p>}
+              <p className="text-sm">No chat history yet</p>
             </div>
           ) : (
             <div className="space-y-4">
               {groupedChats.map((group) => (
                 <div key={group.period} className="space-y-2">
-                  {!collapsed && (
-                    <h3 className="text-xs font-medium text-muted-foreground px-2 py-1">
-                      {group.period}
-                    </h3>
-                  )}
+                  <h3 className="text-xs font-medium text-muted-foreground px-2 py-1">
+                    {group.period}
+                  </h3>
                   <div className="space-y-1">
                     {group.chats.map((chat) => (
                       <ContextMenu key={chat.id}>
                         <ContextMenuTrigger asChild>
                           <div className="flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-muted/80 cursor-pointer transition-colors group">
-                            {!collapsed && isSelectionMode && (
+                            {isSelectionMode && (
                               <Checkbox
                                 checked={selectedChats.has(chat.id)}
                                 onCheckedChange={(checked) => {
@@ -616,20 +615,18 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                               onClick={() => handleChatSelect(chat.id)}
                             >
                               <MessageSquare className="w-4 h-4 flex-shrink-0" />
-                              {!collapsed && (
-                                <div className="flex-1 min-w-0">
-                                  <p className={`text-sm font-medium truncate transition-colors duration-200 ${
-                                    currentChatId === chat.id 
-                                      ? 'text-primary font-semibold' 
-                                      : 'text-foreground hover:text-primary'
-                                  }`}>
-                                    {getDisplayTitle(chat)}
-                                  </p>
-                                </div>
-                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className={`text-sm font-medium truncate transition-colors duration-200 ${
+                                  currentChatId === chat.id 
+                                    ? 'text-primary font-semibold' 
+                                    : 'text-foreground hover:text-primary'
+                                }`}>
+                                  {getDisplayTitle(chat)}
+                                </p>
+                              </div>
                             </div>
                             
-                            {!collapsed && isSelectionMode && (
+                            {isSelectionMode && (
                               <div className="flex items-center gap-1">
                                 <Button
                                   variant="ghost"
@@ -664,17 +661,15 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
             </div>
           )}
         </div>
-
+        
         {/* Fixed footer at bottom - separate from scrollable content */}
-        {!collapsed && (
-          <div className="p-4 bg-background/90 border-t border-border/30 flex-shrink-0">
-            <div className="flex items-center gap-3 px-3 py-2 text-sm">
-              <span className="text-lg font-bold">🇯🇲</span>
-              <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
-            </div>
+        <div className="p-4 bg-background/90 border-t border-border/30 flex-shrink-0">
+          <div className="flex items-center gap-3 px-3 py-2 text-sm">
+            <span className="text-lg font-bold">🇯🇲</span>
+            <span className="font-bold jamaican-text-gradient">JamAI Chat</span>
           </div>
-        )}
-      </Sidebar>
+        </div>
+      </div>
 
       {/* Delete confirmation dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
