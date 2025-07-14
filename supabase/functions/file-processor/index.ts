@@ -16,7 +16,15 @@ serve(async (req) => {
   try {
     const { files, prompt, sessionId, userId } = await req.json();
     
+    console.log('File processor called with:', { 
+      filesCount: files?.length, 
+      prompt: prompt?.substring(0, 100), 
+      sessionId, 
+      userId 
+    });
+    
     if (!files || !Array.isArray(files) || !prompt || !userId) {
+      console.error('Missing required fields:', { files: !!files, prompt: !!prompt, userId: !!userId });
       return new Response(
         JSON.stringify({ error: 'Missing required fields' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -95,13 +103,16 @@ serve(async (req) => {
     }
 
     // Prepare OpenAI request
-    const openAIApiKey = Deno.env.get('OpenAI_API');
+    const openAIApiKey = Deno.env.get('OpenAI_API') || Deno.env.get('OPENAI_API_KEY');
     if (!openAIApiKey) {
+      console.error('OpenAI API key not found in environment');
       return new Response(
         JSON.stringify({ error: 'OpenAI API key not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('Processing', fileContents.length, 'files');
 
     // Build the message content
     const messageContent = [
@@ -145,7 +156,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
+        model: 'gpt-4o',
         messages: [
           {
             role: 'system',
@@ -172,6 +183,8 @@ serve(async (req) => {
 
     const aiResponse = await response.json();
     const aiMessage = aiResponse.choices[0].message.content;
+    
+    console.log('AI response received, length:', aiMessage?.length);
 
     // Save message to database if sessionId provided
     if (sessionId) {
