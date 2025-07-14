@@ -502,7 +502,7 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
   // Desktop version - always expanded, no collapsible functionality
   return (
     <>
-      <div className="w-80 h-screen bg-background border-r border-border flex flex-col">
+      <div className="w-64 h-screen bg-background border-r border-border flex flex-col">
         {/* Header with new chat button and actions */}
         <div className="p-4 border-b border-border/30 bg-background/90 flex-shrink-0">
           <Button 
