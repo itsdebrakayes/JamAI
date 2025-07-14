@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from "@/contexts/AuthContext";
+// Fixed import - using correct export name
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
