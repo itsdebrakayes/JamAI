@@ -24,6 +24,7 @@ import { supabase } from '@/integrations/supabase/client';
 import ChatMessage from '@/components/ChatMessage';
 import TypingIndicator from '@/components/TypingIndicator';
 import TypingMessage from '@/components/TypingMessage';
+import chatSuggestionsData from '@/data/chatSuggestions.json';
 
 interface Message {
   id: string;
@@ -475,7 +476,38 @@ const MainContent = ({
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    sendMessage(suggestion);
+    // Check if this is a predefined suggestion with responses
+    const suggestionData = chatSuggestionsData.suggestions.find(s => s.text === suggestion);
+    
+    if (suggestionData && suggestionData.responses) {
+      // Use predefined response instead of sending to AI
+      const randomResponse = suggestionData.responses[Math.floor(Math.random() * suggestionData.responses.length)];
+      
+      // Create user message
+      const userMessage = {
+        id: uuidv4(),
+        text: suggestion,
+        isUser: true,
+        timestamp: new Date()
+      };
+
+      // Create AI response message
+      const aiMessage = {
+        id: uuidv4(),
+        text: randomResponse,
+        isUser: false,
+        timestamp: new Date(),
+        isPatois: false
+      };
+
+      // Add both messages
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+      setTypingMessage(aiMessage);
+    } else {
+      // For suggestions without predefined responses, use normal AI flow
+      sendMessage(suggestion);
+    }
   };
 
   const handleTypingComplete = () => {
@@ -686,6 +718,37 @@ const Index = () => {
 
   useEffect(() => {
     loadChatHistoryFromDB();
+    
+    // Set up real-time subscription for chat_sessions changes
+    const setupRealtime = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        const channel = supabase
+          .channel('chat_sessions_changes')
+          .on(
+            'postgres_changes',
+            {
+              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+              schema: 'public',
+              table: 'chat_sessions',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload) => {
+              console.log('Real-time chat sessions change:', payload);
+              // Reload chat history when changes occur
+              loadChatHistoryFromDB();
+            }
+          )
+          .subscribe();
+
+        return () => {
+          supabase.removeChannel(channel);
+        };
+      }
+    };
+
+    setupRealtime();
   }, []);
 
   const saveChatHistory = async (history: ChatHistory[]) => {
