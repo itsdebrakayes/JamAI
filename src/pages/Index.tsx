@@ -556,10 +556,18 @@ const Index = () => {
   // Load chat history from Supabase
   const loadChatHistoryFromDB = async () => {
     try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.log('No authenticated user, skipping chat history load');
+        return;
+      }
+
       const { data: sessions, error } = await supabase
         .from('chat_sessions')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('user_id', user.id)
+        .order('updated_at', { ascending: false });
 
       if (error) throw error;
 
@@ -570,13 +578,25 @@ const Index = () => {
               .from('messages')
               .select('*')
               .eq('session_id', session.id)
+              .eq('user_id', user.id)
               .order('created_at', { ascending: true });
 
-            if (messagesError) throw messagesError;
+            if (messagesError) {
+              console.error('Error loading messages for session:', session.id, messagesError);
+              return {
+                id: session.id,
+                title: session.title || session.auto_title || 'New Chat',
+                messages: [],
+                createdAt: new Date(session.created_at),
+                autoTitle: session.auto_title,
+                keywords: session.keywords,
+                summary: session.summary
+              };
+            }
 
             return {
               id: session.id,
-              title: session.title,
+              title: session.title || session.auto_title || 'New Chat',
               messages: sessionMessages?.map(msg => ({
                 id: msg.id,
                 text: msg.content,
@@ -591,6 +611,7 @@ const Index = () => {
           })
         );
 
+        console.log(`✅ Loaded ${historyData.length} chat sessions for user`);
         setChatHistory(historyData);
       }
     } catch (error) {
@@ -635,10 +656,23 @@ const Index = () => {
     try {
       console.log('Loading chat with ID:', chatId);
       
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error('No authenticated user found');
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to load your chats.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const { data: sessionMessages, error } = await supabase
         .from('messages')
         .select('*')
         .eq('session_id', chatId)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -671,6 +705,7 @@ const Index = () => {
           .from('chat_sessions')
           .select('title, message_count')
           .eq('id', chatId)
+          .eq('user_id', user.id)
           .single();
         
         if (session && session.message_count > 0) {
