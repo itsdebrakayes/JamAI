@@ -143,31 +143,22 @@ const MainContent = ({
     let sessionId = currentChatId;
     if (!sessionId) {
       if (user) {
-        // For authenticated users: use user.id as sessionId
-        sessionId = user.id;
+        // For authenticated users: create a new UUID session but link it to user_id
+        sessionId = uuidv4();
         setCurrentChatId(sessionId);
         
-        // Create or get existing session in database
+        // Create new session in database
         try {
-          const { data: existingSession } = await supabase
+          const { error: sessionError } = await supabase
             .from('chat_sessions')
-            .select('id')
-            .eq('id', sessionId)
-            .eq('user_id', user.id)
-            .single();
+            .insert({
+              id: sessionId,
+              title: messageText.substring(0, 50) + '...',
+              user_id: user.id,
+              message_count: 0
+            });
 
-          if (!existingSession) {
-            const { error: sessionError } = await supabase
-              .from('chat_sessions')
-              .insert({
-                id: sessionId,
-                title: messageText.substring(0, 50) + '...',
-                user_id: user.id,
-                message_count: 0
-              });
-
-            if (sessionError) throw sessionError;
-          }
+          if (sessionError) throw sessionError;
         } catch (error) {
           console.error('Error creating chat session:', error);
         }
