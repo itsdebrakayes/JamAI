@@ -18,7 +18,7 @@ import ChatSuggestions from '@/components/ChatSuggestions';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
 import ThemeToggle from '@/components/ThemeToggle';
 import UserProfileSettings from '@/components/UserProfileSettings';
-import { SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import ChatMessage from '@/components/ChatMessage';
@@ -441,6 +441,7 @@ const MainContent = ({
       {/* Header */}
       <header className="flex items-center justify-between p-4 border-b glass-effect modern-shadow">
         <div className="flex items-center gap-4">
+          <SidebarTrigger className="hidden md:flex" />
           <Avatar>
             <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
             <AvatarFallback>JA</AvatarFallback>
