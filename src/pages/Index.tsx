@@ -751,7 +751,7 @@ const Index = () => {
   };
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen w-full">
         <ChatHistorySidebar 
           chatHistory={chatHistory} 
@@ -762,7 +762,7 @@ const Index = () => {
           onClearAllHistory={clearAllHistory}
           onRenameChat={renameChat}
         />
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <MainContent 
             messages={messages}
             setMessages={setMessages}
