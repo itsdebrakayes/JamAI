@@ -43,7 +43,7 @@ function generateUUID(): string {
   });
 }
 
-// Improved intelligent title generation - NOW EXPORTED
+// Enhanced intelligent title generation with comprehensive pattern recognition
 export function generateIntelligentTitle(messages: Message[]): string {
   console.log('🤖 Generating intelligent title for', messages.length, 'messages');
   
@@ -61,43 +61,123 @@ export function generateIntelligentTitle(messages: Message[]): string {
   
   console.log('📝 First user message for title:', firstUserMessage.substring(0, 50) + '...');
   
-  // Extract meaningful parts and create a concise title
+  const text = firstUserMessage.toLowerCase();
   const cleanText = firstUserMessage
     .replace(/[^\w\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+
+  // Enhanced pattern matching for more descriptive titles
   
-  // Create title based on content patterns
-  if (cleanText.toLowerCase().includes('recipe') || cleanText.toLowerCase().includes('cook')) {
-    const match = cleanText.match(/recipe|cook.*?(\w+)/i);
-    const title = match ? `Recipe: ${match[1]}` : 'Recipe Discussion';
-    console.log('🍳 Generated recipe title:', title);
-    return title;
+  // Weather queries
+  if (text.includes('weather') || text.includes('temperature') || text.includes('forecast')) {
+    const locationMatch = text.match(/weather.*?(?:in|for|at)\s+([a-zA-Z\s]+?)(?:\s|$|[?.,])/);
+    const location = locationMatch ? locationMatch[1].trim() : '';
+    return location ? `Weather in ${location}` : 'Weather Forecast';
   }
   
-  if (cleanText.toLowerCase().includes('translate') || cleanText.toLowerCase().includes('patois')) {
-    console.log('🌐 Generated translation title');
+  // Recipe and cooking
+  if (text.includes('recipe') || text.includes('cook') || text.includes('bake') || text.includes('ingredients')) {
+    const dishMatch = text.match(/(?:recipe|cook|bake|make)\s+(?:for\s+)?([a-zA-Z\s]+?)(?:\s|$|[?.,])/);
+    const dish = dishMatch ? dishMatch[1].trim().split(' ').slice(0, 2).join(' ') : '';
+    return dish ? `Recipe: ${dish}` : 'Cooking Help';
+  }
+  
+  // Translation and language
+  if (text.includes('translate') || text.includes('patois') || text.includes('creole') || text.includes('dialect')) {
+    if (text.includes('patois') || text.includes('creole')) {
+      return 'Patois Translation';
+    }
     return 'Translation Help';
   }
   
-  if (cleanText.toLowerCase().includes('help') || cleanText.toLowerCase().includes('how')) {
-    const topic = cleanText.split(/help|how/i)[1]?.trim().split(' ').slice(0, 3).join(' ');
-    const title = topic ? `Help: ${topic}` : 'Help Request';
-    console.log('❓ Generated help title:', title);
-    return title;
+  // Questions and help
+  if (text.startsWith('what') || text.startsWith('how') || text.startsWith('why') || text.startsWith('when') || text.startsWith('where')) {
+    const questionType = text.split(' ')[0];
+    const topic = text.split(' ').slice(1, 4).join(' ').replace(/[?.,]/g, '');
+    return topic ? `${questionType.charAt(0).toUpperCase() + questionType.slice(1)}: ${topic}` : 'Question';
   }
   
-  if (cleanText.toLowerCase().includes('jamaica') || cleanText.toLowerCase().includes('jamaican')) {
-    console.log('🇯🇲 Generated Jamaica title');
+  // Help requests
+  if (text.includes('help') || text.includes('assist') || text.includes('support')) {
+    const helpTopic = text.split(/help|assist|support/)[1]?.trim().split(' ').slice(0, 3).join(' ');
+    return helpTopic ? `Help: ${helpTopic}` : 'Help Request';
+  }
+  
+  // Jamaica and culture
+  if (text.includes('jamaica') || text.includes('jamaican') || text.includes('caribbean')) {
+    if (text.includes('culture') || text.includes('tradition')) {
+      return 'Jamaican Culture';
+    }
+    if (text.includes('history')) {
+      return 'Jamaican History';
+    }
     return 'About Jamaica';
   }
   
-  // Default: use first 40 characters
-  const title = cleanText.length > 40 
-    ? cleanText.substring(0, 40) + '...'
-    : cleanText || 'New Chat';
+  // Travel and location
+  if (text.includes('travel') || text.includes('visit') || text.includes('vacation') || text.includes('trip')) {
+    const locationMatch = text.match(/(?:to|in|visit)\s+([a-zA-Z\s]+?)(?:\s|$|[?.,])/);
+    const location = locationMatch ? locationMatch[1].trim() : '';
+    return location ? `Travel: ${location}` : 'Travel Planning';
+  }
   
-  console.log('💬 Generated default title:', title);
+  // News and current events
+  if (text.includes('news') || text.includes('latest') || text.includes('current') || text.includes('today')) {
+    return 'News & Updates';
+  }
+  
+  // Technology and tech support
+  if (text.includes('computer') || text.includes('software') || text.includes('app') || text.includes('phone') || text.includes('tech')) {
+    return 'Tech Support';
+  }
+  
+  // Health and medical
+  if (text.includes('health') || text.includes('medical') || text.includes('doctor') || text.includes('symptom')) {
+    return 'Health Inquiry';
+  }
+  
+  // Education and learning
+  if (text.includes('learn') || text.includes('study') || text.includes('explain') || text.includes('understand')) {
+    const topic = text.split(/learn|study|explain|understand/)[1]?.trim().split(' ').slice(0, 2).join(' ');
+    return topic ? `Learning: ${topic}` : 'Learning Help';
+  }
+  
+  // Business and work
+  if (text.includes('business') || text.includes('work') || text.includes('job') || text.includes('career')) {
+    return 'Business & Career';
+  }
+  
+  // Entertainment
+  if (text.includes('movie') || text.includes('music') || text.includes('song') || text.includes('book')) {
+    return 'Entertainment';
+  }
+  
+  // Financial
+  if (text.includes('money') || text.includes('budget') || text.includes('finance') || text.includes('invest')) {
+    return 'Financial Advice';
+  }
+  
+  // Fall back to extracting key phrases or using meaningful first sentence
+  const sentences = cleanText.split(/[.!?]+/).filter(s => s.trim().length > 5);
+  if (sentences.length > 0) {
+    const firstSentence = sentences[0].trim();
+    if (firstSentence.length > 5 && firstSentence.length <= 50) {
+      return firstSentence;
+    }
+    if (firstSentence.length > 50) {
+      return firstSentence.substring(0, 47) + '...';
+    }
+  }
+  
+  // Final fallback: use first meaningful words
+  const words = cleanText.split(' ').filter(word => word.length > 2);
+  const meaningfulWords = words.slice(0, 6).join(' ');
+  const title = meaningfulWords.length > 50 
+    ? meaningfulWords.substring(0, 47) + '...'
+    : meaningfulWords || 'New Chat';
+  
+  console.log('💬 Generated enhanced title:', title);
   return title;
 }
 

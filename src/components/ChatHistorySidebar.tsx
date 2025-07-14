@@ -368,20 +368,6 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                                        }`}>
                                          {getDisplayTitle(chat)}
                                        </p>
-                                       {chat.keywords && chat.keywords.length > 0 && (
-                                         <div className="flex gap-1 mt-1">
-                                           {chat.keywords.slice(0, 2).map((keyword, idx) => (
-                                             <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                               {keyword}
-                                             </Badge>
-                                           ))}
-                                           {chat.keywords.length > 2 && (
-                                             <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                               +{chat.keywords.length - 2}
-                                             </Badge>
-                                           )}
-                                         </div>
-                                       )}
                                     </div>
                                   </DrawerClose>
                                   
@@ -641,20 +627,6 @@ const ChatHistorySidebar: React.FC<ChatHistorySidebarProps> = ({
                                   }`}>
                                     {getDisplayTitle(chat)}
                                   </p>
-                                  {chat.keywords && chat.keywords.length > 0 && (
-                                    <div className="flex gap-1 mt-1">
-                                      {chat.keywords.slice(0, 2).map((keyword, idx) => (
-                                        <Badge key={idx} variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                          {keyword}
-                                        </Badge>
-                                      ))}
-                                      {chat.keywords.length > 2 && (
-                                        <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4">
-                                          +{chat.keywords.length - 2}
-                                        </Badge>
-                                      )}
-                                    </div>
-                                  )}
                                 </div>
                               )}
                             </div>
