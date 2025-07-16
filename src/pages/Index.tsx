@@ -78,6 +78,7 @@ interface MainContentProps {
   chatHistory: ChatHistory[];
   saveChatHistory: (history: ChatHistory[]) => void;
   startNewChat: () => void;
+  refreshChatHistory: () => void;                           // Function to refresh chat history from database
 }
 
 const MainContent = ({ 
@@ -87,7 +88,8 @@ const MainContent = ({
   setCurrentChatId, 
   chatHistory, 
   saveChatHistory, 
-  startNewChat 
+  startNewChat,
+  refreshChatHistory
 }: MainContentProps) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -193,6 +195,9 @@ const MainContent = ({
             setIsLoading(false);
             return; // Don't proceed if session creation fails
           }
+          
+          // Manually refresh chat history after creating new session
+          setTimeout(() => refreshChatHistory(), 200);
         } catch (error) {
           console.error('Error creating chat session:', error);
           setIsLoading(false);
@@ -434,6 +439,9 @@ const MainContent = ({
             console.error('Session creation error:', sessionError);
             throw sessionError;
           }
+          
+          // Manually refresh chat history after creating new session
+          setTimeout(() => refreshChatHistory(), 200);
         }
       }
 
@@ -777,19 +785,32 @@ const Index = () => {
             },
             (payload) => {
               console.log('Real-time chat sessions change:', payload);
-              // Reload chat history when changes occur
-              loadChatHistoryFromDB();
+              // Reload chat history when changes occur with a small delay to ensure DB consistency
+              setTimeout(() => {
+                loadChatHistoryFromDB();
+              }, 100);
             }
           )
           .subscribe();
 
-        return () => {
-          supabase.removeChannel(channel);
-        };
+        return channel;
       }
+      return null;
     };
 
-    setupRealtime();
+    // Store the cleanup function
+    let channelCleanup: any = null;
+    
+    setupRealtime().then(channel => {
+      channelCleanup = channel;
+    });
+
+    // Cleanup function
+    return () => {
+      if (channelCleanup) {
+        supabase.removeChannel(channelCleanup);
+      }
+    };
   }, []);
 
   const saveChatHistory = async (history: ChatHistory[]) => {
@@ -956,6 +977,7 @@ const Index = () => {
             chatHistory={chatHistory}
             saveChatHistory={saveChatHistory}
             startNewChat={startNewChat}
+            refreshChatHistory={loadChatHistoryFromDB}
           />
         </main>
       </div>
