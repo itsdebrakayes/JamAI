@@ -72,21 +72,21 @@ const FileDisplay = ({ files, showRemoveButton = false, onRemove }: FileDisplayP
               className="w-16 h-16 object-cover rounded-lg"
             />
           ) : (
-            // Show file card for non-image files
-            <div className="flex items-center gap-3 bg-black text-white rounded-lg p-3 min-w-[180px]">
-              {/* Icon container with green background */}
-              <div className="w-8 h-8 bg-green-600 rounded flex items-center justify-center flex-shrink-0">
+            // Show file card for non-image files - matches the reference design
+            <div className="flex items-center gap-3 bg-black text-white rounded-lg p-3 max-w-[300px]">
+              {/* Icon container with green background - circular like in reference */}
+              <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center flex-shrink-0">
                 {getFileIcon(file.type)}
               </div>
               
               {/* File information */}
               <div className="flex-1 min-w-0">
                 {/* File name (truncated if too long) */}
-                <div className="text-sm font-medium truncate">
+                <div className="text-sm font-medium truncate leading-tight">
                   {file.name}
                 </div>
                 {/* File type label */}
-                <div className="text-xs text-gray-300">
+                <div className="text-xs text-gray-400 uppercase font-medium">
                   {getFileTypeLabel(file.name)}
                 </div>
               </div>
