@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Image, 
@@ -12,6 +13,7 @@ import {
   Heart,
   ChefHat,
   Calendar,
+  FileQuestion,
   Menu
 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -23,6 +25,24 @@ interface ToolsDropdownProps {
 }
 
 const tools = [
+  {
+    icon: GraduationCap,
+    title: "Tutor Mode",
+    description: "Get help with homework and school topics",
+    prompt: "Mi need help understanding "
+  },
+  {
+    icon: Languages,
+    title: "Translate",
+    description: "Translate between English and Patois",
+    prompt: "Translate dis fi mi: "
+  },
+  {
+    icon: FileQuestion,
+    title: "Summarize",
+    description: "Get a summary of text or content",
+    prompt: "Summarize dis fi mi: "
+  },
   {
     icon: Image,
     title: "Generate image",
@@ -60,22 +80,10 @@ const tools = [
     prompt: "Calculate "
   },
   {
-    icon: Languages,
-    title: "Translate",
-    description: "Translate between languages",
-    prompt: "Translate "
-  },
-  {
     icon: Lightbulb,
     title: "Brainstorm ideas",
     description: "Generate creative solutions",
     prompt: "Brainstorm ideas for "
-  },
-  {
-    icon: GraduationCap,
-    title: "Teach me Patois",
-    description: "Learn Jamaican Patois phrases",
-    prompt: "Teach me Patois about "
   },
   {
     icon: Heart,
@@ -102,6 +110,7 @@ const ToolsDropdown = ({ onToolSelect, disabled }: ToolsDropdownProps) => {
     const colors = ['text-black', 'text-green-600', 'text-yellow-500'];
     return colors[index % 3];
   };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

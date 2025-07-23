@@ -1,6 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { detectLanguage } from '@/utils/languageDetection';
-import { formatStructuredPrompt, determinePromptMode, type PromptMode } from '@/utils/promptFormatter';
 
 interface Message {
   id: string;
@@ -17,49 +17,36 @@ interface LocationAwareResponse {
 
 class LocationAwareService {
   /**
-   * Process user query with structured prompt system
+   * Process user query with natural JamAI personality
    */
   async processQuery(
     userMessage: string,
     isUserMessagePatois: boolean = false,
-    conversationHistory: Message[] = [],
-    explicitMode?: PromptMode
+    conversationHistory: Message[] = []
   ): Promise<LocationAwareResponse> {
     try {
-      console.log('🔄 LocationAwareService: Processing query with structured prompts');
+      console.log('🔄 LocationAwareService: Processing query with JamAI personality');
       
-      // Determine the appropriate mode if not explicitly provided
-      const mode = explicitMode || determinePromptMode(userMessage);
-      console.log(`🎯 Determined mode: ${mode}`);
+      // Detect if user is asking for educational help (tutor mode)
+      const isTutorMode = this.detectTutorMode(userMessage);
       
-      // Format the structured prompt
-      const structuredPrompt = formatStructuredPrompt({
-        mode,
-        userInput: userMessage
-      });
+      // Create natural prompt based on context
+      let enhancedPrompt = userMessage;
       
-      console.log('📝 Using structured prompt format');
-      
-      // Get recent feedback for context
-      const recentFeedback = this.getRecentFeedback(conversationHistory);
-      
-      // Enhance prompt with feedback context if available
-      let enhancedPrompt = structuredPrompt;
-      if (recentFeedback.length > 0) {
-        const feedbackContext = recentFeedback.map(fb => 
-          `Previous response "${fb.messageContent.substring(0, 50)}..." received ${fb.feedback} feedback`
-        ).join('. ');
-        
-        enhancedPrompt += `\n\nFeedback Context: ${feedbackContext}. Please adjust your response style accordingly - if previous responses received negative feedback, try a different approach in tone, detail level, or cultural authenticity.`;
+      if (isTutorMode) {
+        enhancedPrompt = `Mi need help understanding dis school topic. Please explain it in a way dat easy fi understand, using both Patois and English as needed: ${userMessage}`;
       }
       
-      // Call the preferred AI service (Gemini by default)
+      // Call the Gemini service with enhanced prompt
       const aiResponse = await this.callGeminiService(enhancedPrompt, isUserMessagePatois, conversationHistory);
+      
+      // Detect if response is in Patois
+      const isResponsePatois = this.detectPatois(aiResponse);
       
       return {
         message: aiResponse,
-        isPatois: mode === 'translation_to_patois' || mode === 'chat' || isUserMessagePatois,
-        translationOffered: mode === 'translation_to_patois' || mode === 'translation_to_english'
+        isPatois: isResponsePatois,
+        translationOffered: false
       };
       
     } catch (error) {
@@ -69,16 +56,36 @@ class LocationAwareService {
   }
 
   /**
-   * Get recent feedback for context
+   * Detect if user is asking for educational help
    */
-  private getRecentFeedback(conversationHistory: Message[]): Array<{messageContent: string, feedback: string, timestamp: Date}> {
-    // This would ideally come from a feedback tracking system
-    // For now, return empty array - this can be enhanced later
-    return [];
+  private detectTutorMode(message: string): boolean {
+    const tutorIndicators = [
+      'help', 'explain', 'understand', 'learn', 'teach', 'homework', 'study',
+      'school', 'assignment', 'essay', 'math', 'science', 'history', 'english',
+      'what is', 'how to', 'why does', 'can you explain'
+    ];
+    
+    const lowerMessage = message.toLowerCase();
+    return tutorIndicators.some(indicator => lowerMessage.includes(indicator));
   }
 
   /**
-   * Call Gemini service with structured prompt
+   * Simple heuristic to detect if text is in Patois
+   */
+  private detectPatois(text: string): boolean {
+    const patoisIndicators = [
+      'mi', 'yuh', 'dem', 'seh', 'nuh', 'weh', 'mek', 'fi', 'wi', 'cyaan', 
+      'waan', 'ting', 'tings', 'deh', 'yah', 'bout', 'inna', 'wid', 'dat'
+    ];
+    
+    const words = text.toLowerCase().split(/\s+/);
+    const patoisWords = words.filter(word => patoisIndicators.includes(word));
+    
+    return patoisWords.length > 0;
+  }
+
+  /**
+   * Call Gemini service with JamAI personality
    */
   private async callGeminiService(prompt: string, isUserMessagePatois: boolean, conversationHistory: Message[]): Promise<string> {
     const { data, error } = await supabase.functions.invoke('gemini-chat', {
@@ -99,12 +106,12 @@ class LocationAwareService {
   }
 
   /**
-   * Handle service errors with appropriate responses
+   * Handle service errors with appropriate JamAI responses
    */
   private handleError(isUserMessagePatois: boolean): LocationAwareResponse {
     const fallbackMessage = isUserMessagePatois 
-      ? "Mi have some trouble right now, but mi here fi help."
-      : "I'm having some connection issues right now, but I'm here to help.";
+      ? "Mi have some trouble right now, but mi here fi help yuh still."
+      : "I'm having some connection issues right now, but I'm here to help you.";
     
     return {
       message: fallbackMessage,

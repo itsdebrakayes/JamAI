@@ -1,84 +1,51 @@
-
-/**
- * Index Page - Main Chat Interface
- * 
- * This is the main page component that provides the complete chat application interface.
- * It manages the entire chat experience including message handling, file uploads, 
- * chat history, and integration with AI services.
- * 
- * Key Features:
- * - Real-time chat with AI assistants
- * - File upload and processing
- * - Chat history management
- * - User authentication integration
- * - Responsive design with sidebar
- * - Message persistence in Supabase
- * - Voice input support
- * - Translation capabilities
- * 
- * Architecture:
- * - MainContent: Handles the core chat functionality
- * - ChatHistorySidebar: Manages chat sessions and history
- * - Layout uses SidebarProvider for responsive behavior
- */
-
 import React, { useState, useEffect, useRef } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from '@/components/ui/button';
-import { Send, Plus, X, Copy, CheckCircle, Menu, Settings, Sun, Moon } from 'lucide-react';
-import { useAuth } from "@/contexts/AuthContext";
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { useToast } from "@/hooks/use-toast"
-import { detectLanguage } from '@/utils/languageDetection';
-import { locationAwareService } from '@/services/locationAwareService';
-import ChatInput from '@/components/ChatInput';
-import ChatHistorySidebar from '@/components/ChatHistorySidebar';
-import ChatSuggestions from '@/components/ChatSuggestions';
-import SubscriptionBadge from '@/components/SubscriptionBadge';
-import ThemeToggle from '@/components/ThemeToggle';
-import UserProfileSettings from '@/components/UserProfileSettings';
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { FileText } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import ChatHistorySidebar from '@/components/ChatHistorySidebar';
 import ChatMessage from '@/components/ChatMessage';
+import ChatInput from '@/components/ChatInput';
 import TypingIndicator from '@/components/TypingIndicator';
-import TypingMessage from '@/components/TypingMessage';
-import chatSuggestionsData from '@/data/chatSuggestions.json';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Menu, MessageSquare, FileText, X } from 'lucide-react';
+import { openaiService } from '@/services/openaiService';
+import { locationAwareService } from '@/services/locationAwareService';
+import { geminiService } from '@/services/geminiService';
+import { detectLanguage } from '@/utils/languageDetection';
+import { v4 as uuidv4 } from 'uuid';
+import { useChatHistory } from '@/utils/chatHistory';
+import { useChatGrouping } from '@/utils/chatGrouping';
+import { useFileUpload } from '@/hooks/useFileUpload';
+import EmptyStateCard from '@/components/EmptyStateCard';
+import ChatSuggestions from '@/components/ChatSuggestions';
+import { cn } from '@/lib/utils';
 
-// Define the structure of a chat message
 interface Message {
-  id: string;           // Unique identifier for the message
-  text: string;         // The message content
-  isUser: boolean;      // Whether this message is from the user (true) or AI (false)
-  timestamp: Date;      // When the message was created
-  isPatois?: boolean;   // Whether the message contains Jamaican Patois
+  id: string;
+  text: string;
+  isUser: boolean;
+  timestamp: Date;
+  files?: File[];
 }
 
-// Define the structure of a chat session/history
 interface ChatHistory {
-  id: string;           // Unique identifier for the chat session
-  title: string;        // Display title for the chat
-  messages: Message[];  // All messages in this chat session
-  createdAt: Date;      // When the chat session was created
-  autoTitle?: string;   // AI-generated title based on conversation
-  keywords?: string[];  // Keywords extracted from the conversation
-  summary?: string;     // AI-generated summary of the conversation
+  id: string;
+  title: string;
+  messages: Message[];
+  lastMessageTime: Date;
 }
 
-// Props for the MainContent component
 interface MainContentProps {
-  messages: Message[];                                      // Current messages to display
-  setMessages: (messages: Message[]) => void;              // Function to update messages
-  currentChatId: string;                                    // ID of the current active chat
-  setCurrentChatId: (id: string) => void;
+  messages: Message[];
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>;
+  currentChatId: string | null;
+  setCurrentChatId: React.Dispatch<React.SetStateAction<string | null>>;
   chatHistory: ChatHistory[];
   saveChatHistory: (history: ChatHistory[]) => void;
   startNewChat: () => void;
-  refreshChatHistory: () => void;                           // Function to refresh chat history from database
+  refreshChatHistory: () => void;
 }
 
 const MainContent = ({ 
@@ -93,430 +60,287 @@ const MainContent = ({
 }: MainContentProps) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [isConfigured, setIsConfigured] = useState(false);
-  const [usageCount, setUsageCount] = useState(0);
-  const [isCopied, setIsCopied] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [typingMessage, setTypingMessage] = useState<Message | null>(null);
-  const { toast } = useToast()
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const [selectedService, setSelectedService] = useState<'openai' | 'gemini' | 'location-aware'>('openai');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { toast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { uploadFiles, isUploading } = useFileUpload();
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    // Load messages from local storage on initial load
-    const storedMessages = localStorage.getItem('chat-messages');
-    if (storedMessages) {
-      setMessages(JSON.parse(storedMessages));
-    }
-
-    // Load usage count from local storage
-    const storedUsageCount = localStorage.getItem('usage-count');
-    if (storedUsageCount) {
-      setUsageCount(parseInt(storedUsageCount, 10));
-    }
-
-    // Check if the service is configured
-    setIsConfigured(true);
-  }, []);
-
-  useEffect(() => {
-    // Save messages to local storage whenever messages change
-    localStorage.setItem('chat-messages', JSON.stringify(messages));
+    scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    // Save usage count to local storage whenever it changes
-    localStorage.setItem('usage-count', usageCount.toString());
-  }, [usageCount]);
-
-  useEffect(() => {
-    // Scroll to the bottom when messages update or typing message changes
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typingMessage]);
-
-  const saveMessagesToLocalStorage = (newMessages: Message[]) => {
-    localStorage.setItem('chat-messages', JSON.stringify(newMessages));
-  };
-
-  const incrementUsageCount = () => {
-    const newCount = usageCount + 1;
-    setUsageCount(newCount);
-    localStorage.setItem('usage-count', newCount.toString());
-  };
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-      .then(() => {
-        setIsCopied(true);
-        toast({
-          title: "Copied!",
-          description: "The message has been copied to your clipboard.",
-        })
-        setTimeout(() => setIsCopied(false), 2000);
-      })
-      .catch(err => {
-        console.error("Failed to copy text: ", err);
-        toast({
-          variant: "destructive",
-          title: "Uh oh! Something went wrong.",
-          description: "Failed to copy the message to your clipboard.",
-        })
-      });
-  };
-
-  const sendMessage = async (messageText: string) => {
-    if (!messageText.trim() || isLoading) return;
+  const handleSendMessage = async (
+    messageText: string,
+    files?: File[]
+  ) => {
+    if (!messageText.trim() && (!files || files.length === 0)) return;
 
     setIsLoading(true);
-    
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    // Create or get current session ID
-    let sessionId = currentChatId;
-    if (!sessionId) {
-      if (user) {
-        // For authenticated users: create a new UUID session but link it to user_id
-        sessionId = uuidv4();
-        setCurrentChatId(sessionId);
-        
-        // Create new session in database
+    const userMessage: Message = {
+      id: uuidv4(),
+      text: messageText,
+      isUser: true,
+      timestamp: new Date(),
+      files: files || []
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    try {
+      // Ensure we have a chat session
+      if (!currentChatId) {
         try {
-          const { error: sessionError } = await supabase
+          const { data: sessionData, error: sessionError } = await supabase
             .from('chat_sessions')
             .insert({
-              id: sessionId,
-              title: messageText.substring(0, 50) + '...',
-              user_id: user.id,
+              user_id: user?.id,
+              title: messageText.length > 50 ? messageText.substring(0, 50) + '...' : messageText,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
               message_count: 0
-            });
+            })
+            .select('id')
+            .single();
 
           if (sessionError) {
-            console.error('Error creating chat session:', sessionError);
+            console.error('Session creation error:', sessionError);
             setIsLoading(false);
-            return; // Don't proceed if session creation fails
+            return;
           }
+          
+          setCurrentChatId(sessionData.id);
           
           // Manually refresh chat history after creating new session
           setTimeout(() => refreshChatHistory(), 200);
         } catch (error) {
           console.error('Error creating chat session:', error);
           setIsLoading(false);
-          return; // Don't proceed if session creation fails
-        }
-      } else {
-        // For guests: use a temporary UUID and save only to localStorage
-        sessionId = uuidv4();
-        setCurrentChatId(sessionId);
-      }
-    }
-    
-    const userMessage = {
-      id: uuidv4(),
-      text: messageText,
-      isUser: true,
-      timestamp: new Date()
-    };
-
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-
-    // Save user message to database (only for authenticated users)
-    if (user) {
-      try {
-        const { error: userMsgError } = await supabase
-          .from('messages')
-          .insert({
-            id: userMessage.id,
-            content: userMessage.text,
-            is_user: true,
-            session_id: sessionId,
-            user_id: user.id
-          });
-
-        if (userMsgError) throw userMsgError;
-      } catch (error) {
-        console.error('Error saving user message:', error);
-      }
-    } else {
-      // For guests, save to localStorage only
-      saveMessagesToLocalStorage(newMessages);
-    }
-
-    try {
-      // Check if this is an image generation request
-      const isImageGenRequest = /\b(generate|create|make|draw|design)\b.*\b(image|picture|photo|art|artwork|illustration|graphic)\b/i.test(messageText) ||
-                               /\b(image|picture|photo|art|artwork|illustration|graphic)\b.*\b(generate|create|make|draw|design)\b/i.test(messageText);
-      
-      if (isImageGenRequest) {
-        // Handle image generation
-        const imageResponse = await supabase.functions.invoke('image-generation', {
-          body: { prompt: messageText }
-        });
-        
-        if (imageResponse.error) {
-          throw new Error(`Image generation failed: ${imageResponse.error.message}`);
-        }
-        
-        const { imageData } = imageResponse.data;
-        const aiMessage = {
-          id: uuidv4(),
-          text: `Here's the image I generated for you: ![Generated Image](data:image/png;base64,${imageData})`,
-          isUser: false,
-          timestamp: new Date(),
-          isPatois: false
-        };
-        
-        // Set typing message for animation
-        setTypingMessage(aiMessage);
-        
-        // Save AI message to database (only for authenticated users)
-        if (user) {
-          try {
-            const { error: aiMsgError } = await supabase
-              .from('messages')
-              .insert({
-                id: aiMessage.id,
-                content: aiMessage.text,
-                is_user: false,
-                session_id: sessionId,
-                user_id: user.id
-              });
-
-            if (aiMsgError) throw aiMsgError;
-          } catch (error) {
-            console.error('Error saving AI message:', error);
-          }
-        } else {
-          // For guests, save to localStorage only
-          saveMessagesToLocalStorage([...newMessages, aiMessage]);
-        }
-      } else {
-        // Handle regular chat
-        const isPatois = detectLanguage(messageText) === 'patois';
-        
-        const response = await locationAwareService.processQuery(
-          messageText,
-          isPatois,
-          newMessages
-        );
-
-        const aiMessage = {
-          id: uuidv4(),
-          text: response.message,
-          isUser: false,
-          timestamp: new Date(),
-          isPatois: response.isPatois
-        };
-
-        // Set typing message for animation
-        setTypingMessage(aiMessage);
-        
-        // Save AI message to database (only for authenticated users)
-        if (user) {
-          try {
-            const { error: aiMsgError } = await supabase
-              .from('messages')
-              .insert({
-                id: aiMessage.id,
-                content: aiMessage.text,
-                is_user: false,
-                session_id: sessionId,
-                user_id: user.id
-              });
-
-            if (aiMsgError) throw aiMsgError;
-          } catch (error) {
-            console.error('Error saving AI message:', error);
-          }
-        } else {
-          // For guests, save to localStorage only
-          saveMessagesToLocalStorage([...newMessages, aiMessage]);
+          return;
         }
       }
 
-      // Update session message count for both cases (only for authenticated users)
-      if (user) {
+      // Handle file uploads first if present
+      if (files && files.length > 0) {
         try {
-          const { error: updateError } = await supabase
-            .from('chat_sessions')
-            .update({
-              message_count: messages.length + 2, // +2 for user and AI messages
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', sessionId)
-            .eq('user_id', user.id);
+          const response = await uploadFiles(files, messageText, user?.id || '', currentChatId);
+          
+          const aiMessage: Message = {
+            id: uuidv4(),
+            text: response.message,
+            isUser: false,
+            timestamp: new Date()
+          };
 
-          if (updateError) throw updateError;
+          setMessages(prev => [...prev, aiMessage]);
+          setIsLoading(false);
+          return;
         } catch (error) {
-          console.error('Error updating session:', error);
+          console.error('File upload error:', error);
+          toast({
+            title: "Upload Error",
+            description: "Failed to process uploaded files. Please try again.",
+            variant: "destructive"
+          });
+          setIsLoading(false);
+          return;
         }
       }
 
-      incrementUsageCount();
+      // Regular text message handling
+      const isUserMessagePatois = detectLanguage(messageText) === 'patois';
       
-    } catch (error) {
-      console.error('Error in sendMessage:', error);
-      
-      const errorMessage = {
+      let aiResponse;
+      switch (selectedService) {
+        case 'openai':
+          aiResponse = await openaiService.generateResponse(
+            messageText, 
+            isUserMessagePatois, 
+            messages,
+            currentChatId
+          );
+          break;
+        case 'gemini':
+          aiResponse = await geminiService.generateResponse(
+            messageText, 
+            isUserMessagePatois, 
+            messages
+          );
+          break;
+        case 'location-aware':
+          aiResponse = await locationAwareService.processQuery(
+            messageText, 
+            isUserMessagePatois, 
+            messages
+          );
+          break;
+        default:
+          aiResponse = await openaiService.generateResponse(
+            messageText, 
+            isUserMessagePatois, 
+            messages,
+            currentChatId
+          );
+      }
+
+      const aiMessage: Message = {
         id: uuidv4(),
-        text: "Mi sorry, but mi run inna some trouble right now. Try again inna likkle bit.",
+        text: aiResponse.message,
         isUser: false,
-        timestamp: new Date(),
-        isPatois: true
+        timestamp: new Date()
       };
 
-      const finalMessages = [...newMessages, errorMessage];
-      setMessages(finalMessages);
-      
-      // Save error message to database (only for authenticated users)
-      if (user) {
-        try {
-          const { error: errorMsgError } = await supabase
-            .from('messages')
-            .insert({
-              id: errorMessage.id,
-              content: errorMessage.text,
-              is_user: false,
-              session_id: sessionId,
-              user_id: user.id
-            });
+      setMessages(prev => [...prev, aiMessage]);
 
-          if (errorMsgError) throw errorMsgError;
+      // Save messages to database
+      if (currentChatId) {
+        try {
+          await supabase.from('messages').insert([
+            {
+              content: userMessage.text,
+              is_user: true,
+              session_id: currentChatId,
+              user_id: user?.id,
+              message_type: files && files.length > 0 ? 'file_upload' : 'text',
+              metadata: files && files.length > 0 ? { file_count: files.length } : null
+            },
+            {
+              content: aiMessage.text,
+              is_user: false,
+              session_id: currentChatId,
+              user_id: user?.id,
+              message_type: 'text'
+            }
+          ]);
+
+          // Update session message count
+          await supabase
+            .from('chat_sessions')
+            .update({
+              message_count: messages.length + 2,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', currentChatId);
         } catch (error) {
-          console.error('Error saving error message:', error);
+          console.error('Error saving messages:', error);
         }
-      } else {
-        // For guests, save to localStorage only
-        saveMessagesToLocalStorage(finalMessages);
       }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      toast({
+        title: "Error",
+        description: "Failed to send message. Please try again.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFeedback = async (messageId: string, isPositive: boolean) => {
-    // Here you could save feedback to database or analytics
-    console.log(`Feedback for message ${messageId}: ${isPositive ? 'positive' : 'negative'}`);
-  };
-
-  const handleFileUpload = async (files: any[], prompt: string) => {
-    if (!files.length || !prompt.trim() || isLoading) return;
-
-    setIsLoading(true);
-
-    // Create user message outside try block so it's available in catch
-    const userMessage: Message = {
-      id: uuidv4(),
-      text: `📎 Uploaded ${files.length} file(s): ${files.map(f => f.file.name).join(', ')}\n\n${prompt}`,
-      isUser: true,
-      timestamp: new Date()
-    };
+  const handleFileUpload = async (files: File[], prompt: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to upload files.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     try {
-      console.log('Starting file upload with assistant API...');
+      setIsLoading(true);
       
-      // Get current user
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // Create or get current session ID
+      // Create a new chat session if we don't have one
       let sessionId = currentChatId;
       if (!sessionId) {
-        sessionId = uuidv4();
+        const { data: sessionData, error: sessionError } = await supabase
+          .from('chat_sessions')
+          .insert({
+            user_id: user.id,
+            title: `File Upload - ${files[0]?.name || 'Multiple Files'}`,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            message_count: 0
+          })
+          .select('id')
+          .single();
+
+        if (sessionError) {
+          console.error('Session creation error:', sessionError);
+          throw sessionError;
+        }
+        
+        sessionId = sessionData.id;
         setCurrentChatId(sessionId);
         
-        // Create new session in database for authenticated users
-        if (user) {
-          const { error: sessionError } = await supabase
-            .from('chat_sessions')
-            .insert({
-              id: sessionId,
-              title: `File Upload: ${files.map(f => f.file.name).join(', ')}`,
-              user_id: user.id,
-              message_count: 0
-            });
-
-          if (sessionError) {
-            console.error('Session creation error:', sessionError);
-            throw sessionError;
-          }
-          
-          // Manually refresh chat history after creating new session
-          setTimeout(() => refreshChatHistory(), 200);
-        }
+        // Manually refresh chat history after creating new session
+        setTimeout(() => refreshChatHistory(), 200);
       }
 
-      // Add user message immediately to UI
-      setMessages([...messages, userMessage]);
+      // Create user message for file upload
+      const userMessage: Message = {
+        id: uuidv4(),
+        text: prompt || `Uploaded ${files.length} file(s)`,
+        isUser: true,
+        timestamp: new Date(),
+        files: files
+      };
 
-      // Extract actual File objects from the uploaded files
-      const actualFiles: File[] = files.map(f => f.file);
+      setMessages(prev => [...prev, userMessage]);
 
-      // Process files with the new assistant API
-      const formData = new FormData();
-      formData.append('prompt', prompt);
-      formData.append('userId', user?.id || 'anonymous');
+      // Process files using the file upload service
+      const response = await uploadFiles(files, prompt, user.id, sessionId);
       
-      if (sessionId) {
-        formData.append('sessionId', sessionId);
-      }
-      
-      // Add files to form data
-      actualFiles.forEach((file, index) => {
-        formData.append(`file_${index}`, file);
-      });
-
-      console.log('Calling assistants-file-processor...');
-      
-      const response = await supabase.functions.invoke('assistants-file-processor', {
-        body: formData,
-      });
-
-      if (response.error) {
-        console.error('Assistant processing error:', response.error);
-        throw new Error(`AI processing failed: ${response.error.message}`);
-      }
-
-      console.log('Assistant processing successful:', response.data);
-
-      // Add AI response to UI
       const aiMessage: Message = {
         id: uuidv4(),
-        text: response.data.message,
+        text: response.message,
         isUser: false,
-        timestamp: new Date(),
-        isPatois: false
+        timestamp: new Date()
       };
 
-      setMessages([...messages, userMessage, aiMessage]);
+      setMessages(prev => [...prev, aiMessage]);
 
-      // Store thread ID for future messages in this session
-      if (response.data.threadId) {
-        console.log('Thread ID stored:', response.data.threadId);
-        // You could store this in session state if needed for continuity
-      }
+      // Save messages to database
+      await supabase.from('messages').insert([
+        {
+          content: userMessage.text,
+          is_user: true,
+          session_id: sessionId,
+          user_id: user.id,
+          message_type: 'file_upload',
+          metadata: { 
+            file_count: files.length,
+            file_names: files.map(f => f.name)
+          }
+        },
+        {
+          content: aiMessage.text,
+          is_user: false,
+          session_id: sessionId,
+          user_id: user.id,
+          message_type: 'text'
+        }
+      ]);
 
-      toast({
-        title: "Files processed successfully",
-        description: `${files.length} file(s) analyzed by AI`,
-        variant: "default"
-      });
+      // Update session message count
+      await supabase
+        .from('chat_sessions')
+        .update({
+          message_count: messages.length + 2,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId);
 
     } catch (error) {
-      console.error('Error in file upload:', error);
-      
-      const errorMessage: Message = {
-        id: uuidv4(),
-        text: "Mi sorry, but mi cyaan process di files right now. Make sure yuh files dem not too big and try again.",
-        isUser: false,
-        timestamp: new Date(),
-        isPatois: true
-      };
-
-      setMessages([...messages, userMessage, errorMessage]);
-      
+      console.error('File upload error:', error);
       toast({
-        title: "Upload failed",
-        description: error instanceof Error ? error.message : "Failed to process files. Please try again.",
+        title: "Upload Error",
+        description: "Failed to process uploaded files. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -525,263 +349,191 @@ const MainContent = ({
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    // Check if this is a predefined suggestion with responses
-    const suggestionData = chatSuggestionsData.suggestions.find(s => s.text === suggestion);
-    
-    if (suggestionData && suggestionData.responses) {
-      // Use predefined response instead of sending to AI
-      const randomResponse = suggestionData.responses[Math.floor(Math.random() * suggestionData.responses.length)];
-      
-      // Create user message
-      const userMessage = {
-        id: uuidv4(),
-        text: suggestion,
-        isUser: true,
-        timestamp: new Date()
-      };
-
-      // Create AI response message
-      const aiMessage = {
-        id: uuidv4(),
-        text: randomResponse,
-        isUser: false,
-        timestamp: new Date(),
-        isPatois: false
-      };
-
-      // Add both messages
-      const newMessages = [...messages, userMessage];
-      setMessages(newMessages);
-      setTypingMessage(aiMessage);
-    } else {
-      // For suggestions without predefined responses, use normal AI flow
-      sendMessage(suggestion);
-    }
+    handleSendMessage(suggestion);
   };
 
-  const handleTypingComplete = () => {
-    if (typingMessage) {
-      // Add the completed message to the messages array
-      const finalMessages = [...messages, typingMessage];
-      setMessages(finalMessages);
-      setTypingMessage(null);
-    }
+  const handleServiceChange = (service: 'openai' | 'gemini' | 'location-aware') => {
+    setSelectedService(service);
+    toast({
+      title: "Service Changed",
+      description: `Now using ${service === 'location-aware' ? 'Location-Aware' : service.charAt(0).toUpperCase() + service.slice(1)} service`,
+    });
   };
+
+  const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-screen bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between p-4 border-b glass-effect modern-shadow">
-        <div className="flex items-center gap-4">
-          <Avatar>
-            <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
-            <AvatarFallback>JA</AvatarFallback>
-          </Avatar>
-          <div className="cursor-pointer" onClick={startNewChat}>
-            <h1 className="text-lg font-semibold bg-gradient-to-r from-yellow-500 to-green-600 bg-clip-text text-transparent hover:from-yellow-400 hover:to-green-500 transition-all duration-200">JamAI</h1>
-            <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
+      <header className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-10">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-yellow-500 rounded-lg flex items-center justify-center">
+                <MessageSquare className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-lg font-semibold">JamAI</h1>
+                <p className="text-sm text-muted-foreground">Yuh cultural AI assistant</p>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="hidden sm:flex items-center gap-2 bg-gradient-to-r from-green-800 via-white to-green-800 hover:from-green-900 hover:via-gray-100 hover:to-green-900 text-black border-0 rounded-full px-4 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-          >
-            <FileText className="w-4 h-4" />
-            Summary
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => setShowSettings(true)}
-          >
-            <Settings className="w-4 h-4" />
-          </Button>
-          <ThemeToggle />
-          <SubscriptionBadge />
+          <div className="flex items-center gap-2">
+            <Button
+              variant={selectedService === 'openai' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleServiceChange('openai')}
+            >
+              OpenAI
+            </Button>
+            <Button
+              variant={selectedService === 'gemini' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleServiceChange('gemini')}
+            >
+              Gemini
+            </Button>
+            <Button
+              variant={selectedService === 'location-aware' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleServiceChange('location-aware')}
+            >
+              Smart
+            </Button>
+          </div>
         </div>
       </header>
 
-      {/* Chat Messages */}
-      <div className="flex-1 p-4 overflow-y-auto">
-        <ScrollArea className="h-full">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full space-y-8">
-              {/* Welcome Section */}
-              <div className="text-center space-y-4 max-w-2xl">
-                <div className="w-32 h-32 mx-auto mb-6">
-                  <Avatar className="w-full h-full">
-                    <AvatarImage src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" />
-                    <AvatarFallback className="text-4xl">🇯🇲</AvatarFallback>
-                  </Avatar>
-                </div>
-                
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                  Welcome to JamAI
-                </h1>
-                
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  Your friendly Jamaican AI assistant with location awareness. Ask me anything in 
-                  English or Patois, find nearby places, and I'll respond in authentic Jamaican style!
-                </p>
-                
-                <Card className="bg-gradient-to-r from-secondary/10 to-accent/10 border-secondary/20">
-                  <CardContent className="p-4">
-                    <div className="flex flex-col items-center gap-3 text-center">
-                      <span className="text-2xl">👋</span>
-                      <div>
-                        <p className="font-semibold text-secondary">Ready for another chat?</p>
-                        <p className="text-sm text-muted-foreground">Welcome back! Ask me more about Jamaica or start fresh.</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+      {/* Mobile Sidebar */}
+      <div className={cn(
+        "fixed inset-0 z-50 bg-black/50 transition-opacity md:hidden",
+        isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+      )}>
+        <div className={cn(
+          "fixed left-0 top-0 h-full w-80 bg-background border-r transition-transform",
+          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}>
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="font-semibold">Chat History</h2>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSidebarOpen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+          <ChatHistorySidebar
+            chatHistory={chatHistory}
+            currentChatId={currentChatId}
+            onChatSelect={(chatId) => {
+              setCurrentChatId(chatId);
+              setIsSidebarOpen(false);
+            }}
+            onStartNewChat={() => {
+              startNewChat();
+              setIsSidebarOpen(false);
+            }}
+            onDeleteChat={(chatId) => {
+              // Handle chat deletion
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block w-80 border-r border-border bg-muted/30">
+          <ChatHistorySidebar
+            chatHistory={chatHistory}
+            currentChatId={currentChatId}
+            onChatSelect={setCurrentChatId}
+            onStartNewChat={startNewChat}
+            onDeleteChat={(chatId) => {
+              // Handle chat deletion
+            }}
+          />
+        </div>
+
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col">
+          <ScrollArea className="flex-1 p-4">
+            {isEmpty ? (
+              <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto">
+                <EmptyStateCard onSuggestionClick={handleSuggestionClick} />
+                <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
               </div>
-              
-              {/* Chat Suggestions */}
-              <ChatSuggestions onSuggestionClick={handleSuggestionClick} />
-            </div>
-           ) : (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <ChatMessage
-                  key={message.id}
-                  message={message.text}
-                  isUser={message.isUser}
-                  timestamp={message.timestamp}
-                  messageId={message.id}
-                  onFeedback={handleFeedback}
-                />
-              ))}
-              
-              {/* Show typing indicator when loading and no typing message */}
-              {isLoading && !typingMessage && <TypingIndicator />}
-              
-              {/* Show typing message when AI response is being typed */}
-              {typingMessage && (
-                <TypingMessage
-                  fullMessage={typingMessage.text}
-                  isUser={typingMessage.isUser}
-                  timestamp={typingMessage.timestamp}
-                  onComplete={handleTypingComplete}
-                />
-              )}
-              
-              <div ref={bottomRef} />
-            </div>
-          )}
-        </ScrollArea>
-      </div>
+            ) : (
+              <div className="max-w-4xl mx-auto space-y-4">
+                {messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    message={message.text}
+                    isUser={message.isUser}
+                    timestamp={message.timestamp}
+                    files={message.files}
+                  />
+                ))}
+                {isLoading && <TypingIndicator />}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </ScrollArea>
 
-      {/* Chat Input */}
-      <div className="p-4 border-t">
-        <ChatInput 
-          onSendMessage={sendMessage} 
-          onFileUpload={handleFileUpload}
-          disabled={isLoading} 
-        />
+          {/* Chat Input */}
+          <div className="border-t border-border bg-background p-4">
+            <div className="max-w-4xl mx-auto">
+              <ChatInput
+                onSendMessage={handleSendMessage}
+                onFileUpload={handleFileUpload}
+                disabled={isLoading || isUploading}
+              />
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Settings Modal */}
-      <UserProfileSettings 
-        open={showSettings} 
-        onOpenChange={setShowSettings} 
-      />
     </div>
   );
 };
 
 const Index = () => {
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chatHistory, setChatHistory] = useState<ChatHistory[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<string>('');
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const { chatHistory, saveChatHistory, loadChatHistoryFromDB } = useChatHistory();
   const { toast } = useToast();
 
-  // Load chat history from Supabase
-  const loadChatHistoryFromDB = async () => {
-    try {
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.log('No authenticated user, skipping chat history load');
-        return;
-      }
-
-      const { data: sessions, error } = await supabase
-        .from('chat_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
-
-      if (error) throw error;
-
-      if (sessions) {
-        const historyData: ChatHistory[] = await Promise.all(
-          sessions.map(async (session) => {
-            const { data: sessionMessages, error: messagesError } = await supabase
-              .from('messages')
-              .select('*')
-              .eq('session_id', session.id)
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: true });
-
-            if (messagesError) {
-              console.error('Error loading messages for session:', session.id, messagesError);
-              return {
-                id: session.id,
-                title: session.title || session.auto_title || 'New Chat',
-                messages: [],
-                createdAt: new Date(session.created_at),
-                autoTitle: session.auto_title,
-                keywords: session.keywords,
-                summary: session.summary
-              };
-            }
-
-            return {
-              id: session.id,
-              title: session.title || session.auto_title || 'New Chat',
-              messages: sessionMessages?.map(msg => ({
-                id: msg.id,
-                text: msg.content,
-                isUser: msg.is_user,
-                timestamp: new Date(msg.created_at)
-              })) || [],
-              createdAt: new Date(session.created_at),
-              autoTitle: session.auto_title,
-              keywords: session.keywords,
-              summary: session.summary
-            };
-          })
-        );
-
-        console.log(`✅ Loaded ${historyData.length} chat sessions for user`);
-        setChatHistory(historyData);
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-    }
-  };
-
+  // Load chat history from database on mount
   useEffect(() => {
-    loadChatHistoryFromDB();
-    
-    // Set up real-time subscription for chat_sessions changes
+    if (user) {
+      loadChatHistoryFromDB();
+    }
+  }, [user]);
+
+  // Set up real-time subscription for chat sessions
+  useEffect(() => {
+    if (!user) return;
+
     const setupRealtime = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
       if (user) {
         const channel = supabase
           .channel('chat_sessions_changes')
           .on(
             'postgres_changes',
             {
-              event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+              event: '*',
               schema: 'public',
               table: 'chat_sessions',
-              filter: `user_id=eq.${user.id}`
+              filter: `user_id=eq.${user.id}`,
             },
             (payload) => {
               console.log('Real-time chat sessions change:', payload);
@@ -811,177 +563,81 @@ const Index = () => {
         supabase.removeChannel(channelCleanup);
       }
     };
-  }, []);
+  }, [user]);
 
   const saveChatHistory = async (history: ChatHistory[]) => {
-    // Update local state
-    setChatHistory(history);
+    // This function is now handled by the database
+    // We'll keep it for compatibility but it's mostly a no-op
   };
 
-  const startNewChat = async () => {
-    // Clear current messages and start fresh
+  const startNewChat = () => {
     setMessages([]);
-    setCurrentChatId(''); // Reset to empty, will be set based on user authentication in sendMessage
+    setCurrentChatId(null);
   };
 
-  const loadChat = async (chatId: string) => {
+  const loadChatForId = async (chatId: string) => {
     try {
-      console.log('Loading chat with ID:', chatId);
-      
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !user) {
-        console.error('No authenticated user found');
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to load your chats.",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      const { data: sessionMessages, error } = await supabase
+      const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select('*')
         .eq('session_id', chatId)
-        .eq('user_id', user.id)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Database error loading messages:', error);
-        toast({
-          title: "Error loading chat",
-          description: "Failed to load chat messages. Please try again.",
-          variant: "destructive",
-        });
+      if (messagesError) {
+        console.error('Error loading chat messages:', messagesError);
         return;
       }
 
-      console.log('Raw session messages:', sessionMessages);
+      const loadedMessages: Message[] = messagesData.map(msg => ({
+        id: msg.id,
+        text: msg.content,
+        isUser: msg.is_user,
+        timestamp: new Date(msg.created_at)
+      }));
 
-      if (sessionMessages && sessionMessages.length > 0) {
-        const loadedMessages: Message[] = sessionMessages.map(msg => ({
-          id: msg.id,
-          text: msg.content,
-          isUser: msg.is_user,
-          timestamp: new Date(msg.created_at)
-        }));
-        
-        console.log('Mapped messages:', loadedMessages);
-        setMessages(loadedMessages);
-        setCurrentChatId(chatId);
-      } else {
-        console.log('No messages found for chat ID:', chatId);
-        // Check if the chat session exists but has no messages - this indicates a data inconsistency
-        const { data: session } = await supabase
-          .from('chat_sessions')
-          .select('title, message_count')
-          .eq('id', chatId)
-          .eq('user_id', user.id)
-          .single();
-        
-        if (session && session.message_count > 0) {
-          console.warn('Chat session exists with message_count > 0 but no messages found. Data inconsistency detected.');
-          toast({
-            title: "Empty chat detected",
-            description: "This chat appears to be empty or corrupted. Starting fresh.",
-            variant: "default",
-          });
-        }
-        
-        setMessages([]);
-        setCurrentChatId(chatId);
-      }
+      setMessages(loadedMessages);
+      setCurrentChatId(chatId);
     } catch (error) {
       console.error('Error loading chat:', error);
       toast({
         title: "Error",
-        description: "Failed to load chat. Please try again.",
-        variant: "destructive",
+        description: "Failed to load chat history.",
+        variant: "destructive"
       });
     }
   };
 
-  const deleteChats = async (chatIds: string[]) => {
-    try {
-      // Delete from database
-      const { error } = await supabase
-        .from('chat_sessions')
-        .delete()
-        .in('id', chatIds);
-
-      if (error) throw error;
-
-      // Refresh chat history
-      await loadChatHistoryFromDB();
-    } catch (error) {
-      console.error('Error deleting chats:', error);
+  // Load chat when currentChatId changes
+  useEffect(() => {
+    if (currentChatId) {
+      loadChatForId(currentChatId);
     }
-  };
+  }, [currentChatId]);
 
-  const clearAllHistory = async () => {
-    try {
-      // Delete all chat sessions for the user
-      const { error } = await supabase
-        .from('chat_sessions')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
-
-      if (error) throw error;
-
-      // Clear local state
-      setChatHistory([]);
-      setMessages([]);
-      setCurrentChatId(''); // Reset to empty
-    } catch (error) {
-      console.error('Error clearing all history:', error);
-    }
-  };
-
-  const renameChat = async (chatId: string, newTitle: string) => {
-    try {
-      const { error } = await supabase
-        .from('chat_sessions')
-        .update({ title: newTitle, updated_at: new Date().toISOString() })
-        .eq('id', chatId);
-
-      if (error) throw error;
-
-      // Update local state
-      setChatHistory(prev => prev.map(chat => 
-        chat.id === chatId ? { ...chat, title: newTitle } : chat
-      ));
-    } catch (error) {
-      console.error('Error renaming chat:', error);
-    }
-  };
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Welcome to JamAI</h1>
+          <p className="text-muted-foreground mb-8">Please sign in to start chatting</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <SidebarProvider defaultOpen={false}>
-      <div className="flex min-h-screen w-full">
-        <ChatHistorySidebar 
-          chatHistory={chatHistory} 
-          currentChatId={currentChatId}
-          onNewChat={startNewChat}
-          onLoadChat={loadChat}
-          onDeleteChats={deleteChats}
-          onClearAllHistory={clearAllHistory}
-          onRenameChat={renameChat}
-        />
-        <main className="flex-1 min-w-0">
-          <MainContent 
-            messages={messages}
-            setMessages={setMessages}
-            currentChatId={currentChatId}
-            setCurrentChatId={setCurrentChatId}
-            chatHistory={chatHistory}
-            saveChatHistory={saveChatHistory}
-            startNewChat={startNewChat}
-            refreshChatHistory={loadChatHistoryFromDB}
-          />
-        </main>
-      </div>
-    </SidebarProvider>
+    <div className="h-screen bg-background">
+      <MainContent
+        messages={messages}
+        setMessages={setMessages}
+        currentChatId={currentChatId}
+        setCurrentChatId={setCurrentChatId}
+        chatHistory={chatHistory}
+        saveChatHistory={saveChatHistory}
+        startNewChat={startNewChat}
+        refreshChatHistory={loadChatHistoryFromDB}
+      />
+    </div>
   );
 };
 
