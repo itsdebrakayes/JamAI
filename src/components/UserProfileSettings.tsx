@@ -28,20 +28,12 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [autoSummary, setAutoSummary] = useState(false);
-  const [translationMode, setTranslationMode] = useState(false);
 
-  // Load user data and preferences
+  // Load user data
   useEffect(() => {
     if (user?.email) {
       setEmail(user.email);
     }
-    
-    // Load preferences from localStorage for both users and guests
-    const savedAutoSummary = localStorage.getItem('autoSummary') === 'true';
-    const savedTranslationMode = localStorage.getItem('translationMode') === 'true';
-    setAutoSummary(savedAutoSummary);
-    setTranslationMode(savedTranslationMode);
   }, [user]);
 
   const handleUpdateEmail = async () => {
@@ -138,21 +130,6 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
     }
   };
 
-  const handlePreferenceChange = (key: string, value: boolean) => {
-    if (key === 'autoSummary') {
-      setAutoSummary(value);
-    } else if (key === 'translationMode') {
-      setTranslationMode(value);
-    }
-    
-    // Save to localStorage for both users and guests
-    localStorage.setItem(key, value.toString());
-    
-    // TODO: For authenticated users, also save to Supabase profiles table
-    if (user) {
-      // This would be implemented to sync with the database
-    }
-  };
 
   const getTierInfo = () => {
     if (isGuest) {
@@ -229,42 +206,6 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
               </CardContent>
             </Card>
 
-            {/* Summary & Translation Settings for Guests */}
-            <Card className="border border-border/50">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <FileText className="w-5 h-5" />
-                  Preferences
-                </CardTitle>
-                <CardDescription>
-                  Basic AI response settings
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="auto-summary" className="flex items-center gap-2">
-                    📝 Auto Summary
-                  </Label>
-                  <Switch 
-                    id="auto-summary" 
-                    checked={autoSummary}
-                    onCheckedChange={(value) => handlePreferenceChange('autoSummary', value)}
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="translation-mode" className="flex items-center gap-2">
-                    <Languages className="w-4 h-4" />
-                    Translation Mode
-                  </Label>
-                  <Switch 
-                    id="translation-mode" 
-                    checked={translationMode}
-                    onCheckedChange={(value) => handlePreferenceChange('translationMode', value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </SheetContent>
       </Sheet>
@@ -400,42 +341,6 @@ const UserProfileSettings = ({ open, onOpenChange }: UserProfileSettingsProps) =
             </CardContent>
           </Card>
 
-          {/* Summary & Translation Settings */}
-          <Card className="border border-border/50">
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <FileText className="w-5 h-5" />
-                Summary & Translation
-              </CardTitle>
-              <CardDescription>
-                Configure AI response settings
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="auto-summary" className="flex items-center gap-2">
-                  📝 Auto Summary
-                </Label>
-                <Switch 
-                  id="auto-summary" 
-                  checked={autoSummary}
-                  onCheckedChange={(value) => handlePreferenceChange('autoSummary', value)}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <Label htmlFor="translation-mode" className="flex items-center gap-2">
-                  <Languages className="w-4 h-4" />
-                  Translation Mode
-                </Label>
-                <Switch 
-                  id="translation-mode" 
-                  checked={translationMode}
-                  onCheckedChange={(value) => handlePreferenceChange('translationMode', value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Security Actions */}
           <Card className="border border-border/50">
