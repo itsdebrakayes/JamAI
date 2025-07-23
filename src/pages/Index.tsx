@@ -8,7 +8,7 @@ import ChatInput from '@/components/ChatInput';
 import TypingIndicator from '@/components/TypingIndicator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Menu, MessageSquare, X } from 'lucide-react';
+import { Menu, MessageSquare, X, Settings } from 'lucide-react';
 import { openaiService } from '@/services/openaiService';
 import { detectLanguage } from '@/utils/languageDetection';
 import { v4 as uuidv4 } from 'uuid';
@@ -18,6 +18,8 @@ import { useFileUpload } from '@/hooks/useFileUpload';
 import EmptyStateCard from '@/components/EmptyStateCard';
 import ChatSuggestions from '@/components/ChatSuggestions';
 import { cn } from '@/lib/utils';
+import SubscriptionBadge from '@/components/SubscriptionBadge';
+import UserProfileSettings from '@/components/UserProfileSettings';
 
 interface Message {
   id: string;
@@ -45,6 +47,7 @@ const Index = () => {
   const [groupedChatHistory, setGroupedChatHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { uploadMultipleFiles, isUploading, isProcessing, processFilesWithAI } = useFileUpload();
@@ -269,11 +272,41 @@ const Index = () => {
               </div>
             </div>
           </div>
+          
+          <div className="flex items-center gap-2">
+            <SubscriptionBadge />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Sidebar */}
+        <ChatHistorySidebar
+          chatHistory={chatHistory}
+          currentChatId={currentChatId || ''}
+          onNewChat={startNewChat}
+          onLoadChat={loadChatForId}
+          onDeleteChats={(chatIds) => {
+            // TODO: Implement delete functionality
+            console.log('Delete chats:', chatIds);
+          }}
+          onClearAllHistory={() => {
+            // TODO: Implement clear all functionality
+            console.log('Clear all history');
+          }}
+          onRenameChat={(chatId, newTitle) => {
+            // TODO: Implement rename functionality
+            console.log('Rename chat:', chatId, newTitle);
+          }}
+        />
 
         {/* Chat Area */}
         <div className="flex-1 flex flex-col">
@@ -315,6 +348,12 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* Settings Dialog */}
+      <UserProfileSettings
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+      />
     </div>
   );
 };
