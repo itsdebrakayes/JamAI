@@ -35,7 +35,7 @@ serve(async (req) => {
     }
 
     // Use your existing assistant ID
-    const assistantId = 'asst_w0jwx4pIWZto4yw1ozet5Mrb';
+    const assistantId = Deno.env.get('Api_Assisstant') || 'asst_w0jwx4pIWZto4yw1ozet5Mrb';
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -84,7 +84,28 @@ serve(async (req) => {
       threadId = sessionData.metadata.threadId;
     }
 
-    // Send message to thread
+    // Get user memories for context
+    let memoryContext = '';
+    if (userId && userId !== 'user') {
+      try {
+        const { data: memories } = await supabase
+          .from('user_memories')
+          .select('title, content, category, keywords')
+          .eq('user_id', userId)
+          .order('importance_score', { ascending: false })
+          .limit(3);
+          
+        if (memories && memories.length > 0) {
+          memoryContext = '\n\nRelevant memories:\n' + 
+            memories.map(m => `- ${m.title}: ${JSON.stringify(m.content)}`).join('\n');
+        }
+      } catch (error) {
+        console.error('Error fetching memories:', error);
+      }
+    }
+
+    // Send message to thread with memory context
+    const fullMessage = userMessage + memoryContext;
     const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'POST',
       headers: {
@@ -94,7 +115,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         role: 'user',
-        content: userMessage
+        content: fullMessage
       })
     });
 
@@ -177,6 +198,27 @@ serve(async (req) => {
     }
 
     const responseText = assistantMessage.content[0]?.text?.value || 'No response generated';
+
+    // Store memory if this is a significant interaction
+    if (userId && userId !== 'user' && responseText.length > 20) {
+      try {
+        await supabase
+          .from('user_memories')
+          .insert({
+            user_id: userId,
+            title: userMessage.substring(0, 50),
+            content: { 
+              user_query: userMessage, 
+              ai_response: responseText.substring(0, 200)
+            },
+            category: 'conversation',
+            keywords: userMessage.toLowerCase().split(' ').slice(0, 5),
+            importance_score: responseText.length > 100 ? 5 : 3
+          });
+      } catch (error) {
+        console.error('Error storing memory:', error);
+      }
+    }
 
     return new Response(
       JSON.stringify({

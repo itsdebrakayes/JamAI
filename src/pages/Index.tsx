@@ -153,7 +153,8 @@ const Index = () => {
         messageText, 
         isUserMessagePatois, 
         messages,
-        currentChatId || undefined
+        currentChatId || undefined,
+        user?.id
       );
 
       const aiMessage: Message = {

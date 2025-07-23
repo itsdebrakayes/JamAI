@@ -59,19 +59,19 @@ export class OpenAIService {
     userMessage: string, 
     isUserMessagePatois: boolean, 
     conversationHistory: Message[] = [],
-    sessionId?: string
+    sessionId?: string,
+    userId?: string
   ): Promise<AIResponse> {
     try {
-      // Get relevant memories for context
-      const memoryContext = await memoryService.getRelevantMemories(userMessage, 5);
-      console.log(`🤖 OpenAI: Generated response with ${memoryContext.length} chars of memory context`);
+      // Get relevant memories for context (this is now handled in the edge function)
+      console.log(`🤖 OpenAI: Generating response using Assistant API`);
       
-      // Call new OpenAI Assistant edge function
+      // Call OpenAI Assistant edge function
       const { data, error } = await supabase.functions.invoke('openai-assistant-chat', {
         body: {
           userMessage,
           sessionId: sessionId || 'default',
-          userId: 'user', // This should be replaced with actual user ID
+          userId: userId || 'user',
           conversationHistory: conversationHistory.slice(-8)
         }
       });
@@ -83,9 +83,8 @@ export class OpenAIService {
 
       const responseText = data.message || 'Sorry, mi cyaan understand dat right now.';
       
-      // Store the exchange in enhanced memory system
-      console.log('🧠 OpenAI: Storing conversation in enhanced memory...');
-      await memoryService.storeMemory(userMessage, responseText);
+      // Memory is now handled in the edge function
+      console.log('🧠 OpenAI: Memory management handled by edge function');
       
       // Detect if response is in Patois (simple heuristic)
       const isResponsePatois = this.detectPatois(responseText);
