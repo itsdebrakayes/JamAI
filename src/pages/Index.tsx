@@ -369,9 +369,13 @@ const Index = () => {
                 const success = await updateChatSessionTitle(chatId, newTitle);
                 if (success) {
                   // Update local state
-                  setChatHistory(prev => prev.map(chat => 
+                  const updatedChats = chatHistory.map(chat => 
                     chat.id === chatId ? { ...chat, title: newTitle } : chat
-                  ));
+                  );
+                  setChatHistory(updatedChats);
+                  // Update grouped chat history as well
+                  const groupedChats = groupChatsByTime(updatedChats);
+                  setGroupedChatHistory(groupedChats);
                 } else {
                   console.error('Failed to update chat title in database');
                 }
@@ -383,6 +387,9 @@ const Index = () => {
                 );
                 saveChatHistory(updatedHistory);
                 setChatHistory(updatedHistory);
+                // Update grouped chat history as well
+                const groupedChats = groupChatsByTime(updatedHistory);
+                setGroupedChatHistory(groupedChats);
               }
             } catch (error) {
               console.error('Error renaming chat:', error);
