@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 import SubscriptionBadge from '@/components/SubscriptionBadge';
 import UserProfileSettings from '@/components/UserProfileSettings';
 import ThemeToggle from '@/components/ThemeToggle';
+import JamAILogo from '@/assets/JAMAi Logo.png';
 
 interface Message {
   id: string;
@@ -64,9 +65,16 @@ const Index = () => {
   // Load chat history when user changes
   useEffect(() => {
     const loadHistory = async () => {
+      console.log('🔄 Starting to load chat history...');
+      console.log('👤 User:', user ? 'authenticated' : 'not authenticated');
+      console.log('🏠 isGuest:', isGuest);
+      
       if (user && !isGuest) {
         try {
+          console.log('🔄 Fetching chat sessions from database...');
           const sessions = await getChatSessions();
+          console.log('📚 Retrieved sessions:', sessions.length, sessions);
+          
           const chats: ChatHistoryItem[] = sessions.map(session => ({
             id: session.id,
             title: session.auto_title || session.title,
@@ -77,11 +85,13 @@ const Index = () => {
             summary: session.summary || undefined
           }));
           
+          console.log('🗂️ Processed chats:', chats);
           setChatHistory(chats);
           const groupedChats = groupChatsByTime(chats);
+          console.log('📊 Grouped chats:', groupedChats);
           setGroupedChatHistory(groupedChats);
         } catch (error) {
-          console.error('Error loading chat history:', error);
+          console.error('❌ Error loading chat history:', error);
         }
       } else {
         // Load from localStorage for guests
@@ -271,7 +281,7 @@ const Index = () => {
               className="flex items-center gap-2 p-2 hover:bg-accent rounded-lg"
             >
               <img 
-                src="/src/assets/JAMAi Logo.png" 
+                src={JamAILogo}
                 alt="JamAI Logo" 
                 className="w-8 h-8 rounded-lg"
               />

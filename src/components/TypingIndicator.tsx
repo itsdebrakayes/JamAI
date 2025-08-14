@@ -1,5 +1,6 @@
 
 import React from 'react';
+import JamAILogo from '@/assets/JAMAi Logo.png';
 
 const TypingIndicator = () => {
   return (
@@ -8,7 +9,7 @@ const TypingIndicator = () => {
         <div className="flex-shrink-0">
           <div className="w-20 h-20 rounded-full bg-gradient-to-br from-secondary to-accent text-secondary-foreground flex items-center justify-center text-lg font-medium modern-shadow overflow-hidden">
             <img 
-              src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+              src={JamAILogo}
               alt="JamAI Logo" 
               className="w-18 h-18 object-contain"
             />

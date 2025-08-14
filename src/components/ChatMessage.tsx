@@ -19,6 +19,7 @@ import remarkGfm from 'remark-gfm';
 import { formatMessageWithBold, hasMarkdownFormatting } from '@/utils/messageFormatter';
 import MessageActions from './MessageActions';
 import FileDisplay from './FileDisplay';
+import JamAILogo from '@/assets/JAMAi Logo.png';
 
 // Define the props this component expects
 interface ChatMessageProps {
@@ -77,7 +78,7 @@ const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: Chat
       {!isUser && (
         <div className="flex-shrink-0">
           <img 
-            src="/src/assets/JAMAi Logo.png" 
+            src={JamAILogo}
             alt="JamAI Logo" 
             className="w-8 h-8 object-contain rounded-full"
           />
