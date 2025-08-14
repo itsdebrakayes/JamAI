@@ -4,7 +4,7 @@ import { FileText, Languages, Loader2, Copy, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { geminiService } from '@/services/geminiService';
+import { apiService } from '@/services/apiService';
 import { detectLanguage } from '@/utils/languageDetection';
 import { Message } from '@/types/Message';
 
@@ -28,7 +28,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
     setActiveTab('summary');
     try {
       const prompt = `Please provide a concise summary of the following large text. Give me the summary in both English and Jamaican Patois for comparison. Structure your response clearly with both versions:\n\n${inputText}`;
-      const response = await geminiService.generateResponse(prompt, false, []);
+      const response = await apiService.generateGeminiResponse(prompt, false, []);
       setSummary(response.message);
     } catch (error) {
       console.error('Summary error:', error);
@@ -52,7 +52,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
         prompt = `Please translate the following English text to authentic Jamaican Patois. Maintain the original meaning and tone. Only provide the Patois translation:\n\n${inputText}`;
       }
       
-      const response = await geminiService.generateResponse(prompt, detectedLanguage === 'english', []);
+      const response = await apiService.generateGeminiResponse(prompt, detectedLanguage === 'english', []);
       setTranslation(response.message);
     } catch (error) {
       console.error('Translation error:', error);
@@ -80,7 +80,7 @@ const ChatSummary = ({ messages, onClose }: ChatSummaryProps) => {
         <DialogHeader>
           <div className="flex items-center gap-3">
             <img 
-              src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+              src="/src/assets/JAMAi Logo.png" 
               alt="JamAI Crest" 
               className="w-6 h-6 object-contain"
             />

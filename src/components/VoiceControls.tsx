@@ -3,7 +3,7 @@ import React from 'react';
 import { Mic, MicOff, Volume2, VolumeX, Pause, Play, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
-import { useElevenLabsSpeech } from '@/hooks/useElevenLabsSpeech';
+import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
 interface VoiceControlsProps {
   onTranscriptReady: (transcript: string) => void;
@@ -24,14 +24,13 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
 
   const {
     speak,
-    stop,
+    cancel,
     pause,
     resume,
     isSpeaking,
     isPaused,
-    isSupported: speechSynthesisSupported,
-    error: ttsError
-  } = useElevenLabsSpeech();
+    isSupported: speechSynthesisSupported
+  } = useSpeechSynthesis();
 
   // Handle transcript completion
   React.useEffect(() => {
@@ -68,7 +67,7 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
   };
 
   const handleStopClick = () => {
-    stop();
+    cancel();
   };
 
   if (!speechRecognitionSupported && !speechSynthesisSupported) {
@@ -174,17 +173,6 @@ const VoiceControls = ({ onTranscriptReady, lastMessage, disabled }: VoiceContro
         </div>
       )}
 
-      {/* TTS error display */}
-      {ttsError && (
-        <div 
-          className="text-xs text-red-500 max-w-32 truncate flex items-center gap-1"
-          role="alert"
-          aria-live="assertive"
-        >
-          <AlertCircle className="w-3 h-3" />
-          {ttsError}
-        </div>
-      )}
     </div>
   );
 };

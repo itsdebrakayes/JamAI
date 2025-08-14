@@ -9,7 +9,7 @@ import TypingIndicator from '@/components/TypingIndicator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Menu, MessageSquare, X, Settings } from 'lucide-react';
-import { openaiService } from '@/services/openaiService';
+import { apiService } from '@/services/apiService';
 import { detectLanguage } from '@/utils/languageDetection';
 import { v4 as uuidv4 } from 'uuid';
 import { loadChatHistory, saveChatHistory, createChatSession, saveMessageToDatabase, getChatSessions, deleteChatSession, clearHistory, updateChatSessionTitle } from '@/utils/chatHistory';
@@ -153,7 +153,7 @@ const Index = () => {
       // Regular text message handling using OpenAI Assistant
       const isUserMessagePatois = detectLanguage(messageText) === 'patois';
       
-      const aiResponse = await openaiService.generateResponse(
+      const aiResponse = await apiService.generateOpenAIResponse(
         messageText, 
         isUserMessagePatois, 
         messages,

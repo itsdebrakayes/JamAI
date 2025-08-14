@@ -33,8 +33,7 @@ export const patoisFarewells = [
   "Respect and blessings! Chat soon!"
 ];
 
-import { geminiService } from '@/services/geminiService';
-import { openaiService } from '@/services/openaiService';
+import { apiService } from '@/services/apiService';
 
 export const getRandomPatoisResponse = (): string => {
   const responses = [...patoisResponses];
@@ -52,8 +51,9 @@ export const getPatoisFarewell = (): string => {
 // This function now ALWAYS uses AI for responses - no special quiz handling
 export const generatePatoisResponse = async (userMessage: string, currentService: 'gemini' | 'openai' = 'gemini'): Promise<string> => {
   try {
-    const service = currentService === 'gemini' ? geminiService : openaiService;
-    const response = await service.generateResponse(userMessage, false, []);
+    const response = currentService === 'gemini' 
+      ? await apiService.generateGeminiResponse(userMessage, false, [])
+      : await apiService.generateOpenAIResponse(userMessage, false, []);
     return response.message;
   } catch (error) {
     console.error('Error generating AI response:', error);

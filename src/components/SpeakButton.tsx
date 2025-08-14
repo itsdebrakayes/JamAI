@@ -2,7 +2,7 @@
 import React from 'react';
 import { Volume2, VolumeX, Pause, Play } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useElevenLabsSpeech } from '@/hooks/useElevenLabsSpeech';
+import { useSpeechSynthesis } from '@/hooks/useSpeechSynthesis';
 
 interface SpeakButtonProps {
   text: string;
@@ -10,7 +10,7 @@ interface SpeakButtonProps {
 }
 
 const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
-  const { speak, stop, pause, resume, isSpeaking, isPaused, isSupported } = useElevenLabsSpeech();
+  const { speak, cancel, pause, resume, isSpeaking, isPaused, isSupported } = useSpeechSynthesis();
 
   if (!isSupported) {
     console.log('ElevenLabs not supported');
@@ -32,7 +32,7 @@ const SpeakButton = ({ text, className = '' }: SpeakButtonProps) => {
   };
 
   const handleStopClick = () => {
-    stop();
+    cancel();
   };
 
   return (
