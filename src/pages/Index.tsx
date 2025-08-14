@@ -12,7 +12,7 @@ import { Menu, MessageSquare, X, Settings } from 'lucide-react';
 import { openaiService } from '@/services/openaiService';
 import { detectLanguage } from '@/utils/languageDetection';
 import { v4 as uuidv4 } from 'uuid';
-import { loadChatHistory, saveChatHistory, createChatSession, saveMessageToDatabase, getChatSessions } from '@/utils/chatHistory';
+import { loadChatHistory, saveChatHistory, createChatSession, saveMessageToDatabase, getChatSessions, deleteChatSession, clearHistory, updateChatSessionTitle } from '@/utils/chatHistory';
 import { groupChatsByTime } from '@/utils/chatGrouping';
 import { useFileUpload } from '@/hooks/useFileUpload';
 import EmptyStateCard from '@/components/EmptyStateCard';
@@ -304,17 +304,89 @@ const Index = () => {
           currentChatId={currentChatId || ''}
           onNewChat={startNewChat}
           onLoadChat={loadChatForId}
-          onDeleteChats={(chatIds) => {
-            // TODO: Implement delete functionality
-            console.log('Delete chats:', chatIds);
+          onDeleteChats={async (chatIds) => {
+            try {
+              for (const chatId of chatIds) {
+                if (user) {
+                  // Delete from Supabase for authenticated users
+                  await deleteChatSession(chatId);
+                } else {
+                  // Delete from localStorage for guests  
+                  const currentHistory = loadChatHistory();
+                  const updatedHistory = currentHistory.filter(chat => !chatIds.includes(chat.id));
+                  saveChatHistory(updatedHistory);
+                  setChatHistory(updatedHistory);
+                }
+              }
+              
+              // If the current chat was deleted, start a new one
+              if (chatIds.includes(currentChatId)) {
+                startNewChat();
+              }
+              
+              // Refresh chat history for authenticated users
+              if (user) {
+                const sessions = await getChatSessions();
+                const chats: ChatHistoryItem[] = sessions.map(session => ({
+                  id: session.id,
+                  title: session.auto_title || session.title,
+                  messages: [],
+                  createdAt: new Date(session.created_at),
+                  autoTitle: session.auto_title || undefined,
+                  keywords: session.keywords || undefined,
+                  summary: session.summary || undefined
+                }));
+                setChatHistory(chats);
+              }
+            } catch (error) {
+              console.error('Error deleting chats:', error);
+            }
           }}
-          onClearAllHistory={() => {
-            // TODO: Implement clear all functionality
-            console.log('Clear all history');
+          onClearAllHistory={async () => {
+            try {
+              if (user) {
+                // Clear all chat sessions from Supabase for authenticated users
+                const sessions = await getChatSessions();
+                for (const session of sessions) {
+                  await deleteChatSession(session.id);
+                }
+              } else {
+                // Clear localStorage for guests
+                clearHistory();
+              }
+              
+              // Reset state
+              setChatHistory([]);
+              startNewChat();
+            } catch (error) {
+              console.error('Error clearing chat history:', error);
+            }
           }}
-          onRenameChat={(chatId, newTitle) => {
-            // TODO: Implement rename functionality
-            console.log('Rename chat:', chatId, newTitle);
+          onRenameChat={async (chatId, newTitle) => {
+            try {
+              if (user) {
+                // Update in Supabase for authenticated users
+                const success = await updateChatSessionTitle(chatId, newTitle);
+                if (success) {
+                  // Update local state
+                  setChatHistory(prev => prev.map(chat => 
+                    chat.id === chatId ? { ...chat, title: newTitle } : chat
+                  ));
+                } else {
+                  console.error('Failed to update chat title in database');
+                }
+              } else {
+                // Update in localStorage for guests
+                const currentHistory = loadChatHistory();
+                const updatedHistory = currentHistory.map(chat => 
+                  chat.id === chatId ? { ...chat, title: newTitle } : chat
+                );
+                saveChatHistory(updatedHistory);
+                setChatHistory(updatedHistory);
+              }
+            } catch (error) {
+              console.error('Error renaming chat:', error);
+            }
           }}
         />
 
