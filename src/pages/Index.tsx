@@ -271,7 +271,7 @@ const Index = () => {
               className="flex items-center gap-2 p-2 hover:bg-accent rounded-lg"
             >
               <img 
-                src="/lovable-uploads/50052a84-111e-4b20-a49b-a5a5b638414b.png" 
+                src="/src/assets/JAMAi Logo.png" 
                 alt="JamAI Logo" 
                 className="w-8 h-8 rounded-lg"
               />
@@ -413,7 +413,6 @@ const Index = () => {
               <div className="max-w-4xl mx-auto space-y-4">
                 {messages.map((message) => (
                   <ChatMessage
-                    key={message.id}
                     message={message.text}
                     isUser={message.isUser}
                     timestamp={message.timestamp}

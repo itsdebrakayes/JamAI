@@ -26,7 +26,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userMessage, sessionId, userId, conversationHistory = [] } = await req.json() as AssistantRequest;
+  const { userMessage, sessionId, userId, conversationHistory = [], isUserMessagePatois } = await req.json();
 
     // Get OpenAI API key from environment
     const openaiApiKey = Deno.env.get('OpenAI_API') || Deno.env.get('OPENAI_API_KEY');
@@ -105,7 +105,23 @@ serve(async (req) => {
     }
 
     // Send message to thread with memory context
-    const fullMessage = userMessage + memoryContext;
+    // Set system prompt based on user's language
+    let systemPrompt = '';
+    if (isUserMessagePatois) {
+      systemPrompt = `You are JamAI, a helpful AI assistant designed for Jamaican users. Respond in authentic Jamaican Patois unless the user requests English or a translation.`;
+    } else {
+      systemPrompt = `You are JamAI, a helpful AI assistant designed for Jamaican users. Respond in clear, natural English unless the user requests Patois or a translation.`;
+    }
+    // If the user requests a translation, override prompt
+    const translationKeywords = [
+      'translate', 'translation', 'english', 'please translate', 'can you translate', 'what does that mean', 'in english', 'english please', 'yes please', 'sure', 'ok', 'okay'
+    ];
+    const lowerUserMessage = userMessage.toLowerCase();
+    const isTranslationRequest = translationKeywords.some(keyword => lowerUserMessage.includes(keyword));
+    if (isTranslationRequest) {
+      systemPrompt = `You are JamAI, a helpful AI assistant. Translate the user's message as requested.`;
+    }
+    const fullMessage = `${systemPrompt}\n\n${userMessage}${memoryContext}`;
     const messageResponse = await fetch(`https://api.openai.com/v1/threads/${threadId}/messages`, {
       method: 'POST',
       headers: {

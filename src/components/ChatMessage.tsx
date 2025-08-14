@@ -77,7 +77,7 @@ const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: Chat
       {!isUser && (
         <div className="flex-shrink-0">
           <img 
-            src="/lovable-uploads/f7360586-ff1c-4d5e-b846-feaceed45e61.png" 
+            src="/src/assets/JAMAi Logo.png" 
             alt="JamAI Logo" 
             className="w-8 h-8 object-contain rounded-full"
           />
@@ -123,7 +123,7 @@ const ChatMessage = ({ message, isUser, timestamp, messageId, onFeedback }: Chat
                   ),
                   ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
                   ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                  li: ({ children }) => <li className="ml-2">{children}</li>,
+                  li: ({ children }) => <ul><li className="ml-2">{children}</li></ul>,
                   a: ({ children, href }) => (
                     <a 
                       href={href} 
