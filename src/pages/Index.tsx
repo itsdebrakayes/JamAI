@@ -270,9 +270,11 @@ const Index = () => {
               onClick={startNewChat}
               className="flex items-center gap-2 p-2 hover:bg-accent rounded-lg"
             >
-              <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-yellow-500 rounded-lg flex items-center justify-center">
-                <MessageSquare className="w-5 h-5 text-white" />
-              </div>
+              <img 
+                src="/lovable-uploads/50052a84-111e-4b20-a49b-a5a5b638414b.png" 
+                alt="JamAI Logo" 
+                className="w-8 h-8 rounded-lg"
+              />
               <div className="text-left">
                 <h1 className="text-lg font-semibold text-foreground">JamAI</h1>
                 <p className="text-sm text-muted-foreground">Jamaican AI Assistant</p>
