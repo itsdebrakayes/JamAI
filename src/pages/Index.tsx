@@ -222,30 +222,40 @@ const Index = () => {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
-      {/* Sidebar */}
-      <ChatHistorySidebar
-        chatHistory={groupedChatHistory}
-        currentChatId={currentChatId}
-        onLoadChat={async (chatId) => {
-          try {
-            setCurrentChatId(chatId);
-            const { data: chatMessages } = user && !isGuest 
-              ? await supabase.from('messages').select('*').eq('session_id', chatId).order('created_at')
-              : { data: null };
-            
-            if (chatMessages) {
-              const formattedMessages: Message[] = chatMessages.map(msg => ({
-                id: msg.id,
-                text: msg.content,
-                isUser: msg.is_user,
-                timestamp: new Date(msg.created_at)
-              }));
-              setMessages(formattedMessages);
+      {/* Mobile Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden" 
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar Container */}
+      <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:relative z-50 lg:z-auto transition-transform duration-300 ease-in-out`}>
+        <ChatHistorySidebar
+          chatHistory={groupedChatHistory}
+          currentChatId={currentChatId || ''}
+          onLoadChat={async (chatId) => {
+            setIsSidebarOpen(false);
+            try {
+              setCurrentChatId(chatId);
+              const { data: chatMessages } = user && !isGuest 
+                ? await supabase.from('messages').select('*').eq('session_id', chatId).order('created_at')
+                : { data: null };
+              
+              if (chatMessages) {
+                const formattedMessages: Message[] = chatMessages.map(msg => ({
+                  id: msg.id,
+                  text: msg.content,
+                  isUser: msg.is_user,
+                  timestamp: new Date(msg.created_at)
+                }));
+                setMessages(formattedMessages);
+              }
+            } catch (error) {
+              console.error('Error loading chat:', error);
             }
-          } catch (error) {
-            console.error('Error loading chat:', error);
-          }
-        }}
+          }}
         onDeleteChats={async (chatIds) => {
           try {
             if (user && !isGuest) {
@@ -341,7 +351,8 @@ const Index = () => {
             console.error('Error renaming chat:', error);
           }
         }}
-      />
+        />
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -392,8 +403,8 @@ const Index = () => {
 
         {/* Chat Area - Fixed height with proper scrolling */}
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto">
+          {/* Messages Area with custom scrollbar */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
             <div className="h-full">
               {isEmpty ? (
                 <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto p-8">
