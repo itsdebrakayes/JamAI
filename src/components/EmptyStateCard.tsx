@@ -23,9 +23,13 @@ const EmptyStateCard: React.FC<EmptyStateCardProps> = ({
 }) => {
   return (
     <Card className={`border-dashed border-2 bg-gradient-to-br from-gray-50 to-gray-100 ${className}`}>
-      <CardContent className="flex flex-col items-center justify-center text-center py-12 px-6">
-        <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-100 to-yellow-100 border-2 border-green-200">
-          <Icon className="h-10 w-10 text-green-600" />
+      <CardContent className="flex flex-col items-center justify-center text-center py-16 px-6">
+        <div className="mx-auto mb-8 flex h-32 w-32 items-center justify-center">
+          <img 
+            src="/lovable-uploads/50052a84-111e-4b20-a49b-a5a5b638414b.png" 
+            alt="JamAI Logo" 
+            className="h-24 w-24"
+          />
         </div>
         <h3 className="text-xl font-semibold text-gray-900 mb-2">
           {title}
